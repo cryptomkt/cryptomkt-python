@@ -25,11 +25,11 @@ class HMACAuth(AuthBase):
         body = ''
 
         if request.body:
-            data = json.loads(request.body)
-            keys = list(data)
+            params = dict(map(lambda x: x.split('='), request.body.split('&')))
+            keys = list(params)
             keys.sort()
             for key in keys:
-                body += str(data[key])
+                body += str(params[key])
 
         timestamp = str(time.time())
         message = timestamp + urljoin(request.path_url, urlparse(request.path_url).path) + body

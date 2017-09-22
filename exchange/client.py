@@ -66,12 +66,10 @@ class Client(object):
         """
         uri = self._create_api_uri(*relative_path_parts, **kwargs)
 
-        print(uri)
-
         data = kwargs.get("data", None)
         if data and isinstance(data, dict):
-            kwargs['data'] = encode_params(data)
-        print(kwargs)
+            kwargs['data'] = data
+
         response = getattr(self.session, method)(uri, **kwargs)
         return self._handle_response(response)
 
