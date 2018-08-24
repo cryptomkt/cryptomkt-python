@@ -93,4 +93,8 @@ fabric.properties
 
 # End of https://www.gitignore.io/api/pycharm+all,pycharm+iml
 
-/tests/test_client.py
+/tests
+/dist 
+*-info
+/build
+.vscode
