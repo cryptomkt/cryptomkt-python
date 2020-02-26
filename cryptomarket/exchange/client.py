@@ -120,22 +120,44 @@ class Client(object):
     # -----------------------------------------------------------
 
     def get_markets(self):
-        """https://developers.cryptomkt.com/es/#mercado"""
-        response = self._get('v1', 'market')
+        """get_markets(self) -> APIObject
+        
+        https://developers.cryptomkt.com/es/#mercado
+        
+        This method returns the markets available in cryptomarket. 
+        You can access them by client.get_markets[indexYouWant]"""
+        response = self._get(self.API_VERSION, 'market')
         return self._make_api_object(response, APIObject)
 
     def get_ticker(self, market=None):
-        """https://developers.cryptomkt.com/es/#obtener-ticker"""
+        """get_ticker(self) -> APIObject
+
+        https://developers.cryptomkt.com/es/#obtener-ticker
+        
+        This method returns the ticker. If market is provided, returns 
+        the ticker according to it. 
+
+        List of arguments:
+                required: None
+                optional: market
+        """
         params = {}
 
         if market:
             params['market'] = market
 
-        response = self._get('v1', 'ticker', params=params)
+        response = self._get(self.API_VERSION, 'ticker', params=params)
         return self._make_api_object(response, APIObject)
 
     def get_book(self, market, type, page=None, limit=None):
-        """https://developers.cryptomkt.com/es/#libro-de-ordenes"""
+        """get_book(self, market, type, page = None, limit = None) -> APIObject
+        
+        https://developers.cryptomkt.com/es/#libro-de-ordenes
+        
+        This method returns the book according to the market and type provided.
+
+        List of arguments: 
+        """
         params = dict(
             market=market,
             type=type
@@ -147,7 +169,7 @@ class Client(object):
         if limit and isinstance(limit, int):
             params['limit'] = limit
 
-        response = self._get('v1', 'book', params=params)
+        response = self._get(self.API_VERSION, 'book', params=params)
         return self._make_api_object(response, APIObject)
 
     def get_trades(self, market, start=None, end=None, page=None, limit=None):
@@ -168,7 +190,7 @@ class Client(object):
         if limit:
             params['limit'] = limit
 
-        response = self._get('v1', 'trades', params=params)
+        response = self._get(self.API_VERSION, 'trades', params=params)
         return self._make_api_object(response, APIObject)
 
     def get_prices(self, market, timeframe, page = None, limit = None):
@@ -182,9 +204,17 @@ class Client(object):
         if limit:
             params["limit"] = limit
 
-        response = self._get("v1","prices", params = params)
+        response = self._get(self.API_VERSION,"prices", params = params)
         return self._make_api_object(response, APIObject)
 
+    # Authenticated API
+    #-------------------------------------------------------------------
+    # account 
+    def get_account(self):
+        response = self._get(self.API_VERSION,"account")
+        return self._make_api_object(response,APIObject)
+
+    # orders
     def get_active_orders(self, market, page=None, limit=None):
         """https://developers.cryptomkt.com/es/#ordenes-activas"""
         params = dict(
@@ -197,7 +227,7 @@ class Client(object):
         if limit:
             params['limit'] = limit
 
-        response = self._get('v1', 'orders', 'active', params=params)
+        response = self._get(self.API_VERSION, 'orders', 'active', params=params)
         return self._make_api_object(response, Order)
 
     def get_executed_orders(self, market, page=None, limit=None):
@@ -212,7 +242,7 @@ class Client(object):
         if limit:
             params['limit'] = limit
 
-        response = self._get('v1', 'orders', 'executed', params=params)
+        response = self._get(self.API_VERSION, 'orders', 'executed', params=params)
         return self._make_api_object(response, Order)
 
     def create_order(self, market, amount, price, type):
@@ -224,7 +254,7 @@ class Client(object):
             type=type
         )
 
-        response = self._post('v1', 'orders', 'create', data=params)
+        response = self._post(self.API_VERSION, 'orders', 'create', data=params)
         return self._make_api_object(response, Order)
 
     def get_status_order(self, id):
@@ -233,7 +263,7 @@ class Client(object):
             id=id
         )
 
-        response = self._get('v1', 'orders', 'status', params=params)
+        response = self._get(self.API_VERSION, 'orders', 'status', params=params)
         return self._make_api_object(response, Order)
 
     def cancel_order(self, id):
@@ -242,11 +272,85 @@ class Client(object):
             id=id
         )
 
-        response = self._post('v1', 'orders', 'cancel', data=params)
+        response = self._post(self.API_VERSION, 'orders', 'cancel', data=params)
         return self._make_api_object(response, Order)
-
+    
+    def get_instant(self,market,type, amount):
+        "https://developers.cryptomkt.com/es/#obtener-cantidad"
+        params = dict(
+            market = market,
+            type = type,
+            amount = amount
+        )
+        response = self._get(self.API_VERSION, "orders","instant","get", params = params)
+        return self._make_api_object(response,Order)
+    
+    def create_instant(self,market,tipe,amount):
+        "https://developers.cryptomkt.com/es/#crear-orden-2"
+        params = dict(
+            market=market,
+            type = type,
+            amount = amount
+        )
+        response = self._post(self.API_VERSION,"order", "instant", "create", data = params)
+        return self._make_api_object(response,Order)
+    
+    #Wallet
     def get_balance(self):
         """https://developers.cryptomkt.com/es/?python#obtener-balance"""
 
-        response = self._get('v1', 'balance')
+        response = self._get(self.API_VERSION, 'balance')
         return self._make_api_object(response, APIObject)
+    
+    def get_transactions(self, currency, page = None, limit = None):
+        params = dict(
+            currency = currency
+        )
+
+        if page:
+            params["page"] = page
+
+        if limit:
+            params["limit"] = limit
+        
+        response = self._get(self.API_VERSION, "transactions", params=params)
+        return self._make_api_object(response, APIObject)
+
+    def notify_deposit(self,amount,bank_acount, date= None, tracking_code = None, voucher = None):
+        "https://developers.cryptomkt.com/es/#notificar-deposito"
+        params = dict(
+            amount = amount,
+            bank_acount = bank_acount            
+        )
+        if date:
+            params["date"] = date 
+        if tracking_code:
+            params["tracking_code"] = tracking_code
+        if voucher:
+            params["voucher"] = voucher
+        
+        response = self._post(self.API_VERSION,"request", "deposit", data = params)
+        return self._make_api_object(response,APIObject)
+
+    def notify_withdrawal(self, amount, bank_account):
+        "https://developers.cryptomkt.com/es/#notificar-retiro"
+        params = dict(
+            amount = amount,
+            bank_account = bank_account
+        )
+        response = self._post(self.API_VERSION, "request", "withdrawal", data = params)
+        return self._make_api_object(response, APIObject)
+
+    def transfer(self,address, amount, currecy, memo = None):
+        "https://developers.cryptomkt.com/es/#transferir"
+        params = dict(
+            address = address,
+            amount = amount,
+            currency = currency
+        )
+        if memo:
+            params["memo"] = memo
+        
+        response = self._post(self.API_VERSION, "transfer", data = params)
+        return self._make_api_object(response, APIObject)
+    
