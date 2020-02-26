@@ -100,6 +100,10 @@ fabric.properties
 .vscode
 main.py
 keys.txt
+.Python
 /python-sdk
 /cryptomarket/__pycache__
 /cryptomarket/exchange/__pycache__
+/bin 
+/include
+/lib
