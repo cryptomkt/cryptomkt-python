@@ -124,8 +124,10 @@ class Client(object):
         
         https://developers.cryptomkt.com/es/#mercado
         
-        This method returns the markets available in cryptomarket. 
-        You can access them by client.get_markets[indexYouWant]"""
+        This method returns the markets available in Cryptomarket. 
+        You can access them by client.get_markets[indexYouWant]. 
+        
+        This method does not need any arguments"""
         response = self._get(self.API_VERSION, 'market')
         return self._make_api_object(response, APIObject)
 
@@ -134,8 +136,13 @@ class Client(object):
 
         https://developers.cryptomkt.com/es/#obtener-ticker
         
-        This method returns the ticker. If market is provided, returns 
-        the ticker according to it. 
+        The ticker is a high level general view market state. It will show you
+        the actual bid and ask as well as the last price market. Besides, it 
+        includes information like daily volume and how much it has changed through 
+        the day.
+
+        You can access the data this way too: 
+        client.get_ticker(args...)[indexYouWant]["fieldYouWant"]
 
         List of arguments:
                 required: None
@@ -154,9 +161,14 @@ class Client(object):
         
         https://developers.cryptomkt.com/es/#libro-de-ordenes
         
-        This method returns the book according to the market and type provided.
+        This method returns the orders book according to the market and type provided.
+
+        You can access the data this way too:
+        client.get_book(args...)[indexYouWant]["fieldYouWant"]
 
         List of arguments: 
+                required: market, type
+                optional: page, limit
         """
         params = dict(
             market=market,
@@ -173,7 +185,20 @@ class Client(object):
         return self._make_api_object(response, APIObject)
 
     def get_trades(self, market, start=None, end=None, page=None, limit=None):
-        """https://developers.cryptomkt.com/es/#obtener-trades"""
+        """get_trades(self, market, start = None, end = None, page = None, limit= None) -> APIObject
+        
+        https://developers.cryptomkt.com/es/#obtener-trades
+        
+        This method returns the done trades in Cryptomarket. 
+
+        You can access the data this way too:
+        client.get_trades(args...)[indexYouWant]["fieldYouWant"]
+
+        List of arguments:
+                required: market
+                optional: start, end, page, limit
+
+        """
         params = dict(
             market=market
         )
@@ -194,7 +219,19 @@ class Client(object):
         return self._make_api_object(response, APIObject)
 
     def get_prices(self, market, timeframe, page = None, limit = None):
-        "https://developers.cryptomkt.com/es/#precios"
+        """get_prices(market, timeframe, page = None, limit= None) -> APIObject
+        
+        https://developers.cryptomkt.com/es/#precios
+
+        This method returns the displayed data in the Market section in cryptomkt
+
+        You can access the data this way too:
+        client.get_prices(args...)["ask or bid (choose one)"][indexYouWant]
+
+        List of arguments:
+                required: market, timeframe
+                optional: page, limit
+        """
         params = dict(
             market = market,
             timeframe = timeframe
@@ -211,12 +248,34 @@ class Client(object):
     #-------------------------------------------------------------------
     # account 
     def get_account(self):
+        """get_account() -> APIObject
+
+        https://developers.cryptomkt.com/es/#informacion-de-cuenta
+
+        This method displays your account info.
+
+        You can access the info this way:
+        client.get_account()["fieldYouWant"]
+
+        This method does not require any arguments
+
+        """
         response = self._get(self.API_VERSION,"account")
         return self._make_api_object(response,APIObject)
 
     # orders
     def get_active_orders(self, market, page=None, limit=None):
-        """https://developers.cryptomkt.com/es/#ordenes-activas"""
+        """get_active_orders(market, page = None, limit = None) -> Order
+
+        https://developers.cryptomkt.com/es/#ordenes-activas
+
+        This method returns the active order lists in Cryptomarket that belongs to
+        the owner provided in the client.
+
+        List of arguments:
+                required: market
+                optional: page, limit
+        """
         params = dict(
             market=market
         )
@@ -231,7 +290,17 @@ class Client(object):
         return self._make_api_object(response, Order)
 
     def get_executed_orders(self, market, page=None, limit=None):
-        """https://developers.cryptomkt.com/es/#ordenes-activas"""
+        """get_executed_orders(market, page= None, limit = None) -> Order
+
+        https://developers.cryptomkt.com/es/#ordenes-activas
+        
+        This method returns an executed order list in Cryptomarket that belongs to
+        the owner provided in the client.
+
+        List of arguments: 
+                required: market
+                optional: page, limit
+        """
         params = dict(
             market=market
         )
@@ -246,7 +315,19 @@ class Client(object):
         return self._make_api_object(response, Order)
 
     def create_order(self, market, amount, price, type):
-        """https://developers.cryptomkt.com/es/?python#crear-orden"""
+        """create_order(market, amount, price) -> Order
+        
+        https://developers.cryptomkt.com/es/?python#crear-orden
+        
+        This method lets you create an sell or buy order inside Criptomarket. 
+
+        You can access the data this way too:
+        client.create_order(args...)["fieldYouWant"]
+
+        List of arguments:
+                required: market, amount, price, type
+                This method does not accept any optional args.
+        """
         params = dict(
             market=market,
             amount=amount,
@@ -258,7 +339,16 @@ class Client(object):
         return self._make_api_object(response, Order)
 
     def get_status_order(self, id):
-        """https://developers.cryptomkt.com/es/?python#estado-de-orden"""
+        """get_status_order(id) -> Order
+        
+        https://developers.cryptomkt.com/es/?python#estado-de-orden
+        
+        This method returns the order state of the id provided
+
+        List of arguments:
+                required: id
+                This method does not accept any optional args.
+        """
         params = dict(
             id=id
         )
@@ -267,7 +357,15 @@ class Client(object):
         return self._make_api_object(response, Order)
 
     def cancel_order(self, id):
-        """https://developers.cryptomkt.com/es/?python#cancelar-una-orden"""
+        """cancel_order(id) -> Order
+        
+        https://developers.cryptomkt.com/es/?python#cancelar-una-orden
+        
+        This method cancels an order
+
+        You can access the data given this way:
+        order.cancel_order()
+        """
         params = dict(
             id=id
         )
