@@ -11,7 +11,9 @@ import time
 
 from requests.auth import AuthBase
 from requests.utils import to_native_string
-from exchange.compat import urljoin, urlparse
+
+#same folder
+from .compat import urljoin, urlparse
 
 
 class HMACAuth(AuthBase):

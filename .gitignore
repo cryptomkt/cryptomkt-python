@@ -98,3 +98,8 @@ fabric.properties
 *-info
 /build
 .vscode
+main.py
+keys.txt
+/python-sdk
+/cryptomarket/__pycache__
+/cryptomarket/exchange/__pycache__

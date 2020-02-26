@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 import json
 import six
 import warnings
-from exchange.compat import urlparse
+from .compat import urlparse
 
 
 def clean_params(params, drop_nones=True, recursive=True):

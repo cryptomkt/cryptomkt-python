@@ -9,16 +9,16 @@ import warnings
 
 import requests
 
-from exchange.auth import HMACAuth
-from exchange.model import APIObject, new_api_object, Order
-from exchange.util import check_uri_security, encode_params
-from exchange.error import build_api_error
+from .auth import HMACAuth
+from .model import APIObject, new_api_object, Order
+from .util import check_uri_security, encode_params
+from .error import build_api_error
 
 
-from exchange.compat import imap
-from exchange.compat import quote
-from exchange.compat import urljoin
-from exchange.compat import urlencode
+from .compat import imap
+from .compat import quote
+from .compat import urljoin
+from .compat import urlencode
 
 
 class Client(object):
