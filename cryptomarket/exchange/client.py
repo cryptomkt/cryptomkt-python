@@ -171,6 +171,20 @@ class Client(object):
         response = self._get('v1', 'trades', params=params)
         return self._make_api_object(response, APIObject)
 
+    def get_prices(self, market, timeframe, page = None, limit = None):
+        "https://developers.cryptomkt.com/es/#precios"
+        params = dict(
+            market = market,
+            timeframe = timeframe
+        )
+        if page:
+            params["page"] = page
+        if limit:
+            params["limit"] = limit
+
+        response = self._get("v1","prices", params = params)
+        return self._make_api_object(response, APIObject)
+
     def get_active_orders(self, market, page=None, limit=None):
         """https://developers.cryptomkt.com/es/#ordenes-activas"""
         params = dict(
