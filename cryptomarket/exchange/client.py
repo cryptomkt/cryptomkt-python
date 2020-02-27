@@ -531,7 +531,19 @@ class Client(object):
         return self._make_api_object(response, APIObject)
     
     def create_wallet(self, id, token, wallet):
-        """https://developers.cryptomkt.com/es/#crear-billetera-de-orden-de-pago"""
+        """create_wallet(id,token, wallet) -> APIObject
+        
+        https://developers.cryptomkt.com/es/#crear-billetera-de-orden-de-pago
+
+        This method creates a cryptocurrency wallet which can pay payments orders
+
+        You can access the data this way too:
+        client.create_wallet(args...)["fieldYouWant"]
+
+        List of arguments:
+                Required: id (string), token (string), wallet (string)
+                This method does not accept any optional args.
+        """
         params = dict(
             id=id,
             token=token,
@@ -543,7 +555,18 @@ class Client(object):
 
     def new_payment_order(self, to_receive, to_receive_currency, payment_receiver, 
         external_id=None, callback_url=None, error_url=None, success_url=None, refund_email=None, language=None):
-        """https://developers.cryptomkt.com/es/#crear-orden-de-pago"""
+        """new_payment_order(to_receive,to_receive_currency, payment_receiver, **kwargs) -> APIObject
+
+        https://developers.cryptomkt.com/es/#crear-orden-de-pago
+        
+        This method creates a payment order, delivering a  QR code and urls for paying.
+
+        List of arguments: 
+                Required: to_receive (double), to_receive_currency (string), payment_receiver (string)
+                Optional: external_id (string), callback_url (string), error_url (string), 
+                          success_url (string), refund_e-mail (string), language(string)
+
+        """
         params = dict(
             to_receive = to_receive,
             to_receive_currency = to_receive_currency,
@@ -560,7 +583,19 @@ class Client(object):
         return self._make_api_object(response, APIObject)
 
     def payment_status(self, id):
-        """https://developers.cryptomkt.com/es/#estado-de-orden-de-pago"""
+        """payment_status(id) -> APIObject
+        
+        https://developers.cryptomkt.com/es/#estado-de-orden-de-pago
+        
+        This method returns the payment order state. 
+        
+        You can access the data this way too:
+        client.payment_status(args...)["fieldYouWant"]
+
+        List of arguments:
+                Required: id (string)
+                This method does not accept any optional args.
+        """
         params = dict(
             id = id,
         )
@@ -568,7 +603,18 @@ class Client(object):
         return self._make_api_object(response, APIObject)
 
     def payment_orders(self, start_date, end_date, page=None, limit=None):
-        """https://developers.cryptomkt.com/es/#estado-de-orden-de-pago"""
+        """payment_orders(start_date, end_date, **kwargs) -> APIObject
+        
+        https://developers.cryptomkt.com/es/#listado-de-ordenes-de-pago
+
+        This method returns the generated payment orders. 
+
+        You can access the data this way too:
+
+        List of arguments:
+                Required: start_date (string dd/mm/yyyy), end_date (string dd/mm/yyyy)
+                Optional: page (int), limit (int) 
+        """
         params = dict(
             start_date = start_date,
             end_date = end_date,
@@ -578,6 +624,12 @@ class Client(object):
         response = self._get(self.API_VERSION, "payment/orders", data = params)
         return self._make_api_object(response, APIObject)
 
-    def _get_auth_socket(self):
-        response = self._get(self.API_VERSION, "socket/auth")
+    def get_auth_socket(self):
+        """get_auth_socket() -> APIObject
+
+        This method returns the data for connecting to websockets, your uid and socid
+
+        This method does not accept any args. 
+        """
+        response = self._get("v2", "socket/auth")
         return self._make_api_object(response, APIObject)

@@ -116,3 +116,4 @@ criptomarket/socketio/keys.txt
 cryptomarket/__init__.pyc
 cryptomarket/exchange/__init__.pyc
 cryptomarket/exchange/client.pyc
+socketConnection/__pycache__
