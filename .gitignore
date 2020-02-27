@@ -102,6 +102,7 @@ fabric.properties
 #personal files
 main.py
 keys.txt
+criptomarket/socketio/keys.txt
 .Python
 /cryptomarket/__pycache__
 /cryptomarket/exchange/__pycache__
