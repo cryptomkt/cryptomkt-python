@@ -109,7 +109,7 @@ class Client(object):
             'warnings': warnings_data and new_api_object(None, warnings_data, APIObject),
         }
 
-        if isinstance(data, dict):
+        if isinstance(data, dict): 
             obj = new_api_object(self, data, model_type, **kwargs)
         else:
             obj = APIObject(self, **kwargs)
@@ -374,7 +374,7 @@ class Client(object):
         return self._make_api_object(response, Order)
     
     def get_instant(self,market,type, amount):
-        "https://developers.cryptomkt.com/es/#obtener-cantidad"
+        """https://developers.cryptomkt.com/es/#obtener-cantidad"""
         params = dict(
             market = market,
             type = type,
@@ -384,7 +384,7 @@ class Client(object):
         return self._make_api_object(response,Order)
     
     def create_instant(self,market,tipe,amount):
-        "https://developers.cryptomkt.com/es/#crear-orden-2"
+        """https://developers.cryptomkt.com/es/#crear-orden-2"""
         params = dict(
             market=market,
             type = type,
@@ -415,7 +415,7 @@ class Client(object):
         return self._make_api_object(response, APIObject)
 
     def notify_deposit(self,amount,bank_acount, date= None, tracking_code = None, voucher = None):
-        "https://developers.cryptomkt.com/es/#notificar-deposito"
+        """https://developers.cryptomkt.com/es/#notificar-deposito"""
         params = dict(
             amount = amount,
             bank_acount = bank_acount            
@@ -431,7 +431,7 @@ class Client(object):
         return self._make_api_object(response,APIObject)
 
     def notify_withdrawal(self, amount, bank_account):
-        "https://developers.cryptomkt.com/es/#notificar-retiro"
+        """https://developers.cryptomkt.com/es/#notificar-retiro"""
         params = dict(
             amount = amount,
             bank_account = bank_account
@@ -440,7 +440,7 @@ class Client(object):
         return self._make_api_object(response, APIObject)
 
     def transfer(self,address, amount, currecy, memo = None):
-        "https://developers.cryptomkt.com/es/#transferir"
+        """https://developers.cryptomkt.com/es/#transferir"""
         params = dict(
             address = address,
             amount = amount,
@@ -452,3 +452,50 @@ class Client(object):
         response = self._post(self.API_VERSION, "transfer", data = params)
         return self._make_api_object(response, APIObject)
     
+    def create_wallet(self, id, token, wallet):
+        """https://developers.cryptomkt.com/es/#crear-billetera-de-orden-de-pago"""
+        params = dict(
+            id=id,
+            token=token,
+            wallet=wallet,
+        )
+        response = self._post(self.API_VERSION, "payment/create_wallet", data = params)
+        return self._make_api_object(response, APIObject)
+
+
+    def new_payment_order(self, to_receive, to_receive_currency, payment_receiver, 
+        external_id=None, callback_url=None, error_url=None, success_url=None, refund_email=None, language=None):
+        """https://developers.cryptomkt.com/es/#crear-orden-de-pago"""
+        params = dict(
+            to_receive = to_receive,
+            to_receive_currency = to_receive_currency,
+            payment_receiver = payment_receiver,
+            external_id = external_id, 
+            callback_url = callback_url, 
+            error_url = error_url, 
+            success_url = success_url, 
+            refund_email = refund_email, 
+            language = language
+        )
+
+        response = self._post(self.API_VERSION, "payment/new_order", data = params)
+        return self._make_api_object(response, APIObject)
+
+    def payment_status(self, id):
+        """https://developers.cryptomkt.com/es/#estado-de-orden-de-pago"""
+        params = dict(
+            id = id,
+        )
+        response = self._get(self.API_VERSION, "payment/status", data = params)
+        return self._make_api_object(response, APIObject)
+
+    def payment_orders(self, start_date, end_date, page=None, limit=None):
+        """https://developers.cryptomkt.com/es/#estado-de-orden-de-pago"""
+        params = dict(
+            start_date = start_date,
+            end_date = end_date,
+            page = page,
+            limit = limit,
+        )
+        response = self._get(self.API_VERSION, "payment/orders", data = params)
+        return self._make_api_object(response, APIObject)
