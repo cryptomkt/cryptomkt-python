@@ -110,3 +110,8 @@ keys.txt
 /bin 
 /include
 /lib
+
+#python stuff
+cryptomarket/__init__.pyc
+cryptomarket/exchange/__init__.pyc
+cryptomarket/exchange/client.pyc
