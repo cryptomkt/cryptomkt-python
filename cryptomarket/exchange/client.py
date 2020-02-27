@@ -499,3 +499,7 @@ class Client(object):
         )
         response = self._get(self.API_VERSION, "payment/orders", data = params)
         return self._make_api_object(response, APIObject)
+
+    def _get_auth_socket(self):
+        response = self._get(self.API_VERSION, "socket/auth")
+        return self._make_api_object(response, APIObject)
