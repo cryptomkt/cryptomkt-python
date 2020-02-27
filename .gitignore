@@ -97,13 +97,16 @@ fabric.properties
 /dist 
 *-info
 /build
+
 .vscode
+#personal files
 main.py
 keys.txt
 .Python
-/python-sdk
 /cryptomarket/__pycache__
 /cryptomarket/exchange/__pycache__
+
+#python environment 
 /bin 
 /include
 /lib

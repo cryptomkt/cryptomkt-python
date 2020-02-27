@@ -124,8 +124,77 @@ class APIObject(dict):
 
 
 class Order(APIObject):
-    def cancel(self, **params):
-        print('cancel order')
+    def get_active(self, market, page=None, limit=None):
+        """get_active_orders(market, **kwargs) -> Order
+
+        https://developers.cryptomkt.com/es/#ordenes-activas
+
+        This method returns the active order lists in CryptoMarket that belong to
+        the owner provided in the client.
+
+        List of arguments:
+                Required: market
+                Optional: page, limit
+        """
+        return self._get_active_orders(market, page, limit)
+    def get_executed(self, market, page=None, limit=None):
+        """get_executed_orders(market, **kwargs) -> Order
+
+        https://developers.cryptomkt.com/es/#ordenes-activas
+        
+        This method returns an executed order list in CryptoMarket that belongs to
+        the owner provided in the client.
+
+        List of arguments: 
+                Required: market
+                Optional: page, limit
+        """
+        return self._get_executed_orders(market, page, limit)
+    
+    def get_status(self, id):
+        """get_status_order(id) -> Order
+        
+        https://developers.cryptomkt.com/es/?python#estado-de-orden
+        
+        This method returns the order state of the provided id.
+ 
+        List of arguments:
+                Required: id
+                This method does not accept any optional args.
+        """
+        return self._get_status_order(id)
+    def cancel(self, id):
+        """cancel_order(id) -> Order
+        
+        https://developers.cryptomkt.com/es/?python#cancelar-una-orden
+        
+        This method cancels an order.
+
+        You can access the data given this way:
+        order.cancel_order()["fieldYouWant"]
+
+        List of arguments:
+                Required: id
+                This method does not accept any optional args.
+        """
+        return self._cancel_order(id)
+    
+    def get_instant(self,market,type, amount):
+        """get_instant(market,type,amount) -> Order
+        
+        https://developers.cryptomkt.com/es/#obtener-cantidad
+        
+        This method returns, according to the actual market state, the amount in local
+        currency or cryptocurrency if a buy or sell is executed.
+
+        You can access the data this way too:
+        order.get_instant(args...)["fieldYouWant"]
+
+        List of arguments:
+                required: market, type, amount
+                This method does not accept any optional args. 
+        """
+        return self._get_instant(market, type, amount)
 
 # The following dicts are used to automatically parse API responses into the
 # appropriate Python models. See `new_api_object` for more details.
