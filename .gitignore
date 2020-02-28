@@ -110,7 +110,8 @@ criptomarket/socketio/keys.txt
 #python environment 
 /bin 
 /include
-/lib
+/liby
+/cpmkt-py-sdk
 
 #python stuff
 cryptomarket/__init__.pyc
@@ -123,4 +124,4 @@ socketConnection/__pycache__
 cryptomarket/.DS_Store
 socketConnection/.DS_Store
 
-script*
+script.py
