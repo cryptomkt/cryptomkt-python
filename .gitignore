@@ -122,3 +122,5 @@ socketConnection/__pycache__
 .DS_Store
 cryptomarket/.DS_Store
 socketConnection/.DS_Store
+
+script*
