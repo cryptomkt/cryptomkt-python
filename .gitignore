@@ -117,11 +117,7 @@ criptomarket/socketio/keys.txt
 cryptomarket/__init__.pyc
 cryptomarket/exchange/__init__.pyc
 cryptomarket/exchange/client.pyc
-socketConnection/__pycache__
 
 #DS_store
 .DS_Store
 cryptomarket/.DS_Store
-socketConnection/.DS_Store
-
-script.py
