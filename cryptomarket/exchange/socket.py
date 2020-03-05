@@ -13,15 +13,15 @@ from .patch_json import patch
 class Socket(object):
     def __init__(self, socketids):
         self.url_worker = 'https://worker.cryptomkt.com'
-        self.currencies_data = None
-        self.balance_data = None
-        self.operated_data = None
-        self.open_orders_data = None
-        self.historical_orders_data = None
+        self.currencies_data = dict()
+        self.balance_data = dict()
+        self.operated_data = dict()
+        self.open_orders_data = dict()
+        self.historical_orders_data = dict()
         self.open_book_data = dict()
         self.historical_book_data = dict()
         self.candles_data = dict()
-        self.board_data = None
+        self.board_data = dict()
 
         self.socketids = socketids
         sio =  socketio.Client()
@@ -149,8 +149,8 @@ class Socket(object):
                 'open-book', 
                 {
                     stock_id:{
-                        'buy':data['data'][1],
-                        'sell':data['data'][2]}
+                        'buy':data['data']['1'],
+                        'sell':data['data']['2']}
                 }
             )
         
@@ -170,8 +170,8 @@ class Socket(object):
                 'open-book', 
                 {
                     stock_id:{
-                        'buy':stock_data['data'][1],
-                        'sell':stock_data['data'][2]}
+                        'buy':stock_data['data']['1'],
+                        'sell':stock_data['data']['2']}
                 }
             )
 
@@ -246,14 +246,13 @@ class Socket(object):
             sio.emit('board', data)
         
         @sio.on('board-delta')
-        def board_delta_handler(deltas):
-            for (delta, index, collection) in deltas:
-                if self.board_data['to_tx'] != delta['from_tx']:
-                    sio.emit('board')
-                patch(self.board_data['data'], delta['delta_data'])
-                self.board_data['to_tx'] = delta['to_tx']
-                if index == len(collection) - 1:
-                    sio.emit('board', self.board_data['data'])
+        def board_delta_handler(delta):
+            if self.board_data['to_tx'] != delta['from_tx']:
+                sio.emit('board')
+                return
+            patch(self.board_data['data'], delta['delta_data'])
+            self.board_data['to_tx'] = delta['to_tx']
+            sio.emit('ticker', self.board_data['data'])
 
         self.sio = sio
         
