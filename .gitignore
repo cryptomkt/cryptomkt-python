@@ -121,3 +121,5 @@ cryptomarket/exchange/client.pyc
 #DS_store
 .DS_Store
 cryptomarket/.DS_Store
+
+test.py
