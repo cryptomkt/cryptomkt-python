@@ -5,9 +5,6 @@ from __future__ import unicode_literals
 
 import socketio
 
-
-
-from .client import Client
 from .patch_json import patch
 
 class Socket(object):
@@ -35,8 +32,7 @@ class Socket(object):
             print('disconnected from server')
 
         sio.connect(self.url_worker)
-
-        sio.emit('socket-auth', socketids)
+        sio.emit('user-auth', socketids)
 
 
         @sio.on('currencies')
@@ -45,30 +41,26 @@ class Socket(object):
         
         @sio.on('currencies-delta')
         def currencies_delta_handler(delta):
-            print("***delta received***")
-            print(delta)
             if self.currencies_data['to_tx'] != delta['from_tx']:
                 sio.emit('currencies')
                 return
             patch(self.currencies_data['data'], delta['delta_data'])
             self.currencies_data['to_tx'] = delta['to_tx']
-            print(self.currencies_data)
         
 
         @sio.on('balance')
         def balance_handler(data):
-            for key, value in data.items():
+            for key, value in data['data'].items():
                 currency = value['currency']
                 value.update({
-                    'currency_kind':self.currencies_data[currency]['kind'],
-                    'currency_name':self.currencies_data[currency]['name'],
-                    'currency_big_name':self.currencies_data[currency]['big_name'],
-                    'currency_prefix':self.currencies_data[currency]['prefix'],
-                    'currency_postfix':self.currencies_data[currency]['postfix'],
-                    'currency_decimals':self.currencies_data[currency]['decimals'],
+                    'currency_kind':self.currencies_data['data'][currency]['kind'],
+                    'currency_name':self.currencies_data['data'][currency]['name'],
+                    'currency_big_name':self.currencies_data['data'][currency]['big_name'],
+                    'currency_prefix':self.currencies_data['data'][currency]['prefix'],
+                    'currency_postfix':self.currencies_data['data'][currency]['postfix'],
+                    'currency_decimals':self.currencies_data['data'][currency]['decimals'],
                 })
             self.balance_data = data
-            sio.emit('balance', self.balance_data)
         
         
         @sio.on('balance-delta')
@@ -83,14 +75,13 @@ class Socket(object):
                     for key, value in self.balance_data.items():
                         currency = value['currency']
                         value.update({
-                            'currency_kind':self.currencies_data[currency]['kind'],
-                            'currency_name':self.currencies_data[currency]['name'],
-                            'currency_big_name':self.currencies_data[currency]['big_name'],
-                            'currency_prefix':self.currencies_data[currency]['prefix'],
-                            'currency_postfix':self.currencies_data[currency]['postfix'],
-                            'currency_decimals':self.currencies_data[currency]['decimals'],
+                            'currency_kind':self.currencies_data['data'][currency]['kind'],
+                            'currency_name':self.currencies_data['data'][currency]['name'],
+                            'currency_big_name':self.currencies_data['data'][currency]['big_name'],
+                            'currency_prefix':self.currencies_data['data'][currency]['prefix'],
+                            'currency_postfix':self.currencies_data['data'][currency]['postfix'],
+                            'currency_decimals':self.currencies_data['data'][currency]['decimals'],
                         })
-                    sio.emit('balance', self.balance_data)
 
 
         @sio.on('open-orders')

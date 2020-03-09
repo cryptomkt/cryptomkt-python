@@ -14,6 +14,7 @@ from .auth import HMACAuth
 from .model import APIObject, new_api_object, Order
 from .util import check_uri_security, encode_params
 from .error import build_api_error
+from .socket import Socket
 
 
 from .compat import imap
@@ -37,6 +38,8 @@ class Client(object):
         self.BASE_API_URI = check_uri_security(base_api_uri or self.BASE_API_URI)
 
         self.API_VERSION = api_version or self.API_VERSION
+
+        self.socket = None
 
         # Set up a requests session for interacting with the API.
         self.session = self._build_session(HMACAuth, api_key, api_secret, self.API_VERSION)
@@ -564,3 +567,11 @@ class Client(object):
         """
         response = self._get("v2", "socket/auth")
         return self._make_api_object(response, APIObject)
+
+    
+    def get_socket(self):
+        if self.socket is None:
+            auth = self.get_auth_socket()
+            del auth['verify']
+            self.socket = Socket(auth)
+        return self.socket
