@@ -14,6 +14,7 @@ from .auth import HMACAuth
 from .model import APIObject, new_api_object, Order
 from .util import check_uri_security, encode_params
 from .error import build_api_error
+from .socket import Socket
 
 
 from .compat import imap
@@ -40,6 +41,9 @@ class Client(object):
 
         # Set up a requests session for interacting with the API.
         self.session = self._build_session(HMACAuth, api_key, api_secret, self.API_VERSION)
+
+        # a container for the socket if needed.
+        self.socket = None
 
     def _build_session(self, auth_class, *args, **kwargs):
         """Internal helper for creating a requests `session` with the correct
@@ -177,10 +181,10 @@ class Client(object):
             type=type_
         )
 
-        if page and isinstance(page, int):
+        if page is not None and isinstance(page, int):
             params['page'] = page
 
-        if limit and isinstance(limit, int):
+        if limit is not None and isinstance(limit, int):
             params['limit'] = limit
 
         response = self._get(self.API_VERSION, 'book', params=params)
@@ -204,16 +208,16 @@ class Client(object):
             market=market
         )
 
-        if start:
+        if start is not None:
             params['start'] = start
 
-        if end:
+        if end is not None:
             params['end'] = end
 
-        if page:
+        if page is not None:
             params['page'] = page
 
-        if limit:
+        if limit is not None:
             params['limit'] = limit
 
         response = self._get(self.API_VERSION, 'trades', params=params)
@@ -237,9 +241,9 @@ class Client(object):
             market = market,
             timeframe = timeframe
         )
-        if page:
+        if page is not None:
             params["page"] = page
-        if limit:
+        if limit is not None:
             params["limit"] = limit
 
         response = self._get(self.API_VERSION,"prices", params = params)
@@ -280,10 +284,10 @@ class Client(object):
             market=market
         )
 
-        if page:
+        if page is not None:
             params['page'] = page
 
-        if limit:
+        if limit is not None:
             params['limit'] = limit
 
         response = self._get(self.API_VERSION, 'orders', 'active', params=params)
@@ -305,10 +309,10 @@ class Client(object):
             market=market
         )
 
-        if page:
+        if page is not None:
             params['page'] = page
 
-        if limit:
+        if limit is not None:
             params['limit'] = limit
 
         response = self._get(self.API_VERSION, 'orders', 'executed', params=params)
@@ -480,10 +484,10 @@ class Client(object):
             currency = currency
         )
 
-        if page:
+        if page is not None:
             params["page"] = page
 
-        if limit:
+        if limit is not None:
             params["limit"] = limit
         
         response = self._get(self.API_VERSION, "transactions", params=params)
@@ -505,11 +509,11 @@ class Client(object):
             amount = amount,
             bank_account = bank_account            
         )
-        if date:
+        if date is not None:
             params["date"] = date 
-        if tracking_code:
+        if tracking_code is not None:
             params["tracking_code"] = tracking_code
-        if voucher:
+        if voucher is not None:
             params["voucher"] = voucher
         
         response = self._post(self.API_VERSION,"request", "deposit", data = params)
@@ -549,7 +553,7 @@ class Client(object):
             amount = amount,
             currency = currency
         )
-        if memo:
+        if memo is not None:
             params["memo"] = memo
         
         response = self._post(self.API_VERSION, "transfer", data = params)
@@ -564,3 +568,9 @@ class Client(object):
         """
         response = self._get("v2", "socket/auth")
         return self._make_api_object(response, APIObject)
+
+    def get_socket(self):
+        if self.socket is None:
+            auth = self.get_auth_socket()
+            return Socket(auth)
+        return self.socket
