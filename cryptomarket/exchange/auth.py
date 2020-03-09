@@ -33,7 +33,7 @@ class HMACAuth(AuthBase):
             for key in keys:
                 body += str(params[key])
 
-        timestamp = str(time.time())
+        timestamp = str(int(time.time()))
         message = timestamp + urljoin(request.path_url, urlparse(request.path_url).path) + body
         secret = self.api_secret
 
@@ -41,8 +41,9 @@ class HMACAuth(AuthBase):
             message = message.encode()
         if not isinstance(secret, bytes):
             secret = secret.encode()
-
+        print('message', message)
         signature = hmac.new(secret, message, hashlib.sha384).hexdigest()
+        print('sig', signature)
 
         request.headers.update({
             to_native_string('X-MKT-APIKEY'): self.api_key,

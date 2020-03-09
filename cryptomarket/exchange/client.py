@@ -25,7 +25,7 @@ from .compat import urlencode
 class Client(object):
 
     BASE_API_URI = 'https://api.cryptomkt.com/'
-    API_VERSION = 'v1'
+    API_VERSION = 'v2'
 
     def __init__(self, api_key, api_secret, base_api_uri=None, api_version=None):
         if not api_key:
@@ -49,7 +49,7 @@ class Client(object):
         authentication handling."""
         session = requests.session()
         session.auth = auth_class(*args, **kwargs)
-        # session.headers.update({'Content-Type': 'application/json'})
+        # session.headers.update({'Content-type': 'application/json'})
         return session
 
     def _create_api_uri(self, *parts, **kwargs):
@@ -73,7 +73,7 @@ class Client(object):
         data = kwargs.get("data", None)
         if data and isinstance(data, dict):
             kwargs['data'] = data
-
+        
         response = getattr(self.session, method)(uri, **kwargs)
         return self._handle_response(response)
 
@@ -138,7 +138,7 @@ class Client(object):
     def get_ticker(self, market=None):
         """Returns a general view of the market state as a dict.
         shows the actual bid and ask, also the volume and price, 
-        and the low and high.
+        and the low and high. stored in the "data" member of a dict
 
         Does not requiere to be authenticated.
 
@@ -158,9 +158,9 @@ class Client(object):
         return self._make_api_object(response, APIObject)
 
 
-    def get_book(self, market, type_, page=None, limit=None):
-        """Returns a list of active orders of a given type in a specified
-        market pair.
+    def get_book(self, market, side, page=None, limit=None):
+        """Returns a list of active orders of a given side in a specified
+        market pair. stored in the "data" member of a dict
 
         Does not requiere to be authenticated.
 
@@ -168,7 +168,7 @@ class Client(object):
             market: A market pair as a string. Is the specified market to get
                 the book from.
                 e.g: 'ETHEUR'.
-            type: 'buy' or 'sell'.
+            side: 'buy' or 'sell'.
         Optional Arguments:
             page: Page number to query. Default is 0
             limit: Number of orders returned in each page. Default is 20.
@@ -177,7 +177,7 @@ class Client(object):
         """
         params = dict(
             market=market,
-            type=type_
+            side=side
         )
 
         if page is not None and isinstance(page, int):
@@ -193,12 +193,12 @@ class Client(object):
     def get_trades(self, market, start=None, end=None, page=None, limit=None):
         """returns a list of all trades (executed orders) of a market between 
         the start date, until the end date. the earlier trades first, and the 
-        older last.
+        older last. stored in the "data" member of a dict
         If no start date is given, returns trades since 2020-02-17.
         If no end date is given, returns trades until the present moment.
 
         Does not requiere to be authenticated.
-        
+
         Required Arguments:
             market: A market pair as a string. Is the specified market to get
                 the book from.
@@ -233,16 +233,21 @@ class Client(object):
 
 
     def get_prices(self, market, timeframe, page = None, limit = None):
-        """get_prices(market, timeframe, **kwargs) -> APIObject
-        
-        This method returns the displayed data in the Market section in CryptoMarket
+        """returns a list of the prices of a market (candles on the market 
+        prices graph), given a timeframe. The earlier prices first and the 
+        older last. the list is stored in the data member of a dict
 
-        You can access the data this way too:
-        client.get_prices(args...)["ask or bid (choose one)"][indexYouWant]
+        Does not requiere to be authenticated.
 
-        List of arguments:
-                Required: market (string), timeframe (string)
-                Optional: page (int), limit (int)
+        Required Arguments:
+            market: A market pair as a string. Is the specified market to get
+                the book from.
+                e.g: 'ETHCLP'.
+            timeframe: timelapse between every candle in minutes.
+                accepted values are 1, 5, 15, 60, 240, 1440 and 10080.
+        Optional Arguments:
+            page: Page number to query. Default is 0
+            limit: Number of orders returned in each page. Default is 20.
 
         https://developers.cryptomkt.com/#precios
         """
@@ -258,18 +263,14 @@ class Client(object):
         response = self._get(self.API_VERSION,"prices", params = params)
         return self._make_api_object(response, APIObject)
 
-    # Authenticated API
+    # Authenticated endpoints
     #-------------------------------------------------------------------
     # account 
     def get_account(self):
-        """get_account() -> APIObject
+        """returns the account information of the user. Name, email, rate 
+        and bank accounts.
 
-        This method displays your account info.
-
-        You can access the info this way:
-        client.get_account()["fieldYouWant"]
-
-        This method does not require any arguments
+        Authentication is requiered.
 
         https://developers.cryptomkt.com/#informacion-de-cuenta
         """
@@ -278,14 +279,17 @@ class Client(object):
 
     # orders
     def get_active_orders(self, market, page=None, limit=None):
-        """get_active_orders(market, **kwargs) -> Order
+        """returns a list of the active orders of the user in a given market.
 
-        This method returns the active order lists in CryptoMarket that belong to
-        the owner provided in the client.
+        Authentication is requiered.
 
-        List of arguments:
-                Required: market (string)
-                Optional: page (int), limit (int)
+        Required Arguments:
+            market: A market pair as a string. Is the specified market to get
+                the book from.
+                e.g: 'ETHCLP'.
+        Optional Arguments:
+            page: Page number to query. Default is 0
+            limit: Number of orders returned in each page. Default is 20.
 
         https://developers.cryptomkt.com/#ordenes-activas
         """
@@ -302,15 +306,19 @@ class Client(object):
         response = self._get(self.API_VERSION, 'orders', 'active', params=params)
         return self._make_api_object(response, Order)
 
-    def get_executed_orders(self, market, page=None, limit=None):
-        """get_executed_orders(market,**kwargs) -> Order
-        
-        This method returns an executed order list in CryptoMarket that belongs to
-        the owner provided in the client.
 
-        List of arguments: 
-                Required: market (string)
-                Optional: page (int), limit (int)
+    def get_executed_orders(self, market, page=None, limit=None):
+        """returns the list of the executed orders of the user on a given market.
+
+        Authentication is requiered.
+
+        Required Arguments:
+            market: A market pair as a string. Is the specified market to get
+                the book from.
+                e.g: 'ETHCLP'.
+        Optional Arguments:
+            page: Page number to query. Default is 0
+            limit: Number of orders returned in each page. Default is 20.
 
         https://developers.cryptomkt.com/#ordenes-activas
         """
@@ -327,38 +335,37 @@ class Client(object):
         response = self._get(self.API_VERSION, 'orders', 'executed', params=params)
         return self._make_api_object(response, Order)
 
-    def create_order(self, market, amount, price, type_):
-        """create_order(market, amount, price, type_) -> Order
-        
-        This method lets you create an sell or buy order inside CryptoMarket. 
 
-        You can access the data this way too:
-        client.create_order(args...)["fieldYouWant"]
+    def create_order(self, market, amount, price, side):
+        """creates an orders from the specified argument.
 
-        List of arguments:
-                Required: market (string), amount (string), price (string), type (string)
-                This method does not accept any optional args.
+        Authentication is requiered.
+
+        Required Arguments:
+            amount: The amount of crypto to be buyed or selled.
+            market: A market pair as a string. Is the specified market to place the order in
+                e.g: 'ETHCLP'.
+            price: The price to ask or bid for one unit of crypto
+            side: 'buy' or 'sell' the crypto
+            type: market, limit, stop_limit
         
         https://developers.cryptomkt.com/?python#crear-orden
         """
         params = dict(
-            market=market,
             amount=amount,
+            market=market,
             price=price,
-            type=type_
+            side=side,
+            type='limit' # market, stop_limit
         )
 
         response = self._post(self.API_VERSION, 'orders', 'create', data=params)
         return self._make_api_object(response, Order)
 
+
     def get_status_order(self, id):
-        """get_status_order(id_) -> Order
-        
-        This method returns the order state of the provided id.
- 
-        List of arguments:
-                Required: id_ (string)
-                This method does not accept any optional args.
+        """returns the status of an order, given the order id.
+
 
         https://developers.cryptomkt.com/?python#estado-de-orden
         """
@@ -368,6 +375,7 @@ class Client(object):
 
         response = self._get(self.API_VERSION, 'orders', 'status', params=params)
         return self._make_api_object(response, Order)
+
 
     def cancel_order(self, id):
         """cancel_order(id_) -> Order
@@ -390,8 +398,8 @@ class Client(object):
         response = self._post(self.API_VERSION, 'orders', 'cancel', data=params)
         return self._make_api_object(response, Order)
     
-    def get_instant(self,market,type_, amount):
-        """get_instant(market,type_,amount) -> Order
+    def get_instant(self,market,side, amount):
+        """get_instant(market,side,amount) -> Order
         
         This method returns, according to the actual market state, the amount in local
         currency or cryptocurrency if a buy or sell is executed.
@@ -400,20 +408,20 @@ class Client(object):
         order.get_instant(args...)["fieldYouWant"]
 
         List of arguments:
-                required: market (string), type_ (string), amount (string)
+                required: market (string), side (string), amount (string)
                 This method does not accept any optional args. 
 
         https://developers.cryptomkt.com/#obtener-cantidad
         """
 
         rest = float(amount)
-        book_type = 'sell' if type_ == 'buy' else 'buy'
+        book_side = 'sell' if side == 'buy' else 'buy'
         amount_required = 0.0
         amount_obtained = 0.0
         page = 0
         n_entries = 100
         while True:
-            book_page = self.get_book(market, book_type, page=page, limit=n_entries)
+            book_page = self.get_book(market, book_side, page=page, limit=n_entries)
             for entry in book_page['data']:
                 price = float(entry['price'])
                 amount = float(entry['amount'])
@@ -432,27 +440,27 @@ class Client(object):
             
             page = page + 1
         
-        if book_type == 'sell':
+        if book_side == 'sell':
             temp = amount_required
             amount_required = amount_obtained
             amount_obtained = temp
         instant = dict(obtained=amount_obtained, required=amount_required)
         return instant
     
-    def create_instant(self,market,type_,amount):
-        """create_instant(market, type_, amount) -> Order
+    def create_instant(self,market,side,amount):
+        """create_instant(market, side, amount) -> Order
 
         This method creates a instant sell or buy order inside CryptoMarket Instant Exchange.
 
         List of arguments:
-                Required: market (string), type_ (string), amount (string)
+                Required: market (string), side (string), amount (string)
                 This method doen tno accept any optional args.
         
         https://developers.cryptomkt.com/#crear-orden-2
         """
         params = dict(
             market=market,
-            type = type_,
+            side = side,
             amount = amount
         )
         response = self._post(self.API_VERSION,"order", "instant", "create", data = params)
