@@ -13,8 +13,7 @@ import requests
 from .auth import HMACAuth
 from .model import APIObject, new_api_object, Order
 from .util import check_uri_security, encode_params
-from .error import build_api_error
-from .socket import Socket
+from .error import build_api_error  
 
 
 from .compat import imap
@@ -125,34 +124,30 @@ class Client(object):
     # -----------------------------------------------------------
 
     def get_markets(self):
-        """get_markets(self) -> APIObject
+        """Returns a list of the marketpairs as strings available in Cryptomkt
+        as the "data" member of a dict.
         
-        This method returns the markets available in CryptoMarket. 
-        You can access them by client.get_markets[indexYouWant]. 
-        
-        This method does not need any arguments
+        Does not requiere to be authenticated.
 
-        https://developers.cryptomkt.com/es/#mercado
+        https://developers.cryptomkt.com/#mercado
         """
         response = self._get(self.API_VERSION, 'market')
         return self._make_api_object(response, APIObject)
 
+
     def get_ticker(self, market=None):
-        """get_ticker(self) -> APIObject
+        """Returns a general view of the market state as a dict.
+        shows the actual bid and ask, also the volume and price, 
+        and the low and high.
 
-        The ticker is a high level general view market state. It will show you
-        the actual bid and ask as well as the last price market. Besides, it 
-        includes information like daily volume and how much it has changed through 
-        the day.
+        Does not requiere to be authenticated.
 
-        You can access the data this way too: 
-        client.get_ticker(args...)[indexYouWant]["fieldYouWant"]
+        Arguments:
+            market: A market pair as string, if no market pair is provided, 
+                the market state of all the market pairs are returned.
+                e.g: 'EHTARS'.
 
-        List of arguments:
-                Required: None
-                Optional: market (string)
-
-        https://developers.cryptomkt.com/es/#obtener-ticker
+        https://developers.cryptomkt.com/#obtener-ticker
         """
         params = {}
 
@@ -162,19 +157,23 @@ class Client(object):
         response = self._get(self.API_VERSION, 'ticker', params=params)
         return self._make_api_object(response, APIObject)
 
+
     def get_book(self, market, type_, page=None, limit=None):
-        """get_book(self, market, type_, **kwargs) -> APIObject
-        
-        This method returns the orders book according to the market and type provided.
+        """Returns a list of active orders of a given type in a specified
+        market pair.
 
-        You can access the data this way too:
-        client.get_book(args...)[indexYouWant]["fieldYouWant"]
+        Does not requiere to be authenticated.
 
-        List of arguments: 
-                Required: market (string), type_ (string)
-                Optional: page (int), limit (int)
+        Required Arguments:
+            market: A market pair as a string. Is the specified market to get
+                the book from.
+                e.g: 'ETHEUR'.
+            type: 'buy' or 'sell'.
+        Optional Arguments:
+            page: Page number to query. Default is 0
+            limit: Number of orders returned in each page. Default is 20.
 
-        https://developers.cryptomkt.com/es/#libro-de-ordenes
+        https://developers.cryptomkt.com/#libro-de-ordenes
         """
         params = dict(
             market=market,
@@ -190,19 +189,28 @@ class Client(object):
         response = self._get(self.API_VERSION, 'book', params=params)
         return self._make_api_object(response, APIObject)
 
+
     def get_trades(self, market, start=None, end=None, page=None, limit=None):
-        """get_trades(self, market, **kwargs) -> APIObject
+        """returns a list of all trades (executed orders) of a market between 
+        the start date, until the end date. the earlier trades first, and the 
+        older last.
+        If no start date is given, returns trades since 2020-02-17.
+        If no end date is given, returns trades until the present moment.
+
+        Does not requiere to be authenticated.
         
-        This method returns the done trades in CryptoMarket. 
+        Required Arguments:
+            market: A market pair as a string. Is the specified market to get
+                the book from.
+                e.g: 'ETHCLP'.
+        Optional Arguments:
+            start: The older date to get trades from, inclusive.
+            end: The earlier date to get trades from, exclusive.
+            page: Page number to query. Default is 0
+            limit: Number of orders returned in each page. Default is 20.
 
-        You can access the data this way too:
-        client.get_trades(args...)[indexYouWant]["fieldYouWant"]
 
-        List of arguments:
-                Required: market (string)
-                Optional: start (string YYYY-MM-DD), end (string YYYY-MM-DD), page (int), limit (int)
-
-        https://developers.cryptomkt.com/es/#obtener-trades
+        https://developers.cryptomkt.com/#obtener-trades
         """
         params = dict(
             market=market
@@ -223,6 +231,7 @@ class Client(object):
         response = self._get(self.API_VERSION, 'trades', params=params)
         return self._make_api_object(response, APIObject)
 
+
     def get_prices(self, market, timeframe, page = None, limit = None):
         """get_prices(market, timeframe, **kwargs) -> APIObject
         
@@ -235,7 +244,7 @@ class Client(object):
                 Required: market (string), timeframe (string)
                 Optional: page (int), limit (int)
 
-        https://developers.cryptomkt.com/es/#precios
+        https://developers.cryptomkt.com/#precios
         """
         params = dict(
             market = market,
@@ -262,7 +271,7 @@ class Client(object):
 
         This method does not require any arguments
 
-        https://developers.cryptomkt.com/es/#informacion-de-cuenta
+        https://developers.cryptomkt.com/#informacion-de-cuenta
         """
         response = self._get(self.API_VERSION,"account")
         return self._make_api_object(response,APIObject)
@@ -278,7 +287,7 @@ class Client(object):
                 Required: market (string)
                 Optional: page (int), limit (int)
 
-        https://developers.cryptomkt.com/es/#ordenes-activas
+        https://developers.cryptomkt.com/#ordenes-activas
         """
         params = dict(
             market=market
@@ -303,7 +312,7 @@ class Client(object):
                 Required: market (string)
                 Optional: page (int), limit (int)
 
-        https://developers.cryptomkt.com/es/#ordenes-activas
+        https://developers.cryptomkt.com/#ordenes-activas
         """
         params = dict(
             market=market
@@ -330,7 +339,7 @@ class Client(object):
                 Required: market (string), amount (string), price (string), type (string)
                 This method does not accept any optional args.
         
-        https://developers.cryptomkt.com/es/?python#crear-orden
+        https://developers.cryptomkt.com/?python#crear-orden
         """
         params = dict(
             market=market,
@@ -351,7 +360,7 @@ class Client(object):
                 Required: id_ (string)
                 This method does not accept any optional args.
 
-        https://developers.cryptomkt.com/es/?python#estado-de-orden
+        https://developers.cryptomkt.com/?python#estado-de-orden
         """
         params = dict(
             id_=id
@@ -372,7 +381,7 @@ class Client(object):
                 Required: id_ (string)
                 This method does not accept any optional args.
 
-        https://developers.cryptomkt.com/es/?python#cancelar-una-orden
+        https://developers.cryptomkt.com/?python#cancelar-una-orden
         """
         params = dict(
             id_=id
@@ -394,7 +403,7 @@ class Client(object):
                 required: market (string), type_ (string), amount (string)
                 This method does not accept any optional args. 
 
-        https://developers.cryptomkt.com/es/#obtener-cantidad
+        https://developers.cryptomkt.com/#obtener-cantidad
         """
 
         rest = float(amount)
@@ -439,7 +448,7 @@ class Client(object):
                 Required: market (string), type_ (string), amount (string)
                 This method doen tno accept any optional args.
         
-        https://developers.cryptomkt.com/es/#crear-orden-2
+        https://developers.cryptomkt.com/#crear-orden-2
         """
         params = dict(
             market=market,
@@ -460,7 +469,7 @@ class Client(object):
 
         This method does not require any args.
 
-        https://developers.cryptomkt.com/es/?python#obtener-balance
+        https://developers.cryptomkt.com/?python#obtener-balance
         """
 
         response = self._get(self.API_VERSION, 'balance')
@@ -478,7 +487,7 @@ class Client(object):
                 Required: currency (string)
                 Optional: page (int), limit (int)
 
-        https://developers.cryptomkt.com/es/#obtener-movimientos
+        https://developers.cryptomkt.com/#obtener-movimientos
         """
         params = dict(
             currency = currency
@@ -503,7 +512,7 @@ class Client(object):
                 Required for México: date (string dd/mm/yyyy), tracking_code (string), voucher (file)
                 Required for Brazil and European Union: voucher (file)
 
-        https://developers.cryptomkt.com/es/#notificar-deposito
+        https://developers.cryptomkt.com/#notificar-deposito
         """
         params = dict(
             amount = amount,
@@ -528,7 +537,7 @@ class Client(object):
                 Required: amount (string), bank_account (string)
                 This method does not accept any optional args.
 
-        https://developers.cryptomkt.com/es/#notificar-retiro
+        https://developers.cryptomkt.com/#notificar-retiro
         """
         params = dict(
             amount = amount,
@@ -546,7 +555,7 @@ class Client(object):
                 Required: address (string), amount (string), currency (string)
                 Optional: memo (string)
 
-        https://developers.cryptomkt.com/es/#transferir
+        https://developers.cryptomkt.com/#transferir
         """
         params = dict(
             address = address,
