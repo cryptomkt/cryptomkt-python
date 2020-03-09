@@ -339,7 +339,7 @@ class Client(object):
         return self._make_api_object(response, Order)
 
 
-    def create_order(self, market, amount, price, side):
+    def create_order(self, market, amount, price, side, type):
         """creates an orders from the specified argument.
 
         Authentication is requiered.
@@ -359,7 +359,7 @@ class Client(object):
             market=market,
             price=price,
             side=side,
-            type='limit' # market, stop_limit
+            type=type,
         )
 
         response = self._post(self.API_VERSION, 'orders', 'create', data=params)
