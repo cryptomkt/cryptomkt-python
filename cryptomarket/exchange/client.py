@@ -557,7 +557,7 @@ class Client(object):
         response = self._post(self.API_VERSION, "request", "withdrawal", data = params)
         return self._make_api_object(response, APIObject)
 
-    def transfer(self,address, amount, currecy, memo = None):
+    def transfer(self,address, amount, currency, memo = None):
         """transfer(addres, amount, currency, **kwargs) -> APIObject
         
         This method tranfers cryptocurrencies to another wallet
