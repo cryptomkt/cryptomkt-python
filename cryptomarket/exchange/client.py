@@ -129,8 +129,6 @@ class Client(object):
     def get_markets(self):
         """Returns a list of the marketpairs as strings available in Cryptomkt
         as the "data" member of a dict.
-        
-        Does not requiere to be authenticated.
 
         https://developers.cryptomkt.com/#mercado
         """
@@ -165,8 +163,6 @@ class Client(object):
         """Returns a list of active orders of a given side in a specified
         market pair. stored in the "data" member of a dict
 
-        Does not requiere to be authenticated.
-
         Required Arguments:
             market: A market pair as a string. Is the specified market to get
                 the book from.
@@ -199,8 +195,6 @@ class Client(object):
         older last. stored in the "data" member of a dict
         If no start date is given, returns trades since 2020-02-17.
         If no end date is given, returns trades until the present moment.
-
-        Does not requiere to be authenticated.
 
         Required Arguments:
             market: A market pair as a string. Is the specified market to get
@@ -240,8 +234,6 @@ class Client(object):
         prices graph), given a timeframe. The earlier prices first and the 
         older last. the list is stored in the data member of a dict
 
-        Does not requiere to be authenticated.
-
         Required Arguments:
             market: A market pair as a string. Is the specified market to get
                 the book from.
@@ -273,8 +265,6 @@ class Client(object):
         """returns the account information of the user. Name, email, rate 
         and bank accounts.
 
-        Authentication is requiered.
-
         https://developers.cryptomkt.com/#informacion-de-cuenta
         """
         response = self._get(self.API_VERSION,"account")
@@ -283,8 +273,6 @@ class Client(object):
     # orders
     def get_active_orders(self, market, page=None, limit=None):
         """returns a list of the active orders of the user in a given market.
-
-        Authentication is requiered.
 
         Required Arguments:
             market: A market pair as a string. Is the specified market to get
@@ -313,8 +301,6 @@ class Client(object):
     def get_executed_orders(self, market, page=None, limit=None):
         """returns the list of the executed orders of the user on a given market.
 
-        Authentication is requiered.
-
         Required Arguments:
             market: A market pair as a string. Is the specified market to get
                 the book from.
@@ -342,8 +328,6 @@ class Client(object):
     def create_order(self, market, amount, price, side, type):
         """creates an orders from the specified argument.
 
-        Authentication is requiered.
-
         Required Arguments:
             amount: The amount of crypto to be buyed or selled.
             market: A market pair as a string. Is the specified market to place the order in
@@ -367,12 +351,10 @@ class Client(object):
 
 
     def get_order_status(self, id):
-        """returns the status of an order, given the order id.
-        
-        Authentication is requiered.
+        """returns the present status of an order, given the order id.
         
         Required Arguments:
-            id (str): The identification of the order.
+            id: The identification of the order.
         
         https://developers.cryptomkt.com/#estado-de-orden
         """
@@ -385,16 +367,10 @@ class Client(object):
 
 
     def cancel_order(self, id):
-        """cancel_order(id) -> Order
-        
-        This method cancels an order.
+        """Cancel an order given its id.
 
-        You can access the data given this way:
-        order.cancel_order()["fieldYouWant"]
-
-        List of arguments:
-                Required: id (string)
-                This method does not accept any optional args.
+        Required Arguments:
+            id: The identification of the order.
 
         https://developers.cryptomkt.com/#cancelar-una-orden
         """
@@ -405,18 +381,14 @@ class Client(object):
         response = self._post(self.API_VERSION, 'orders', 'cancel', data=params)
         return self._make_api_object(response, Order)
     
-    def get_instant(self,market,side, amount):
-        """get_instant(market,side,amount) -> Order
-        
-        This method returns, according to the actual market state, the amount in local
-        currency or cryptocurrency if a buy or sell is executed.
+    def get_instant(self,market, side, amount):
+        """If side is sell, returns an estimate of the amount of fiat obtained and the amount of crypto required to obatin it.
+        If side is buy, returns an estimate of the amount of crypto obtained and the amount of fiat required to obtain it.
 
-        You can access the data this way too:
-        order.get_instant(args...)["fieldYouWant"]
-
-        List of arguments:
-                required: market (string), side (string), amount (string)
-                This method does not accept any optional args. 
+        Required Arguments:
+            market: The market to get the estimate of the transaction. 
+            side: 'buy' or 'sell'
+            amount: Is the amount of crypto to 'buy' or 'sell'
 
         https://developers.cryptomkt.com/#obtener-cantidad
         """
@@ -453,36 +425,10 @@ class Client(object):
             amount_obtained = temp
         instant = dict(obtained=amount_obtained, required=amount_required)
         return instant
-    
-    def create_instant(self,market,side,amount):
-        """create_instant(market, side, amount) -> Order
-
-        This method creates a instant sell or buy order inside CryptoMarket Instant Exchange.
-
-        List of arguments:
-                Required: market (string), side (string), amount (string)
-                This method doen tno accept any optional args.
         
-        https://developers.cryptomkt.com/#crear-orden-2
-        """
-        params = dict(
-            market=market,
-            side = side,
-            amount = amount
-        )
-        response = self._post(self.API_VERSION,"order", "instant", "create", data = params)
-        return self._make_api_object(response,Order)
-    
     #Wallet
     def get_balance(self):
-        """get_balance() -> APIObject
-
-        This method returns your actual wallets balances
-        
-        You can access the data this way too:
-        client.get_balance()[indexYouWant]["fieldYouWant"]
-
-        This method does not require any args.
+        """returns the balance of the user.
 
         https://developers.cryptomkt.com/#obtener-balance
         """
@@ -491,16 +437,10 @@ class Client(object):
         return self._make_api_object(response, APIObject)
     
     def get_transactions(self, currency, page = None, limit = None):
-        """get_transactions(currency, **kwargs) -> APIObject
+        """return all the transactions of a currency of the user.
 
-        This method returns your actual wallets transactions. 
-
-        You can access the data this way too:
-        client.get_transactions(args...)[indexYouWant]["fieldYouWant"]
-
-        List of arguments:
-                Required: currency (string)
-                Optional: page (int), limit (int)
+        Arguments:
+            currency: The currency to get all the user transactions.
 
         https://developers.cryptomkt.com/#obtener-movimientos
         """
@@ -518,14 +458,20 @@ class Client(object):
         return self._make_api_object(response, APIObject)
 
     def notify_deposit(self,amount,bank_account, date= None, tracking_code = None, voucher = None):
-        """notify_deposit(amount, bank_account, **kwargs) -> APIObject
-        
-        This method notifies a deposit to a local wallet currency.
+        """Notifies a deposit.
 
-        List of arguments:
-                Required: amount (string), bank_account (string)
-                Required for México: date (string dd/mm/yyyy), tracking_code (string), voucher (file)
-                Required for Brazil and European Union: voucher (file)
+        Arguments:
+            amount: the amount deposited
+            bank_account: The address of the bank account.
+
+        Arguments required for Brazil and the European Union:
+            voucher: a file.
+
+        Arguments required for Mexico:
+            date: The date of the deposit, in format dd/mm/yyyy.
+            tracking_code: The tracking code of the deposit.
+            voucher: a file.
+                
 
         https://developers.cryptomkt.com/#notificar-deposito
         """
@@ -540,17 +486,15 @@ class Client(object):
         if voucher is not None:
             params["voucher"] = voucher
         
-        response = self._post(self.API_VERSION,"request", "deposit", data = params)
+        response = self._post(self.API_VERSION, "deposit", data = params)
         return self._make_api_object(response,APIObject)
 
     def notify_withdrawal(self, amount, bank_account):
-        """notify_withdrawal(amount, bank_account) -> APIObject
-        
-        This method notifies a withdrawal froma local currency wallet
+        """Notifies a deposit.
 
-        List of arguments:
-                Required: amount (string), bank_account (string)
-                This method does not accept any optional args.
+        Arguments:
+            amount: the amount deposited
+            bank_account: The address of the bank account.
 
         https://developers.cryptomkt.com/#notificar-retiro
         """
@@ -558,17 +502,18 @@ class Client(object):
             amount = amount,
             bank_account = bank_account
         )
-        response = self._post(self.API_VERSION, "request", "withdrawal", data = params)
+        response = self._post(self.API_VERSION, "withdrawal", data = params)
         return self._make_api_object(response, APIObject)
 
     def transfer(self,address, amount, currency, memo = None):
-        """transfer(addres, amount, currency, **kwargs) -> APIObject
+        """transfer money between wallets.
         
-        This method tranfers cryptocurrencies to another wallet
-
-        List of arguments:
-                Required: address (string), amount (string), currency (string)
-                Optional: memo (string)
+        Arguments:
+            adderss: The address of the wallet to transfer money.
+            amount: The amount of money to transfer into the wallet.
+            currency: The wallet from which to take the money.
+                e.g. 'ETH'
+            memo (optional): memo of the wallet to transfer money.
 
         https://developers.cryptomkt.com/#transferir
         """
@@ -584,17 +529,15 @@ class Client(object):
         return self._make_api_object(response, APIObject)
 
     def get_auth_socket(self):
-        """get_auth_socket() -> APIObject
-
-        This method returns the data for connecting to websockets, your uid and socid
-
-        This method does not accept any args. 
+        """returns the userid and the socket ids to permit a socket connection with cryptomkt.
         """
         response = self._get("v2", "socket/auth")
         return self._make_api_object(response, APIObject)
 
     
     def get_socket(self):
+        """returns a socket connection with cryptomkt.
+        """
         if self.socket is None:
             auth = self.get_auth_socket()
             del auth['verify']

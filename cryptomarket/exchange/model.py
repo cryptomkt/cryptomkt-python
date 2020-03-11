@@ -32,13 +32,13 @@ def new_api_object(client, obj, cls=None, **kwargs):
 class APIObject(dict):
     __api_client = None
     __response = None
-    pagination = None
+    __pagination = None
     __warnings = None
 
     def __init__(self, api_client, response=None, pagination=None, warnings=None):
         self.__api_client = api_client
         self.__response = response
-        self.pagination = pagination
+        self.__pagination = pagination
         self.__warnings = warnings
 
     @property
@@ -53,6 +53,9 @@ class APIObject(dict):
     def warnings(self):
         return self.__warnings
 
+    @property
+    def pagination(self):
+        return self.__pagination
 
     def refresh(self, **params):
         url = getattr(self, 'resource_path', None)
