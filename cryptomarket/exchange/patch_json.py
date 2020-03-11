@@ -2,6 +2,8 @@
 from operator import itemgetter
 import diff_match_patch as dmp_module
 
+import json
+
 dmp = dmp_module.diff_match_patch()
 
 def is_value(value):
@@ -9,6 +11,9 @@ def is_value(value):
 
 def is_object(value):
     return isinstance(value, dict) and not '_t' in value.keys()
+
+def is_string(value):
+    return isinstance(value, str) 
 
 def is_array(value):
     return isinstance(value, dict) and '_t' in value.keys()
@@ -35,11 +40,14 @@ def is_old_index(key):
 def is_new_index(key):
     return len(key) > 0 and key[0] != '_'
 
+
 def patch(dict_, delta):
     if is_object(delta):
         patch_object(dict_, delta)
     elif is_array(delta):
         patch_array(dict_, delta)
+    elif is_string(delta):
+        patch(dict_, json.loads(delta))
 
 def patch_object(dict_, delta):
     for key, v in delta.items():

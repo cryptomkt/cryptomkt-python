@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import socketio
+from pubsub import pub
 
 from .patch_json import patch
 
@@ -44,6 +45,7 @@ class Socket(object):
             if self.currencies_data['to_tx'] != delta['from_tx']:
                 sio.emit('currencies')
                 return
+
             patch(self.currencies_data['data'], delta['delta_data'])
             self.currencies_data['to_tx'] = delta['to_tx']
         
@@ -52,118 +54,140 @@ class Socket(object):
         def balance_handler(data):
             for _, value in data['data'].items():
                 currency = value['currency']
+                currency_data = self.currencies_data['data'][currency]
                 value.update({
-                    'currency_kind':self.currencies_data['data'][currency]['kind'],
-                    'currency_name':self.currencies_data['data'][currency]['name'],
-                    'currency_big_name':self.currencies_data['data'][currency]['big_name'],
-                    'currency_prefix':self.currencies_data['data'][currency]['prefix'],
-                    'currency_postfix':self.currencies_data['data'][currency]['postfix'],
-                    'currency_decimals':self.currencies_data['data'][currency]['decimals'],
+                    'currency_kind':currency_data['kind'],
+                    'currency_name':currency_data['name'],
+                    'currency_big_name':currency_data['big_name'],
+                    'currency_prefix':currency_data['prefix'],
+                    'currency_postfix':currency_data['postfix'],
+                    'currency_decimals':currency_data['decimals'],
                 })
             self.balance_data = data
+
+            pub.sendMessage(
+                'balance', 
+                data=self.balance_data['data'].copy())
         
         
         @sio.on('balance-delta')
         def balance_delta_handler(deltas):
-            for (delta, index, collection) in deltas:
+            for delta in deltas:
                 if self.balance_data['to_tx'] != delta['from_tx']:
                     sio.emit('balance')
                     return
+
                 patch(self.balance_data['data'], delta['delta_data'])
                 self.balance_data['to_tx'] = delta['to_tx']
-                if index == len(collection) - 1:
-                    for _, value in self.balance_data.items():
-                        currency = value['currency']
-                        value.update({
-                            'currency_kind':self.currencies_data['data'][currency]['kind'],
-                            'currency_name':self.currencies_data['data'][currency]['name'],
-                            'currency_big_name':self.currencies_data['data'][currency]['big_name'],
-                            'currency_prefix':self.currencies_data['data'][currency]['prefix'],
-                            'currency_postfix':self.currencies_data['data'][currency]['postfix'],
-                            'currency_decimals':self.currencies_data['data'][currency]['decimals'],
-                        })
+        
+            for _, value in self.balance_data['data'].items():
+                currency = value['currency']
+                currency_data = self.currencies_data['data'][currency]
+                value.update({
+                    'currency_kind':currency_data['kind'],
+                    'currency_name':currency_data['name'],
+                    'currency_big_name':currency_data['big_name'],
+                    'currency_prefix':currency_data['prefix'],
+                    'currency_postfix':currency_data['postfix'],
+                    'currency_decimals':currency_data['decimals'],
+                })
 
+            pub.sendMessage(
+                'balance', 
+                data=self.balance_data['data'].copy())
 
         @sio.on('open-orders')
         def open_orders_handler(data):
             self.open_orders_data = data
-            sio.emit('open-orders', data)
+            pub.sendMessage('open-orders', data=data['data'].copy())
         
         @sio.on('open-orders-delta')
         def open_orders_delta_handler(deltas):
-            for (delta, index, collection) in deltas:
+            for delta in deltas:
                 if self.open_orders_data['to_tx'] != delta['from_tx']:
                     sio.emit('open-orders')
+                    return 
+
                 patch(self.open_orders_data['data'], delta['delta_data'])
                 self.open_orders_data['to_tx'] = delta['to_tx']
-                if index == len(collection) - 1:
-                    sio.emit('open-orders', self.open_orders_data['data'])
+
+            pub.sendMessage(
+                'open-orders', 
+                data=self.open_orders_data['data'].copy())
 
 
         @sio.on('historical-orders')
         def historical_orders_handler(data):
             self.historical_orders_data = data
-            sio.emit('historical-orders', data)
+            pub.sendMessage('historical-orders', data=data['data'].copy())
         
         @sio.on('historical-orders-delta')
         def historical_orders_delta_handler(deltas):
-            for (delta, index, collection) in deltas:
+            for delta in deltas:
                 if self.historical_orders_data['to_tx'] != delta['from_tx']:
                     sio.emit('historical-orders')
+                    return
+
                 patch(self.historical_orders_data['data'], delta['delta_data'])
                 self.historical_orders_data['to_tx'] = delta['to_tx']
-                if index == len(collection) - 1:
-                    sio.emit('historical-orders', self.historical_orders_data['data'])
+        
+            pub.sendMessage(
+                'historical-orders', 
+                data=self.historical_orders_data['data'].copy())
 
 
         @sio.on('operated')
         def operated_handler(data):
             self.operated_data = data
-            sio.emit('operated', data)
+            pub.sendMessage('operated', data=data['data'].copy())
         
         @sio.on('operated-delta')
         def operated_delta_handler(deltas):
-            for (delta, index, collection) in deltas:
+            for delta in deltas:
                 if self.operated_data['to_tx'] != delta['from_tx']:
                     sio.emit('operated')
+                    return
+
                 patch(self.operated_data['data'], delta['delta_data'])
                 self.operated_data['to_tx'] = delta['to_tx']
-                if index == len(collection) - 1:
-                    sio.emit('operated', self.operated_data['data'])
+
+            pub.sendMessage(
+                'operated', 
+                data=self.operated_data['data'].copy())
 
 
         @sio.on('open-book')
         def open_book_handler(data):
             stock_id = data['stock_id']
             self.open_book_data.update({stock_id:data})
-            sio.emit(
+            pub.sendMessage(
                 'open-book', 
-                {
+                data={
                     stock_id:{
                         'buy':data['data']['1'],
                         'sell':data['data']['2']}
-                }
+                }.copy()
             )
         
         @sio.on('open-book-delta')
         def open_book_delta_handler(delta):
             stock_id = delta['stock_id']
-            if not stock_id in self.open_book_data:
+            if (stock_id not in self.open_book_data
+                or self.open_book_data[stock_id]['to_tx'] != delta['from_tx']):
                 sio.emit('open-book', {'stockId':stock_id})
                 return
-            elif self.open_book_data[stock_id]['to_tx'] != delta['from_tx']:
-                sio.emit('open-book', {'stock_id':stock_id})
 
             stock_data = self.open_book_data[stock_id]
             patch(stock_data['data'], delta['delta_data'])
             stock_data['to_tx'] = delta['to_tx']
-            sio.emit(
+
+            pub.sendMessage(
                 'open-book', 
-                {
+                data={
                     stock_id:{
                         'buy':stock_data['data']['1'],
                         'sell':stock_data['data']['2']}
-                }
+                }.copy()
             )
 
 
@@ -171,26 +195,26 @@ class Socket(object):
         def historical_book_handler(data):
             stock_id = data['stock_id']
             self.historical_book_data.update({stock_id:data})
-            sio.emit(
+            pub.sendMessage(
                 'historical-book',
-                {stock_id:data['data']}
+                data={stock_id:data['data']}.copy()
             )
         
         @sio.on('historical-book-delta')
         def historical_book_delta_handler(delta):
             stock_id = delta['stock_id']
-            if not stock_id in self.historical_book_data:
-                sio.emit('historical-book', {'stockId':stock_id})
+            if (stock_id not in self.historical_book_data
+               or self.historical_book_data[stock_id]['to_tx'] != delta['from_tx']):
+                sio.emit('historical-book', {'stock_id':stock_id})
                 return
-            elif self.historical_book_data[stock_id]['to_tx'] != delta['from_tx']:
-                sio.emit('open-book', {'stock_id':stock_id})
 
             stock_data = self.historical_book_data[stock_id]
             patch(stock_data['data'], delta['delta_data'])
             stock_data['to_tx'] = delta['to_tx']
-            sio.emit(
+
+            pub.sendMessage(
                 'historical-book',
-                {stock_id:stock_data['data']}
+                data={stock_id:stock_data['data']}.copy()
             )
 
         
@@ -199,54 +223,53 @@ class Socket(object):
             stock_id = data['stock_id']
             self.candles_data.update({stock_id:data})
 
-            result = {stock_id:self.candles_data[stock_id].copy()}
+            result = {stock_id:self.candles_data[stock_id]}.copy()
             if '1' in result[stock_id]:
                 result[stock_id].update({'buy':result[stock_id]['1']})
                 del result[stock_id]['1']
             if '2' in result[stock_id]:
                 result[stock_id].update({'sell':result[stock_id]['2']})
                 del result[stock_id]['2']
-            sio.emit('candles', result)
+            pub.sendMessage('candles', data=result)
         
 
         @sio.on('candles-delta')
         def candles_delta_handler(delta):
             stock_id = delta['stock_id']
-            if not stock_id in self.candles_data:
-                sio.emit('candles', {'stockId':stock_id})
+            if (stock_id not in self.candles_data
+                or self.candles_data[stock_id]['to_tx'] != delta['from_tx']):
+                sio.emit('candles', {'stock_id':stock_id})
                 return
-            elif self.candles_data[stock_id]['to_tx'] != delta['from_tx']:
-                sio.emit('open-book', {'stock_id':stock_id})
 
             stock_data = self.candles_data[stock_id]
             patch(stock_data['data'], delta['delta_data'])
             stock_data['to_tx'] = delta['to_tx']
 
-            result = {stock_id:stock_data.copy()}
+            result = {stock_id:stock_data}.copy()
             if '1' in result[stock_id]:
                 result[stock_id].update({'buy':result[stock_id]['1']})
                 del result[stock_id]['1']
             if '2' in result[stock_id]:
                 result[stock_id].update({'sell':result[stock_id]['2']})
                 del result[stock_id]['2']
-            sio.emit('candles', result)
+            pub.sendMessage('candles', data=result)
 
         @sio.on('board')
         def board_handler(data):
             self.board_data = data
-            sio.emit('board', data)
+            pub.sendMessage('ticker', data=data.copy())
         
         @sio.on('board-delta')
         def board_delta_handler(delta):
             if self.board_data['to_tx'] != delta['from_tx']:
                 sio.emit('board')
                 return
+
             patch(self.board_data['data'], delta['delta_data'])
             self.board_data['to_tx'] = delta['to_tx']
-            sio.emit('ticker', self.board_data['data'])
+            pub.sendMessage('ticker', data=self.board_data['data'].copy())
 
         self.sio = sio
-        
 
     def subscribe(self, *market_pairs):
         for pair in market_pairs:
@@ -255,6 +278,6 @@ class Socket(object):
     def unsubscribe(self, *market_pairs):
         for pair in market_pairs:
             self.sio.emit('unsubscribe', pair)
-        
+
     def on(self, event, handler):
-        self.sio.on(event, handler)
+        pub.subscribe(handler, event)
