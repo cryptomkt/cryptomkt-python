@@ -281,3 +281,4 @@ class Socket(object):
 
     def on(self, event, handler):
         pub.subscribe(handler, event)
+        
