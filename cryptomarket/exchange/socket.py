@@ -50,7 +50,7 @@ class Socket(object):
 
         @sio.on('balance')
         def balance_handler(data):
-            for key, value in data['data'].items():
+            for _, value in data['data'].items():
                 currency = value['currency']
                 value.update({
                     'currency_kind':self.currencies_data['data'][currency]['kind'],
@@ -72,7 +72,7 @@ class Socket(object):
                 patch(self.balance_data['data'], delta['delta_data'])
                 self.balance_data['to_tx'] = delta['to_tx']
                 if index == len(collection) - 1:
-                    for key, value in self.balance_data.items():
+                    for _, value in self.balance_data.items():
                         currency = value['currency']
                         value.update({
                             'currency_kind':self.currencies_data['data'][currency]['kind'],

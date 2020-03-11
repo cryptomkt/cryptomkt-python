@@ -41,9 +41,7 @@ class HMACAuth(AuthBase):
             message = message.encode()
         if not isinstance(secret, bytes):
             secret = secret.encode()
-        print('message', message)
         signature = hmac.new(secret, message, hashlib.sha384).hexdigest()
-        print('sig', signature)
 
         request.headers.update({
             to_native_string('X-MKT-APIKEY'): self.api_key,
