@@ -909,7 +909,7 @@ historical-orders [
   {Order2},...
   ]
 ```
-**Receive Your Historical orders**
+**Receive Your Operated Volume**
 ```python
 socket.on('operated', handler)
 ```
