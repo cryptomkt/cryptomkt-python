@@ -339,7 +339,7 @@ class Client(object):
                 return None
                 
         params = dict(
-            orders=json.dumps(order_list, sort_keys=True),
+            orders=json.dumps(order_list, sort_keys=True, separators=(',',':')),
         )
 
         response = self._post(self.API_VERSION, 'orders', 'create', 'bulk', data=params)
