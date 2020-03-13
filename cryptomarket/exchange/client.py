@@ -433,16 +433,16 @@ class Client(object):
         return self._make_api_object(response, APIObject)
 
     def notify_deposit(self,amount,bank_account, date= None, tracking_code = None, voucher = None):
-        """Notifies a deposit.
+        """Notifies a deposit from your bank account to your wallet (fiat).
 
-        Arguments:
-            amount: the amount deposited
-            bank_account: The address of the bank account.
+        Required Arguments:
+            amount: The amount deposited to your wallet.
+            bank_account: The address (id) of the bank account from which you deposited.
 
-        Arguments required for Brazil and the European Union:
+        Extra Arguments required for Brazil and the European Union:
             voucher: a file.
 
-        Arguments required for Mexico:
+        Extra Arguments required for Mexico:
             date: The date of the deposit, in format dd/mm/yyyy.
             tracking_code: The tracking code of the deposit.
             voucher: a file.
@@ -462,11 +462,11 @@ class Client(object):
         return self._make_api_object(response,APIObject)
 
     def notify_withdrawal(self, amount, bank_account):
-        """Notifies a deposit.
+        """Notifies a withdrawal from fiat wallet to your bank account.
 
-        Arguments:
-            amount: the amount deposited
-            bank_account: The address of the bank account.
+        Required Arguments:
+            amount: the amount you need to withdraw to your bank account.
+            bank_account: The address(id) of the bank account.
         """
         params = dict(
             amount = amount,
@@ -478,7 +478,7 @@ class Client(object):
     def transfer(self,address, amount, currency, memo = None):
         """transfer money between wallets.
         
-        Arguments:
+        Required Arguments:
             adderss: The address of the wallet to transfer money.
             amount: The amount of money to transfer into the wallet.
             currency: The wallet from which to take the money.
