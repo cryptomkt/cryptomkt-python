@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import socketio
+
 from pubsub import pub
 
 from .patch_json import patch
@@ -13,9 +14,9 @@ class Socket(object):
         self.url_worker = 'https://worker.cryptomkt.com'
         self.currencies_data = dict()
         self.balance_data = dict()
-        self.operated_data = dict()
         self.open_orders_data = dict()
         self.historical_orders_data = dict()
+        self.operated_data = dict()
         self.open_book_data = dict()
         self.historical_book_data = dict()
         self.candles_data = dict()
@@ -281,4 +282,3 @@ class Socket(object):
 
     def on(self, event, handler):
         pub.subscribe(handler, event)
-        

@@ -1,8 +1,9 @@
 
-from operator import itemgetter
+import json
+
 import diff_match_patch as dmp_module
 
-import json
+from operator import itemgetter
 
 dmp = dmp_module.diff_match_patch()
 

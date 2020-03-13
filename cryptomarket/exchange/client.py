@@ -5,22 +5,23 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
-import warnings
-import time
-
 import requests
+import time
+import warnings
+
 
 from .auth import HMACAuth
-from .model import APIObject, new_api_object, Order
-from .util import check_uri_security, encode_params
-from .error import build_api_error
-from .socket import Socket
-
-
 from .compat import imap
 from .compat import quote
 from .compat import urljoin
 from .compat import urlencode
+from .error import build_api_error
+from .model import APIObject
+from .model import new_api_object
+from .model import Order
+from .socket import Socket
+from .util import check_uri_security
+from .util import encode_params
 
 
 class Client(object):
@@ -68,8 +69,7 @@ class Client(object):
 
     def _request(self, method, *relative_path_parts, **kwargs):
         """Internal helper for creating HTTP requests to the CryptoMarket API.
-        Raises an APIError if the response is not 20X. Otherwise, returns the
-        response object. Not intended for direct use by API consumers.
+        Raises an APIError if the response is not 20X. Otherwise, returns the response object. Not intended for direct use by API consumers.
         """
         uri = self._create_api_uri(*relative_path_parts, **kwargs)
 
@@ -129,8 +129,6 @@ class Client(object):
     def get_markets(self):
         """Returns a list of the marketpairs as strings available in Cryptomkt
         as the "data" member of a dict.
-
-        https://developers.cryptomkt.com/#mercado
         """
         response = self._get(self.API_VERSION, 'market')
         return self._make_api_object(response, APIObject)
@@ -138,17 +136,15 @@ class Client(object):
 
     def get_ticker(self, market=None):
         """Returns a general view of the market state as a dict.
-        shows the actual bid and ask, also the volume and price, 
-        and the low and high. stored in the "data" member of a dict
+        Shows the actual bid and ask, the volume and price, and the low and high of the market.
+        Stored in the "data" member of a dict.
 
         Does not requiere to be authenticated.
 
-        Arguments:
+        Optional Arguments:
             market: A market pair as string, if no market pair is provided, 
                 the market state of all the market pairs are returned.
                 e.g: 'EHTARS'.
-
-        https://developers.cryptomkt.com/#obtener-ticker
         """
         params = {}
 
@@ -161,7 +157,7 @@ class Client(object):
 
     def get_book(self, market, side, page=None, limit=None):
         """Returns a list of active orders of a given side in a specified
-        market pair. stored in the "data" member of a dict
+        market pair. stored in the "data" member of a dict.
 
         Required Arguments:
             market: A market pair as a string. Is the specified market to get
@@ -171,8 +167,6 @@ class Client(object):
         Optional Arguments:
             page: Page number to query. Default is 0
             limit: Number of orders returned in each page. Default is 20.
-
-        https://developers.cryptomkt.com/#libro-de-ordenes
         """
         params = dict(
             market=market,
@@ -205,9 +199,6 @@ class Client(object):
             end: The earlier date to get trades from, exclusive.
             page: Page number to query. Default is 0
             limit: Number of orders returned in each page. Default is 20.
-
-
-        https://developers.cryptomkt.com/#obtener-trades
         """
         params = dict(
             market=market
@@ -243,8 +234,6 @@ class Client(object):
         Optional Arguments:
             page: Page number to query. Default is 0
             limit: Number of orders returned in each page. Default is 20.
-
-        https://developers.cryptomkt.com/#precios
         """
         params = dict(
             market = market,
@@ -264,8 +253,6 @@ class Client(object):
     def get_account(self):
         """returns the account information of the user. Name, email, rate 
         and bank accounts.
-
-        https://developers.cryptomkt.com/#informacion-de-cuenta
         """
         response = self._get(self.API_VERSION,"account")
         return self._make_api_object(response,APIObject)
@@ -281,8 +268,6 @@ class Client(object):
         Optional Arguments:
             page: Page number to query. Default is 0
             limit: Number of orders returned in each page. Default is 20.
-
-        https://developers.cryptomkt.com/#ordenes-activas
         """
         params = dict(
             market=market
@@ -308,8 +293,6 @@ class Client(object):
         Optional Arguments:
             page: Page number to query. Default is 0
             limit: Number of orders returned in each page. Default is 20.
-
-        https://developers.cryptomkt.com/#ordenes-activas
         """
         params = dict(
             market=market
@@ -335,8 +318,6 @@ class Client(object):
             price: The price to ask or bid for one unit of crypto
             side: 'buy' or 'sell' the crypto
             type: one of the keywords 'market', 'limit', 'stop_limit'
-        
-        https://developers.cryptomkt.com/#crear-orden
         """
         params = dict(
             amount=amount,
@@ -355,8 +336,6 @@ class Client(object):
         
         Required Arguments:
             id: The identification of the order.
-        
-        https://developers.cryptomkt.com/#estado-de-orden
         """
         params = dict(
             id=id
@@ -371,8 +350,6 @@ class Client(object):
 
         Required Arguments:
             id: The identification of the order.
-
-        https://developers.cryptomkt.com/#cancelar-una-orden
         """
         params = dict(
             id=id
@@ -389,8 +366,6 @@ class Client(object):
             market: The market to get the estimate of the transaction. 
             side: 'buy' or 'sell'
             amount: Is the amount of crypto to 'buy' or 'sell'
-
-        https://developers.cryptomkt.com/#obtener-cantidad
         """
 
         rest = float(amount)
@@ -429,8 +404,6 @@ class Client(object):
     #Wallet
     def get_balance(self):
         """returns the balance of the user.
-
-        https://developers.cryptomkt.com/#obtener-balance
         """
 
         response = self._get(self.API_VERSION, 'balance')
@@ -439,10 +412,12 @@ class Client(object):
     def get_transactions(self, currency, page = None, limit = None):
         """return all the transactions of a currency of the user.
 
-        Arguments:
+        Required Arguments:
             currency: The currency to get all the user transactions.
 
-        https://developers.cryptomkt.com/#obtener-movimientos
+        Optional Arguments:
+            page: Page number to query. Default is 0
+            limit: Number of orders returned in each page. Default is 20.
         """
         params = dict(
             currency = currency
@@ -471,9 +446,6 @@ class Client(object):
             date: The date of the deposit, in format dd/mm/yyyy.
             tracking_code: The tracking code of the deposit.
             voucher: a file.
-                
-
-        https://developers.cryptomkt.com/#notificar-deposito
         """
         params = dict(
             amount = amount,
@@ -495,8 +467,6 @@ class Client(object):
         Arguments:
             amount: the amount deposited
             bank_account: The address of the bank account.
-
-        https://developers.cryptomkt.com/#notificar-retiro
         """
         params = dict(
             amount = amount,
@@ -514,8 +484,6 @@ class Client(object):
             currency: The wallet from which to take the money.
                 e.g. 'ETH'
             memo (optional): memo of the wallet to transfer money.
-
-        https://developers.cryptomkt.com/#transferir
         """
         params = dict(
             address = address,
