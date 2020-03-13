@@ -69,7 +69,7 @@ client.get_markets()
 
 client.get_ticker()
 
-#can recieve market as an optional arguments, in that case will return only the ticker of the specified market.
+#can recieve market as an optional parameter, in that case will return only the ticker of the specified market.
 
 client.get_ticker(market="XLMCLP")
 ```
@@ -288,7 +288,7 @@ client.get_active_orders(market="ETHCLP")
 
 ### Get Executed Orders
 ```python
-#can receive page and limit as optional arguments.
+#can receive page and limit as optional parameters.
 
 client.get_executed_orders(market="XLMCLP")
 ```

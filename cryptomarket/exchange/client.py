@@ -4,6 +4,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import json
 import logging
 import requests
 import time
@@ -18,7 +19,6 @@ from .compat import urlencode
 from .error import build_api_error
 from .model import APIObject
 from .model import new_api_object
-from .model import Order
 from .socket import Socket
 from .util import check_uri_security
 from .util import encode_params
@@ -280,7 +280,7 @@ class Client(object):
             params['limit'] = limit
 
         response = self._get(self.API_VERSION, 'orders', 'active', params=params)
-        return self._make_api_object(response, Order)
+        return self._make_api_object(response, APIObject)
 
 
     def get_executed_orders(self, market, page=None, limit=None):
@@ -305,7 +305,7 @@ class Client(object):
             params['limit'] = limit
 
         response = self._get(self.API_VERSION, 'orders', 'executed', params=params)
-        return self._make_api_object(response, Order)
+        return self._make_api_object(response, APIObject)
 
 
     def create_order(self, market, amount, price, side, type):
@@ -328,7 +328,22 @@ class Client(object):
         )
 
         response = self._post(self.API_VERSION, 'orders', 'create', data=params)
-        return self._make_api_object(response, Order)
+        return self._make_api_object(response, APIObject)
+
+    def create_multi_orders(self, order_list):
+        for order in order_list:
+            if ('market' not in order
+                or 'type' not in order
+                or 'side' not in order
+                or 'amount' not in order):
+                return None
+                
+        params = dict(
+            orders=json.dumps(order_list, sort_keys=True),
+        )
+
+        response = self._post(self.API_VERSION, 'orders', 'create', 'bulk', data=params)
+        return self._make_api_object(response, APIObject)
 
 
     def get_order_status(self, id):
@@ -342,7 +357,7 @@ class Client(object):
         )
 
         response = self._get(self.API_VERSION, 'orders', 'status', params=params)
-        return self._make_api_object(response, Order)
+        return self._make_api_object(response, APIObject)
 
 
     def cancel_order(self, id):
@@ -356,11 +371,23 @@ class Client(object):
         )
 
         response = self._post(self.API_VERSION, 'orders', 'cancel', data=params)
-        return self._make_api_object(response, Order)
+        return self._make_api_object(response, APIObject)
+
+    def cancel_multi_orders(self, order_list):
+        for order in order_list:
+            if 'id' not in order:
+                return None
+                
+        params = dict(
+            orders=json.dumps(order_list),
+        )
+
+        response = self._post(self.API_VERSION, 'orders', 'cancel', 'bulk', data=params)
+        return self._make_api_object(response, APIObject)
     
     def get_instant(self,market, side, amount):
         """If side is sell, returns an estimate of the amount of fiat obtained and the amount of crypto required to obatin it.
-        If side is buy, returns an estimate of the amount of crypto obtained and the amount of fiat required to obtain it.
+        If side is buy, returns an estimate of the amount ofOrder crypto obtained and the amount of fiat required to obtain it.
 
         Required Arguments:
             market: The market to get the estimate of the transaction. 
