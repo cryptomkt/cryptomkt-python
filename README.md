@@ -8,7 +8,7 @@ pip install cryptomarket
 ```
 # Documentation
 
-The first things you'll need to do is [sign up with CryptoMarket](https://www.cryptomkt.com/account/register).
+The first things you'll need to do is [sign up in CryptoMarket](https://www.cryptomkt.com/account/register).
 
 ## API Key + Secret
 If you're writing code for your own CryptoMarket account, [enable an API key](https://www.cryptomkt.com/account2#api_tab).
@@ -21,14 +21,16 @@ from cryptomarket.exchange.client import Client
 Finally, you can 
 instantiate the class with the required arguments:
 ```python
-client = Client("api_key", "api_secret")
+api_key='AB32B3201'
+api_secret='21b12401'
+client = Client(api_key, api_secret)
 ```
 
 
 
 # Usage
 
-## [Public endpoints](https://developers.cryptomkt.com/es/#endpoints-publicos)
+## Public endpoints
 
 ### Get markets
 ```python
