@@ -1,5 +1,5 @@
 # CryptoMarket
-The official Python library for the [CryptoMarket API v1](https://developers.cryptomkt.com).
+The official Python library for the CryptoMarket API v2
 
 # Installation
 To install Cryptomarket, simply use pip:
