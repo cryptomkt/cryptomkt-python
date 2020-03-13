@@ -72,14 +72,12 @@ class Client(object):
         Raises an APIError if the response is not 20X. Otherwise, returns the response object. Not intended for direct use by API consumers.
         """
         uri = self._create_api_uri(*relative_path_parts, **kwargs)
-
         data = kwargs.get("data", None)
         if data and isinstance(data, dict):
             kwargs['data'] = data
-        
         response = getattr(self.session, method)(uri, **kwargs)
         return self._handle_response(response)
-
+        
     def _handle_response(self, response):
         """Internal helper for handling API responses from the CryptoMarket server.
         Raises the appropriate exceptions when necessary; otherwise, returns the
@@ -379,7 +377,7 @@ class Client(object):
                 return None
                 
         params = dict(
-            orders=json.dumps(order_list),
+            ids=json.dumps(order_list, sort_keys=True, separators=(',',':')),
         )
 
         response = self._post(self.API_VERSION, 'orders', 'cancel', 'bulk', data=params)

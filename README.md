@@ -541,6 +541,125 @@ client.transfer(address="",amount=0.02,currency="ETH")
 ```python
 { status: 'success', data: '' }
 ```
+### Create Multiple Orders
+```python
+#arguments are the same as regular create_order, but must be contained inside an array of dictionaries
+client.create_multi_orders([{Order1},{Order2}])
+```
+***Expected Output***
+```javascript
+{
+  "created": [
+    {
+      "data": {
+        "amount": {
+          "executed": "0",
+          "original": "1"
+        },
+        "avg_execution_price": "0",
+        "created_at": "2020-03-13T21:08:31.136000",
+        "fee": "0",
+        "id": "O0000001",
+        "market": "XLMCLP",
+        "price": "10",
+        "side": "buy",
+        "status": "queued",
+        "stop": null,
+        "type": "limit",
+        "updated_at": "2020-03-13T21:08:31.160129"
+      },
+      "original": {
+        "amount": 1,
+        "market": "XLMCLP",
+        "price": 10,
+        "side": "buy",
+        "type": "limit"
+      }
+    },
+    {
+      "data": {
+        "amount": {
+          "executed": "0",
+          "original": "2"
+        },
+        "avg_execution_price": "0",
+        "created_at": "2020-03-13T21:08:31.218000",
+        "fee": "0",
+        "id": "O0000001",
+        "market": "XLMCLP",
+        "price": "10",
+        "side": "buy",
+        "status": "queued",
+        "stop": null,
+        "type": "limit",
+        "updated_at": "2020-03-13T21:08:31.257744"
+      },
+      "original": {
+        "amount": 2,
+        "market": "XLMCLP",
+        "price": 10,
+        "side": "buy",
+        "type": "limit"
+      }
+    }
+  ],
+  "not_created": []
+}
+```
+
+### Cancel Multiple Orders
+```python
+#cancel_multiple_orders receives an array of dictionaries, those must contain the IDs of your active orders.
+client.cancel_multi_orders([{"id":"O0000001"},{"id":"O0000002"}])
+```
+***Expected Output***
+```javascript
+{
+  "canceled": [
+    {
+      "data": {
+        "amount": {
+          "executed": "0",
+          "original": "1"
+        },
+        "avg_execution_price": "0",
+        "created_at": "2020-03-13T20:03:07.204000",
+        "fee": "0",
+        "id": "O0000001",
+        "market": "XLMCLP",
+        "price": "10",
+        "side": "buy",
+        "status": "cancelled",
+        "stop": null,
+        "type": "limit",
+        "updated_at": "2020-03-13T20:05:20.971205"
+      },
+      "order_id": "O0000001"
+    },
+    {
+      "data": {
+        "amount": {
+          "executed": "0",
+          "original": "2"
+        },
+        "avg_execution_price": "0",
+        "created_at": "2020-03-13T20:21:53.991000",
+        "fee": "0",
+        "id": "O0000002",
+        "market": "XLMCLP",
+        "price": "10",
+        "side": "buy",
+        "status": "cancelled",
+        "stop": null,
+        "type": "limit",
+        "updated_at": "2020-03-13T21:00:11.071641"
+      },
+      "order_id": "O0000002"
+    }
+  ],
+  "not_canceled": []
+}
+```
 
 ## Using Socket
 
