@@ -11,7 +11,7 @@ pip install cryptomarket
 The first thing you'll need to do is [sign up in CryptoMarket](https://www.cryptomkt.com/account/register).
 
 ## API Key + Secret
-If you're writing code for your own CryptoMarket account, [enable an API key](https://www.cryptomkt.com/account2#api_tab).
+If you're writing code for your own CryptoMarket account, [enable an API key](https://www.cryptomkt.com/platform/account#api_tab).
 
 Next, you'll need to import Client like this:
 
