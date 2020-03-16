@@ -5,7 +5,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import hashlib
-import urllib
 import hmac
 import json
 import time
@@ -14,7 +13,9 @@ from requests.auth import AuthBase
 from requests.utils import to_native_string
 
 #same folder
-from .compat import urljoin, urlparse
+from .compat import unquote
+from .compat import urljoin
+from .compat import urlparse
 
 
 class HMACAuth(AuthBase):
@@ -35,7 +36,7 @@ class HMACAuth(AuthBase):
                 body += str(params[key])
 
         timestamp = str(int(time.time()))
-        message = timestamp + urllib.parse.unquote(urljoin(request.path_url, urlparse(request.path_url).path) + body)
+        message = timestamp + unquote(urljoin(request.path_url, urlparse(request.path_url).path) + body)
         secret = self.api_secret
 
         if not isinstance(message, bytes):
