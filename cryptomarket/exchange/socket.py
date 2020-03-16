@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import logging 
+
 import socketio
 
 from pubsub import pub
@@ -10,7 +12,18 @@ from pubsub import pub
 from .patch_json import patch
 
 class Socket(object):
-    def __init__(self, socketids):
+    def __init__(self, socketids, debug=False):
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.DEBUG)
+        f_handler = logging.FileHandler('socket.log')
+        if debug:
+            f_handler.setLevel(logging.DEBUG)
+        f_format = logging.Formatter('%(asctime)s - %(message)s')
+        #f_format.datefmt = '%d-%b-%y %H:%M:%S'
+        f_handler.setFormatter(f_format)
+        logger.addHandler(f_handler)
+        self.logger = logger
+
         self.url_worker = 'https://worker.cryptomkt.com'
         self.currencies_data = dict()
         self.balance_data = dict()
@@ -33,16 +46,21 @@ class Socket(object):
         def disconnect():
             print('disconnected from server')
 
+        self.logger.debug('connecting to cryptomarket')
         sio.connect(self.url_worker)
+
+        self.logger.debug('authenticating')
         sio.emit('user-auth', socketids)
 
 
         @sio.on('currencies')
         def currencies_handler(data):
+            self.logger.debug('currencies recieved: {}'.format(data))
             self.currencies_data = data
         
         @sio.on('currencies-delta')
         def currencies_delta_handler(delta):
+            self.logger.debug('delta-currencies recieved: {}'.format(delta))
             if self.currencies_data['to_tx'] != delta['from_tx']:
                 sio.emit('currencies')
                 return
@@ -53,6 +71,7 @@ class Socket(object):
 
         @sio.on('balance')
         def balance_handler(data):
+            self.logger.debug('balance recieved: {}'.format(data))
             for _, value in data['data'].items():
                 currency = value['currency']
                 currency_data = self.currencies_data['data'][currency]
@@ -73,6 +92,7 @@ class Socket(object):
         
         @sio.on('balance-delta')
         def balance_delta_handler(deltas):
+            self.logger.debug('balance-delta recieved: {}'.format(deltas))
             for delta in deltas:
                 if self.balance_data['to_tx'] != delta['from_tx']:
                     sio.emit('balance')
@@ -99,11 +119,13 @@ class Socket(object):
 
         @sio.on('open-orders')
         def open_orders_handler(data):
+            self.logger.debug('open-orders recieved: {}'.format(data))
             self.open_orders_data = data
             pub.sendMessage('open-orders', data=data['data'].copy())
         
         @sio.on('open-orders-delta')
         def open_orders_delta_handler(deltas):
+            self.logger.debug('open-orders-delta recieved: {}'.format(deltas))
             for delta in deltas:
                 if self.open_orders_data['to_tx'] != delta['from_tx']:
                     sio.emit('open-orders')
@@ -119,11 +141,13 @@ class Socket(object):
 
         @sio.on('historical-orders')
         def historical_orders_handler(data):
+            self.logger.debug('historical-orders recieved: {}'.format(data))
             self.historical_orders_data = data
             pub.sendMessage('historical-orders', data=data['data'].copy())
         
         @sio.on('historical-orders-delta')
         def historical_orders_delta_handler(deltas):
+            self.logger.debug('historical-orders-delta recieved: {}'.format(deltas))
             for delta in deltas:
                 if self.historical_orders_data['to_tx'] != delta['from_tx']:
                     sio.emit('historical-orders')
@@ -139,11 +163,13 @@ class Socket(object):
 
         @sio.on('operated')
         def operated_handler(data):
+            self.logger.debug('operated recieved: {}'.format(data))
             self.operated_data = data
             pub.sendMessage('operated', data=data['data'].copy())
         
         @sio.on('operated-delta')
         def operated_delta_handler(deltas):
+            self.logger.debug('operated-delta recieved: {}'.format(deltas))
             for delta in deltas:
                 if self.operated_data['to_tx'] != delta['from_tx']:
                     sio.emit('operated')
@@ -159,6 +185,7 @@ class Socket(object):
 
         @sio.on('open-book')
         def open_book_handler(data):
+            self.logger.debug('open-book recieved: {}'.format(data))
             stock_id = data['stock_id']
             self.open_book_data.update({stock_id:data})
             pub.sendMessage(
@@ -172,6 +199,7 @@ class Socket(object):
         
         @sio.on('open-book-delta')
         def open_book_delta_handler(delta):
+            self.logger.debug('open-book-delta recieved: {}'.format(delta))
             stock_id = delta['stock_id']
             if (stock_id not in self.open_book_data
                 or self.open_book_data[stock_id]['to_tx'] != delta['from_tx']):
@@ -194,6 +222,7 @@ class Socket(object):
 
         @sio.on('historical-book')
         def historical_book_handler(data):
+            self.logger.debug('historical-book recieved: {}'.format(data))
             stock_id = data['stock_id']
             self.historical_book_data.update({stock_id:data})
             pub.sendMessage(
@@ -203,6 +232,7 @@ class Socket(object):
         
         @sio.on('historical-book-delta')
         def historical_book_delta_handler(delta):
+            self.logger.debug('historical-book-delta recieved: {}'.format(delta))
             stock_id = delta['stock_id']
             if (stock_id not in self.historical_book_data
                or self.historical_book_data[stock_id]['to_tx'] != delta['from_tx']):
@@ -221,6 +251,7 @@ class Socket(object):
         
         @sio.on('candles')
         def candles_handler(data):
+            self.logger.debug('candles recieved: {}'.format(data))
             stock_id = data['stock_id']
             self.candles_data.update({stock_id:data})
 
@@ -236,6 +267,7 @@ class Socket(object):
 
         @sio.on('candles-delta')
         def candles_delta_handler(delta):
+            self.logger.debug('candles-delta recieved: {}'.format(delta))
             stock_id = delta['stock_id']
             if (stock_id not in self.candles_data
                 or self.candles_data[stock_id]['to_tx'] != delta['from_tx']):
@@ -257,11 +289,13 @@ class Socket(object):
 
         @sio.on('board')
         def board_handler(data):
+            self.logger.debug('board recieved: {}'.format(data))
             self.board_data = data
             pub.sendMessage('ticker', data=data.copy())
         
         @sio.on('board-delta')
         def board_delta_handler(delta):
+            self.logger.debug('board-delta recieved: {}'.format(delta))
             if self.board_data['to_tx'] != delta['from_tx']:
                 sio.emit('board')
                 return
@@ -273,12 +307,15 @@ class Socket(object):
         self.sio = sio
 
     def subscribe(self, *market_pairs):
+        self.logger.debug('starting subscriptions: {}'.format(market_pairs))
         for pair in market_pairs:
             self.sio.emit('subscribe', pair)
         
     def unsubscribe(self, *market_pairs):
+        self.logger.debug('ending subscriptions: {}'.format(market_pairs))
         for pair in market_pairs:
             self.sio.emit('unsubscribe', pair)
 
     def on(self, event, handler):
+        self.logger.debug('subscribing to event: {}'.format(event))
         pub.subscribe(handler, event)

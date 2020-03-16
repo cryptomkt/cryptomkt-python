@@ -5,7 +5,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import json
-import logging
 import requests
 import time
 import warnings
@@ -29,7 +28,7 @@ class Client(object):
     BASE_API_URI = 'https://api.cryptomkt.com/'
     API_VERSION = 'v2'
 
-    def __init__(self, api_key, api_secret, base_api_uri=None, api_version=None):
+    def __init__(self, api_key, api_secret, base_api_uri=None, api_version=None, debug=False):
         if not api_key:
             raise ValueError('Missing `api_key`.')
         if not api_secret:
@@ -528,11 +527,11 @@ class Client(object):
         return self._make_api_object(response, APIObject)
 
     
-    def get_socket(self):
+    def get_socket(self, debug=False):
         """returns a socket connection with cryptomkt.
         """
         if self.socket is None:
             auth = self.get_auth_socket()
             del auth['verify']
-            self.socket = Socket(auth)
+            self.socket = Socket(auth, debug=debug)
         return self.socket
