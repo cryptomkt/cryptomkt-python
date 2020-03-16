@@ -547,7 +547,7 @@ client.transfer(address="",amount=0.02,currency="ETH")
 client.create_multi_orders([{Order1},{Order2}])
 ```
 ***Expected Output***
-```javascript
+```python
 {
   "created": [
     {
@@ -613,7 +613,7 @@ client.create_multi_orders([{Order1},{Order2}])
 client.cancel_multi_orders([{"id":"O0000001"},{"id":"O0000002"}])
 ```
 ***Expected Output***
-```javascript
+```python
 {
   "canceled": [
     {
@@ -666,11 +666,11 @@ client.cancel_multi_orders([{"id":"O0000001"},{"id":"O0000002"}])
 To get a Socket connection with CryptoMarket you'll want to use:
 
 ```python
-client.get_socket()
+socket = client.get_socket()
 ```
 
 Note that **some Socket events requires subscription to a _Market Pair_ to work**, you can do it like this:
-
+**make subscription**
 ```python
 socket.subscribe('ETHCLP')
 ```
@@ -691,27 +691,27 @@ As you can see, **socket.on** receives two arguments, first you need to provide 
 **Handler example**
 
 ```python
-from __future__ import print_function
 import json
 
 def handler(data):
-    print(json.dumps(data, indent= 1))
+    print(json.dumps(data, indent= 2))
 ```
 
 ### Available Socket events
 
 **Receive open book info**
 ```python
+# subscription required*
 socket.on('open-book', handler)
 ```
 Output:
-```javascript
-open-book {
-  ETHCLP: {
-    sell: [
+```python
+{
+  "ETHCLP": {
+    "sell": [
       [Order1], [Order2],...
     ],
-    buy: [
+    "buy": [
       [Order1], [Order2],...
     ]
   }
@@ -720,88 +720,90 @@ open-book {
 
 **Receive Historical book info**
 ```python
+# subscription required*
 socket.on('historical-book', handler)
 ```
 Output:
-```javascript
+```python
 [
-    ETHCLP:
-{
-      requestId: 'OOETHCLP0000000000000000000001',
-      tradeId: 'O232937',
-      stockId: 'ETHCLP',
-      kind: 1,
-      type: 2,
-      side: 1,
-      price: '204820.000000000000000000000000000000',
-      limit: null,
-      condition: null,
-      flag: 'GENERAL',
-      amount: '0.00000000000000000000000000000000000',
-      initAmount: '2.07330000000000000000000000000000000',
-      dateReceived: 1582205310697,
-      executed_price: '204820.000000000000000000000000000000',
-      executed_amount: '2.07330000000000000000000000000000000',
-      executed_date: 1582205310745
+  "ETHCLP":
+    {
+      "requestId": 'OOETHCLP0000000000000000000001',
+      "tradeId": 'O232937',
+      "stockId": 'ETHCLP',
+      "kind": 1,
+      "type": 2,
+      "side": 1,
+      "price": '204820.000000000000000000000000000000',
+      "limit": null,
+      "condition": null,
+      "flag": 'GENERAL',
+      "amount": '0.00000000000000000000000000000000000',
+      "initAmount": '2.07330000000000000000000000000000000',
+      "dateReceived": 1582205310697,
+      "executed_price": '204820.000000000000000000000000000000',
+      "executed_amount": '2.07330000000000000000000000000000000',
+      "executed_date": 1582205310745
     },
     {
-      requestId: 'OOETHCLP0000000000000000000002',
-      tradeId: 'O232665',
-      stockId: 'ETHCLP',
-      kind: 1,
-      type: 2,
-      side: 1,
-      price: '201540.000000000000000000000000000000',
-      limit: null,
-      condition: null,
-      flag: 'GENERAL',
-      amount: '1.66960000000000000000000000000000000',
-      initAmount: '1.92640000000000000000000000000000000',
-      dateReceived: 1582204925623,
-      executed_price: '201260.000000000000000000000000000000',
-      executed_amount: '0.256800000000000000000000000000000000',
-      executed_date: 1582204925645
+      "requestId": 'OOETHCLP0000000000000000000002',
+      "tradeId": 'O232665',
+      "stockId": 'ETHCLP',
+      "kind": 1,
+      "type": 2,
+      "side": 1,
+      "price": '201540.000000000000000000000000000000',
+      "limit": null,
+      "condition": null,
+      "flag": 'GENERAL',
+      "amount": '1.66960000000000000000000000000000000',
+      "initAmount": '1.92640000000000000000000000000000000',
+      "dateReceived": 1582204925623,
+      "executed_price": '201260.000000000000000000000000000000',
+      "executed_amount": '0.256800000000000000000000000000000000',
+      "executed_date": 1582204925645
     }
   ]
 ```
 
 **Receive Candles info**
 ```python
+# subscription required*
 socket.on('candles', handler)
 ```
 Output:
-```javascript
-candles: {
+```python
+{
   'buy': {
     '1': [
         [{
-      date: '21/02/2020 04:56:00',
-      stockId: 'ETHCLP',
-      type: 1,
-      timeFrame: 1,
-      lowPrice: 212060,
-      hightPrice: 212060,
-      openPrice: 212060,
-      closePrice: 212100,
-      count: 3,
-      volume: 0,
-      lastBuyPrice: 217900,
-      lastSellPrice: 227220
-    }],[Object],...],
-  '5': [[Object],[Object],...],
-  '15':[[Object],[Object],...],
-  '60': [[Object],[Object],...],
-  '240':[[Object],[Object],...],
-  '1440':[[Object],[Object],...],
-  '10080':[[Object],[Object],...],
-  '44640':[[Object],[Object],...]
-}
-
-'sell':{
-  '1':[[Object],...],
-  '5':...
-},
-lastBuyPrice: 218880,lastSellPrice: 227220
+      "date": '21/02/2020 04:56:00',
+      "stockId": 'ETHCLP',
+      "type": 1,
+      "timeFrame": 1,
+      "lowPrice": 212060,
+      "hightPrice": 212060,
+      "openPrice": 212060,
+      "closePrice": 212100,
+      "count": 3,
+      "volume": 0,
+      "lastBuyPrice": 217900,
+      "lastSellPrice": 227220
+      }], ...],
+    '5': ...,
+    '15': ...,
+    '60': ...,
+    '240': ...,
+    '1440': ...,
+    '10080': ...,
+    '44640': ...
+  },
+  'sell':{
+    '1':...,
+    '5':...
+  },
+  "lastBuyPrice": 218880,
+  "lastSellPrice": 227220
 }
 ```
 
@@ -810,25 +812,25 @@ lastBuyPrice: 218880,lastSellPrice: 227220
 socket.on('ticker', handler)
 ```
 Output:
-```javascript
-ticker: {
-  EOSARS: {
-    BID: 346.95,
-    ASK: 364.65,
-    delta1d: -13.04511278195489,
-    delta7d: -21.928442844284426
+```python
+{
+  "EOSARS": {
+    "BID": 346.95,
+    "ASK": 364.65,
+    "delta1d": -13.04511278195489,
+    "delta7d": -21.928442844284426
   },
-  BTCCLP: {
-    BID: 7914600,
-    ASK: 8038600,
-    delta1d: -2.4334319526627217,
-    delta7d: -2.1318164956102383
+  "BTCCLP": {
+    "BID": 7914600,
+    "ASK": 8038600,
+    "delta1d": -2.4334319526627217,
+    "delta7d": -2.1318164956102383
   },
-  ETHCLP: {
-    BID: 213600,
-    ASK: 218880,
-    delta1d: 1.0598031794095382,
-    delta7d: 0.6692430954849656
+  "ETHCLP": {
+    "BID": 213600,
+    "ASK": 218880,
+    "delta1d": 1.0598031794095382,
+    "delta7d": 0.6692430954849656
   },
   ...
 }
@@ -839,18 +841,18 @@ ticker: {
 socket.on('balance', handler)
 ```
 Output:
-```javascript
-balance: {
-  ETH: {
-    currency: 'ETH',
-    countable: '0.0700000000000000000000000000000000000',
-    available: '0.0700000000000000000000000000000000000',
-    currency_kind: 1,
-    currency_name: 'ETH',
-    currency_big_name: 'Ether',
-    currency_prefix: '',
-    currency_postfix: ' ETH',
-    currency_decimals: 4
+```python
+{
+  "ETH": {
+    "currency": 'ETH',
+    "countable": '0.0700000000000000000000000000000000000',
+    "available": '0.0700000000000000000000000000000000000',
+    "currency_kind": 1,
+    "currency_name": 'ETH',
+    "currency_big_name": 'Ether',
+    "currency_prefix": '',
+    "currency_postfix": ' ETH',
+    "currency_decimals": 4
   },
   ...
 }
@@ -861,23 +863,23 @@ balance: {
 socket.on('open-orders', handler)
 ```
 Output:
-```javascript
-open-orders [
+```python
+[
   {
-    requestId: 'OOXLMCLP0000000000000000000001',
-    tradeId: 'O000001',
-    traderId: '2',
-    stockId: 'XLMCLP',
-    kind: 2,
-    type: 2,
-    side: 2,
-    price: '80.0000000000000000000000000000000000',
-    limit: null,
-    condition: null,
-    flag: 'GENERAL',
-    amount: '1.00000000000000000000000000000000000',
-    initAmount: '1.00000000000000000000000000000000000',
-    dateReceived: 1582301424510
+    "requestId": 'OOXLMCLP0000000000000000000001',
+    "tradeId": 'O000001',
+    "traderId": '2',
+    "stockId": 'XLMCLP',
+    "kind": 2,
+    "type": 2,
+    "side": 2,
+    "price": '80.0000000000000000000000000000000000',
+    "limit": null,
+    "condition": null,
+    "flag": 'GENERAL',
+    "amount": '1.00000000000000000000000000000000000',
+    "initAmount": '1.00000000000000000000000000000000000',
+    "dateReceived": 1582301424510
   },
   {Order2},...
 ]
@@ -888,23 +890,23 @@ open-orders [
 socket.on('historical-orders', handler)
 ```
 Output:
-```javascript
-historical-orders [
+```python
+[
   {
-    requestId: 'OOXLMCLP000000000000000000001',
-    tradeId: 'O000001',
-    traderId: '1',
-    stockId: 'XLMCLP',
-    kind: 2,
-    type: 2,
-    side: 2,
-    price: '50.5000000000000000000000000000000000',
-    limit: null,
-    condition: null,
-    flag: 'GENERAL',
-    amount: '0.00000000000000000000000000000000000',
-    initAmount: '1.00000000000000000000000000000000000',
-    dateReceived: 1582261738700
+    "requestId": 'OOXLMCLP000000000000000000001',
+    "tradeId": 'O000001',
+    "traderId": '1',
+    "stockId": 'XLMCLP',
+    "kind": 2,
+    "type": 2,
+    "side": 2,
+    "price": '50.5000000000000000000000000000000000',
+    "limit": null,
+    "condition": null,
+    "flag": 'GENERAL',
+    "amount": '0.00000000000000000000000000000000000',
+    "initAmount": '1.00000000000000000000000000000000000',
+    "dateReceived": 1582261738700
   },
   {Order2},...
   ]
@@ -914,13 +916,13 @@ historical-orders [
 socket.on('operated', handler)
 ```
 Output:
-```javascript
-operated {
-  flag: 'L0',
-  threshold: '0.00000000000000000000000000000000000',
-  traded: '0.0718085391503182500000000000000000000',
-  tk: '0.00680000000000000000000000000000000000',
-  mk: '0.00390000000000000000000000000000000000'
+```python
+{
+  "flag": 'L0',
+  "threshold": '0.00000000000000000000000000000000000',
+  "traded": '0.0718085391503182500000000000000000000',
+  "tk": '0.00680000000000000000000000000000000000',
+  "mk": '0.00390000000000000000000000000000000000'
 }
 ```
 
