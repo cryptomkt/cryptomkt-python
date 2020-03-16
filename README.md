@@ -8,7 +8,7 @@ pip install cryptomarket
 ```
 # Documentation
 
-The first things you'll need to do is [sign up in CryptoMarket](https://www.cryptomkt.com/account/register).
+The first thing you'll need to do is [sign up in CryptoMarket](https://www.cryptomkt.com/account/register).
 
 ## API Key + Secret
 If you're writing code for your own CryptoMarket account, [enable an API key](https://www.cryptomkt.com/account2#api_tab).
@@ -69,7 +69,7 @@ client.get_markets()
 
 client.get_ticker()
 
-#can recieve market as an optional parameter, in that case will return only the ticker of the specified market.
+#can receive "market" as an optional argument, in that case will return only the "ticker" of the specified "market".
 
 client.get_ticker(market="XLMCLP")
 ```
@@ -258,7 +258,7 @@ client.get_account();
 
 ### Get Active Orders
 ```python
-#can receive page and limit as optional parameters.
+#can receive "page" and "limit" as optional arguments.
 
 client.get_active_orders(market="ETHCLP")
 ```
@@ -288,7 +288,7 @@ client.get_active_orders(market="ETHCLP")
 
 ### Get Executed Orders
 ```python
-#can receive page and limit as optional parameters.
+#can receive "page" and "limit" as optional arguments.
 
 client.get_executed_orders(market="XLMCLP")
 ```
@@ -394,7 +394,7 @@ client.get_order_status(id="O0000001")
 
 ### Cancel an order
 ```python
-client.cancel_order()
+client.cancel_order(id="O0000001")
 ```
 
 ***Expected Output***
@@ -460,7 +460,7 @@ client.get_balance()
 
 ### Get Transactions
 ```python
-#can recieve "page" and "limit" as optional arguments
+#can receive "page" and "limit" as optional arguments
 
 client.get_transactions(currency="CLP")
 ```
@@ -504,7 +504,7 @@ client.get_transactions(currency="CLP")
 
 ### Notify Deposit
 ```python
-#"bank_account" receives the bank account id as a string, you can obtain de id using "get_account()"
+#"bank_account" receives the bank account "id" as a string, you can obtain the "id" using "get_account()"
 
 client.notify_deposit(bank_account="12345", amount="10000")
 ```
@@ -519,7 +519,7 @@ client.notify_deposit(bank_account="12345", amount="10000")
 
 ### Notify Withdrawal
 ```python
-#"bank_account" receives the bank account id as a string, you can obtain this id using "client.get_account()".
+#"bank_account" receives the bank account "id" as a string, you can obtain this "id" using "client.get_account()".
 
 client.notify_withdrawal(bank_account="12345", amount="10000")
 ```
@@ -609,7 +609,7 @@ client.create_multi_orders([{Order1},{Order2}])
 
 ### Cancel Multiple Orders
 ```python
-#cancel_multiple_orders receives an array of dictionaries, those must contain the IDs of your active orders.
+#receives an array of dictionaries, those must contain the IDs of your active orders.
 client.cancel_multi_orders([{"id":"O0000001"},{"id":"O0000002"}])
 ```
 ***Expected Output***
