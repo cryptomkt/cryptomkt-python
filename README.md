@@ -1,4 +1,7 @@
 # CryptoMarket
+<!--- badges -->
+[![PyPI version](https://badge.fury.io/py/cryptomarket.svg)](https://badge.fury.io/py/cryptomarket)
+
 The official Python library for the CryptoMarket API v2
 
 # Installation
