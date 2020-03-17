@@ -123,5 +123,6 @@ cryptomarket/exchange/client.pyc
 cryptomarket/.DS_Store
 
 test.py
+socket.log
 
 */__pycache__/*
