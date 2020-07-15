@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging 
+import time
 
 import socketio
 
@@ -26,7 +27,7 @@ class Socket(object):
         self.logger = logger
 
         # initializing the cache
-        self.url_worker = 'https://worker.cryptomkt.com'
+        self.url_worker = 'wss://worker.cryptomkt.com:443'
         self.currencies_data = dict()
         self.balance_data = dict()
         self.open_orders_data = dict()
@@ -62,7 +63,7 @@ class Socket(object):
 
         self.logger.debug('connecting to cryptomarket')
         sio.connect(self.url_worker)
-
+        
         # defining all the cryptomarket events of the socket
         @sio.on('currencies')
         def currencies_handler(data):
@@ -265,7 +266,6 @@ class Socket(object):
             self.logger.debug('candles recieved: {}'.format(data))
             stock_id = data['stock_id']
             self.candles_data.update({stock_id:data})
-
             result = {stock_id:self.candles_data[stock_id]}.copy()
             if '1' in result[stock_id]:
                 result[stock_id].update({'buy':result[stock_id]['1']})
@@ -322,6 +322,7 @@ class Socket(object):
         for pair in market_pairs:
             self.subsciptions[pair] = True
             self.sio.emit('subscribe', pair)
+            time.sleep(1)
         
     def unsubscribe(self, *market_pairs):
         self.logger.debug('ending subscriptions: {}'.format(market_pairs))
@@ -329,6 +330,7 @@ class Socket(object):
             if pair in self.subsciptions:
                 del self.subsciptions[pair]
             self.sio.emit('unsubscribe', pair)
+            time.sleep(1)
 
     def on(self, event, handler):
         self.logger.debug('subscribing to event: {}'.format(event))

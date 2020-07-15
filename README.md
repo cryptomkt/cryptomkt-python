@@ -1,8 +1,45 @@
-# CryptoMarket
+# CryptoMarket-Python
 <!--- badges -->
 [![PyPI version](https://badge.fury.io/py/cryptomarket.svg)](https://badge.fury.io/py/cryptomarket)
 
 The official Python library for the CryptoMarket API v2
+
+- [cryptomkt-python](#CryptoMarket-Python)
+  - [Installation](#Installation)
+  - [Documentation](#Documentation)
+  - [API Key](#Api-key)
+  - [Making API Calls](#making-api-calls)
+    - [Public endpoints](#public-endpoints)
+      - [Get Markets](#get-markets)
+      - [Get Ticker](#get-ticker)
+      - [Get Book](#get-book)
+      - [Get Trades](#get-trades)
+      - [Get Prices](#get-prices)
+    - [Authenticated endpoints](#authenticated-endpoints)
+      - [Get account info](#get-account-info)
+      - [Get balance](#Get-balance)
+      - [Get active orders](#get-active-orders)
+      - [Get executed orders](#get-executed-orders)
+      - [Create order](#create-order)
+      - [Create multiple orders](#create-multiple-orders)
+      - [Get order status](#Get-order-status)
+      - [Cancel order](#cancel-Order)
+      - [Cancel multiple orders](#cancel-multiple-orders)
+      - [Get transactions](#make-a-transfer)
+      - [Notify deposit](#notify-deposit)
+      - [Notify withdrawal](#notify-withdrawal)
+      - [Transfer](#transfer)
+  - [Using sockets](#using-sockets)
+    - [Listening socket events](#listening-socket-events)
+    - [Available socket events](#available-socket-events)
+      - [Receive balance](#receive-balance)
+      - [Receive user operated volume](#receive-user-operated-volume)
+      - [Receive user open orders](#receive-user-open-orders)
+      - [Receive user historical orders](#receive-user-historical-orders)
+      - [Receive open book](#Receive-open-book)
+      - [Receive historical book](#receive-historical-book)
+      - [Receive candles](#receive-candles)
+      - [Receive ticker](#receive-ticker)
 
 # Installation
 To install Cryptomarket, simply use pip:
@@ -13,7 +50,7 @@ pip install cryptomarket
 
 The first thing you'll need to do is [sign up in CryptoMarket](https://www.cryptomkt.com/account/register).
 
-## API Key + Secret
+## API Key
 If you're writing code for your own CryptoMarket account, [enable an API key](https://www.cryptomkt.com/platform/account#api_tab).
 
 Next, you'll need to import Client like this:
@@ -31,15 +68,17 @@ client = Client(api_key, api_secret)
 
 
 
-# Usage
+# Making API Calls
 
 ## Public endpoints
 
-### Get markets
+### Get Markets
 ```python
 client.get_markets()
 ```
-***Expected Output***
+<details>
+<summary>Expected Output</summary>
+
 ```python
 {
   "data": [
@@ -67,7 +106,9 @@ client.get_markets()
 }
 ```
 
-### Get ticker
+</details>
+
+### Get Ticker
 ```python
 
 client.get_ticker()
@@ -77,7 +118,9 @@ client.get_ticker()
 client.get_ticker(market="XLMCLP")
 ```
 
-***Expected Output***
+<details>
+<summary>Expected Output</summary>
+
 ```python
 {
   "data": [
@@ -95,15 +138,18 @@ client.get_ticker(market="XLMCLP")
 }
 ```
 
+</details>
 
-### Get book
+### Get Book
 ```python
 #can receive "page" as an optional argument.
 
 client.get_book(market="ETHCLP", type="sell", page=1)
 ```
 
-***Expected Output***
+<details>
+<summary>Expected Output</summary>
+
 ```python
 {
   "data": [
@@ -127,12 +173,16 @@ client.get_book(market="ETHCLP", type="sell", page=1)
 }
 ```
 
-### Get trades
+</details>
+
+### Get Trades
 ```python
 client.get_trades(market="ETHCLP")
 ```
 
-***Expected Output***
+<details>
+<summary>Expected Output</summary>
+
 ```python
 {
   "data": [
@@ -162,6 +212,8 @@ client.get_trades(market="ETHCLP")
 }
 ```
 
+</details>
+
 ### Get Prices
 ```python
 #"timeframe" value in minutes can be = "1,5,15,60,240,1440,10080".
@@ -170,7 +222,9 @@ client.get_trades(market="ETHCLP")
 client.get_prices(market="ETHCLP",timeframe=10080)
 ```
 
-***Expected Output***
+<details>
+<summary>Expected Output</summary>
+
 ```python
 {
   "ask": [
@@ -221,14 +275,19 @@ client.get_prices(market="ETHCLP",timeframe=10080)
   ]
 }
 ```
-## Authenticated enpoints
 
-### Get account 
+</details>
+
+## Authenticated endpoints
+
+### Get Account 
 ```python
 client.get_account();
 ```
 
-***Expected Output***
+<details>
+<summary>Expected Output</summary>
+
 ```python
 {
   "bank_accounts": [
@@ -259,6 +318,55 @@ client.get_account();
 }
 ```
 
+</details>
+
+
+### Get Balance
+```python
+client.get_balance()
+```
+
+<details>
+<summary>Expected Output</summary>
+
+```python
+{
+  "data": [
+    {
+      "available": "0",
+      "balance": "0",
+      "currency_big_name": "Peso Chileno",
+      "currency_decimal": 0,
+      "currency_postfix": "",
+      "currency_prefix": "$",
+      "wallet": "CLP"
+    },
+    {
+      "available": "0",
+      "balance": "0",
+      "currency_big_name": "Peso Argentino",
+      "currency_decimal": 2,
+      "currency_postfix": "",
+      "currency_prefix": "$",
+      "wallet": "ARS"
+    },
+    {
+      "available": "0.0052612795",
+      "balance": "0.0052612795",
+      "currency_big_name": "Real Brasile\u00f1o",
+      "currency_decimal": 2,
+      "currency_postfix": "",
+      "currency_prefix": "R$",
+      "wallet": "BRL"
+    },
+   #...
+  ]
+}
+```
+
+</details>
+
+
 ### Get Active Orders
 ```python
 #can receive "page" and "limit" as optional arguments.
@@ -266,7 +374,9 @@ client.get_account();
 client.get_active_orders(market="ETHCLP")
 ```
 
-***Expected Output***
+<details>
+<summary>Expected Output</summary>
+
 ```python
 {
   "data": [
@@ -289,6 +399,8 @@ client.get_active_orders(market="ETHCLP")
 }
 ```
 
+</details>
+
 ### Get Executed Orders
 ```python
 #can receive "page" and "limit" as optional arguments.
@@ -296,7 +408,9 @@ client.get_active_orders(market="ETHCLP")
 client.get_executed_orders(market="XLMCLP")
 ```
 
-***Expected Output***
+<details>
+<summary>Expected Output</summary>
+
 ```python
 {
   "data": [
@@ -335,6 +449,8 @@ client.get_executed_orders(market="XLMCLP")
 }
 ```
 
+</details>
+
 ### Create Order
 ```python
 #"price" is an optional argument, is required only if "type" is "limit" or "stop-limit".
@@ -347,7 +463,9 @@ client.get_executed_orders(market="XLMCLP")
 client.create_order(market="XLMCLP", type="limit", amount="1", price=50, side="sell")
 ```
 
-***Expected Output***
+<details>
+<summary>Expected Output</summary>
+
 ```python
 {
   "amount": {
@@ -368,188 +486,18 @@ client.create_order(market="XLMCLP", type="limit", amount="1", price=50, side="s
 }
 ```
 
-### Get Status of an Order
-```python
-client.get_order_status(id="O0000001")
-```
+</details>
 
-***Expected Output***
-```python
-{
-  "amount": {
-    "executed": "0",
-    "original": "1"
-  },
-  "avg_execution_price": "0",
-  "created_at": "2020-03-09T23:07:35.185000",
-  "fee": "0",
-  "fills": [],
-  "id": "O0000001",
-  "market": "XLMCLP",
-  "price": "50",
-  "side": "sell",
-  "status": "queued",
-  "stop": null,
-  "type": "limit",
-  "updated_at": "2020-03-09T23:07:35.234007"
-}
-```
 
-### Cancel an order
-```python
-client.cancel_order(id="O0000001")
-```
-
-***Expected Output***
-```python
-{
-  "amount": {
-    "executed": "0",
-    "original": "1"
-  },
-  "avg_execution_price": "0",
-  "created_at": "2020-03-09T23:07:35.185000",
-  "fee": "0",
-  "id": "O0000001",
-  "market": "XLMCLP",
-  "price": "50",
-  "side": "sell",
-  "status": "cancelled",
-  "stop": null,
-  "type": "limit",
-  "updated_at": "2020-03-11T19:27:28.625385"
-}
-```
-
-### Get Balance
-```python
-client.get_balance()
-```
-***Expected Output***
-```python
-{
-  "data": [
-    {
-      "available": "0",
-      "balance": "0",
-      "currency_big_name": "Peso Chileno",
-      "currency_decimal": 0,
-      "currency_postfix": "",
-      "currency_prefix": "$",
-      "wallet": "CLP"
-    },
-    {
-      "available": "0",
-      "balance": "0",
-      "currency_big_name": "Peso Argentino",
-      "currency_decimal": 2,
-      "currency_postfix": "",
-      "currency_prefix": "$",
-      "wallet": "ARS"
-    },
-    {
-      "available": "0.0052612795",
-      "balance": "0.0052612795",
-      "currency_big_name": "Real Brasile\u00f1o",
-      "currency_decimal": 2,
-      "currency_postfix": "",
-      "currency_prefix": "R$",
-      "wallet": "BRL"
-    },
-   #...
-  ]
-}
-```
-
-### Get Transactions
-```python
-#can receive "page" and "limit" as optional arguments
-
-client.get_transactions(currency="CLP")
-```
-
-***Expected Output***
-```python
-{
-  "data": [
-    {
-      "address": null,
-      "amount": "43.45",
-      "balance": "735.98669",
-      "blocks": null,
-      "currency": "CLP",
-      "date": "2020-03-09T21:55:26",
-      "fee_amount": "0.295",
-      "fee_percent": "0+0.680%",
-      "hash": null,
-      "id": "T000001",
-      "memo": null,
-      "type": 1
-    },
-    {
-      "address": null,
-      "amount": "49.9",
-      "balance": "692.83215",
-      "blocks": null,
-      "currency": "CLP",
-      "date": "2020-03-06T03:20:48",
-      "fee_amount": "0.194",
-      "fee_percent": "0+0.390%",
-      "hash": null,
-      "id": "T000002",
-      "memo": null,
-      "type": 1
-    },
- #...
-  ]
-}
-```
-
-### Notify Deposit
-```python
-#"bank_account" receives the bank account "id" as a string, you can obtain the "id" using "get_account()"
-
-client.notify_deposit(bank_account="12345", amount="10000")
-```
-
-***Expected Output***
-```python
-{
-  "data": "",
-  "pagination": null
-}
-```
-
-### Notify Withdrawal
-```python
-#"bank_account" receives the bank account "id" as a string, you can obtain this "id" using "client.get_account()".
-
-client.notify_withdrawal(bank_account="12345", amount="10000")
-```
-
-***Expected Output***
-```python
-{
-  "data": "",
-  "pagination": null
-}
-```
-### Transfer
-```python
-#can receive "memo" as an optional argument.
-client.transfer(address="",amount=0.02,currency="ETH")
-```
-
-***Expected Output***
-```python
-{ status: 'success', data: '' }
-```
 ### Create Multiple Orders
 ```python
 #arguments are the same as regular create_order, but must be contained inside an array of dictionaries
 client.create_multi_orders([{Order1},{Order2}])
 ```
-***Expected Output***
+
+<details>
+<summary>Expected Output</summary>
+
 ```python
 {
   "created": [
@@ -610,12 +558,78 @@ client.create_multi_orders([{Order1},{Order2}])
 }
 ```
 
+</details>
+
+### Get Order Status
+```python
+client.get_order_status(id="O0000001")
+```
+
+<details>
+<summary>Expected Output</summary>
+
+```python
+{
+  "amount": {
+    "executed": "0",
+    "original": "1"
+  },
+  "avg_execution_price": "0",
+  "created_at": "2020-03-09T23:07:35.185000",
+  "fee": "0",
+  "fills": [],
+  "id": "O0000001",
+  "market": "XLMCLP",
+  "price": "50",
+  "side": "sell",
+  "status": "queued",
+  "stop": null,
+  "type": "limit",
+  "updated_at": "2020-03-09T23:07:35.234007"
+}
+```
+
+</details>
+
+### Cancel Order
+```python
+client.cancel_order(id="O0000001")
+```
+
+<details>
+<summary>Expected Output</summary>
+
+```python
+{
+  "amount": {
+    "executed": "0",
+    "original": "1"
+  },
+  "avg_execution_price": "0",
+  "created_at": "2020-03-09T23:07:35.185000",
+  "fee": "0",
+  "id": "O0000001",
+  "market": "XLMCLP",
+  "price": "50",
+  "side": "sell",
+  "status": "cancelled",
+  "stop": null,
+  "type": "limit",
+  "updated_at": "2020-03-11T19:27:28.625385"
+}
+```
+
+</details>
+
 ### Cancel Multiple Orders
 ```python
 #receives an array of dictionaries, those must contain the IDs of your active orders.
 client.cancel_multi_orders([{"id":"O0000001"},{"id":"O0000002"}])
 ```
-***Expected Output***
+
+<details>
+<summary>Expected Output</summary>
+
 ```python
 {
   "canceled": [
@@ -664,7 +678,110 @@ client.cancel_multi_orders([{"id":"O0000001"},{"id":"O0000002"}])
 }
 ```
 
-## Using Socket
+</details>
+
+### Get Transactions
+```python
+#can receive "page" and "limit" as optional arguments
+
+client.get_transactions(currency="CLP")
+```
+
+<details>
+<summary>Expected Output</summary>
+
+```python
+{
+  "data": [
+    {
+      "address": null,
+      "amount": "43.45",
+      "balance": "735.98669",
+      "blocks": null,
+      "currency": "CLP",
+      "date": "2020-03-09T21:55:26",
+      "fee_amount": "0.295",
+      "fee_percent": "0+0.680%",
+      "hash": null,
+      "id": "T000001",
+      "memo": null,
+      "type": 1
+    },
+    {
+      "address": null,
+      "amount": "49.9",
+      "balance": "692.83215",
+      "blocks": null,
+      "currency": "CLP",
+      "date": "2020-03-06T03:20:48",
+      "fee_amount": "0.194",
+      "fee_percent": "0+0.390%",
+      "hash": null,
+      "id": "T000002",
+      "memo": null,
+      "type": 1
+    },
+ #...
+  ]
+}
+```
+
+</details>
+
+### Notify Deposit
+```python
+#"bank_account" receives the bank account "id" as a string, you can obtain the "id" using "get_account()"
+
+client.notify_deposit(bank_account="12345", amount="10000")
+```
+
+<details>
+<summary>Expected Output</summary>
+
+```python
+{
+  "data": "",
+  "pagination": null
+}
+```
+
+</details>
+
+### Notify Withdrawal
+```python
+#"bank_account" receives the bank account "id" as a string, you can obtain this "id" using "client.get_account()".
+
+client.notify_withdrawal(bank_account="12345", amount="10000")
+```
+
+<details>
+<summary>Expected Output</summary>
+
+```python
+{
+  "data": "",
+  "pagination": null
+}
+```
+
+</details>
+
+### Transfer
+```python
+#can receive "memo" as an optional argument.
+client.transfer(address="",amount=0.02,currency="ETH")
+```
+
+<details>
+<summary>Expected Output</summary>
+
+```python
+{ status: 'success', data: '' }
+```
+
+</details>
+
+## Using Sockets
 
 To get a Socket connection with CryptoMarket you'll want to use:
 
@@ -685,7 +802,7 @@ socket.unsubscribe('ETHCLP')
 
 Now you're ready to start receiving Socket events!
 
-### Listening Socket events
+### Listening Socket Events
 ```python
 socket.on(event, handler)
 ```
@@ -700,14 +817,133 @@ def handler(data):
     print(json.dumps(data, indent= 2))
 ```
 
-### Available Socket events
+### Available Socket Events
 
-**Receive open book info**
+#### Receive Balance
+```python
+socket.on('balance', handler)
+```
+
+<details>
+<summary>Expected Output</summary>
+
+
+```python
+{
+  "ETH": {
+    "currency": 'ETH',
+    "countable": '0.0700000000000000000000000000000000000',
+    "available": '0.0700000000000000000000000000000000000',
+    "currency_kind": 1,
+    "currency_name": 'ETH',
+    "currency_big_name": 'Ether',
+    "currency_prefix": '',
+    "currency_postfix": ' ETH',
+    "currency_decimals": 4
+  },
+  ...
+}
+```
+
+</details>
+
+#### Receive User Operated Volume
+```python
+socket.on('operated', handler)
+```
+
+<details>
+<summary>Expected Output</summary>
+
+
+```python
+{
+  "flag": 'L0',
+  "threshold": '0.00000000000000000000000000000000000',
+  "traded": '0.0718085391503182500000000000000000000',
+  "tk": '0.00680000000000000000000000000000000000',
+  "mk": '0.00390000000000000000000000000000000000'
+}
+```
+
+</details>
+
+#### Receive User Open Orders
+```python
+socket.on('open-orders', handler)
+```
+
+<details>
+<summary>Expected Output</summary>
+
+
+```python
+[
+  {
+    "requestId": 'OOXLMCLP0000000000000000000001',
+    "tradeId": 'O000001',
+    "traderId": '2',
+    "stockId": 'XLMCLP',
+    "kind": 2,
+    "type": 2,
+    "side": 2,
+    "price": '80.0000000000000000000000000000000000',
+    "limit": null,
+    "condition": null,
+    "flag": 'GENERAL',
+    "amount": '1.00000000000000000000000000000000000',
+    "initAmount": '1.00000000000000000000000000000000000',
+    "dateReceived": 1582301424510
+  },
+  {Order2},...
+]
+```
+
+</details>
+
+#### Receive User Historical Orders
+```python
+socket.on('historical-orders', handler)
+```
+
+<details>
+<summary>Expected Output</summary>
+
+
+```python
+[
+  {
+    "requestId": 'OOXLMCLP000000000000000000001',
+    "tradeId": 'O000001',
+    "traderId": '1',
+    "stockId": 'XLMCLP',
+    "kind": 2,
+    "type": 2,
+    "side": 2,
+    "price": '50.5000000000000000000000000000000000',
+    "limit": null,
+    "condition": null,
+    "flag": 'GENERAL',
+    "amount": '0.00000000000000000000000000000000000',
+    "initAmount": '1.00000000000000000000000000000000000',
+    "dateReceived": 1582261738700
+  },
+  {Order2},...
+  ]
+```
+
+</details>
+
+#### Receive Open Book
 ```python
 # subscription required*
 socket.on('open-book', handler)
 ```
-Output:
+
+<details>
+<summary>Expected Output</summary>
+
+
 ```python
 {
   "ETHCLP": {
@@ -721,12 +957,16 @@ Output:
 }
 ```
 
-**Receive Historical book info**
+</details>
+
+#### Receive Historical Book
 ```python
 # subscription required*
 socket.on('historical-book', handler)
 ```
-Output:
+<details>
+<summary>Expected Output</summary>
+
 ```python
 [
   "ETHCLP":
@@ -769,12 +1009,17 @@ Output:
   ]
 ```
 
-**Receive Candles info**
+</details>
+
+#### Receive Candles
 ```python
 # subscription required*
 socket.on('candles', handler)
 ```
-Output:
+
+<details>
+<summary>Expected Output</summary>
+
 ```python
 {
   'buy': {
@@ -809,12 +1054,16 @@ Output:
   "lastSellPrice": 227220
 }
 ```
+</details>
 
-**Receive Ticker info**
+#### Receive Ticker
 ```python
 socket.on('ticker', handler)
 ```
-Output:
+
+<details>
+<summary>Expected Output</summary>
+
 ```python
 {
   "EOSARS": {
@@ -839,94 +1088,4 @@ Output:
 }
 ```
 
-**Receive Balance info**
-```python
-socket.on('balance', handler)
-```
-Output:
-```python
-{
-  "ETH": {
-    "currency": 'ETH',
-    "countable": '0.0700000000000000000000000000000000000',
-    "available": '0.0700000000000000000000000000000000000',
-    "currency_kind": 1,
-    "currency_name": 'ETH',
-    "currency_big_name": 'Ether',
-    "currency_prefix": '',
-    "currency_postfix": ' ETH',
-    "currency_decimals": 4
-  },
-  ...
-}
-```
-
-**Receive Your Open Orders info**
-```python
-socket.on('open-orders', handler)
-```
-Output:
-```python
-[
-  {
-    "requestId": 'OOXLMCLP0000000000000000000001',
-    "tradeId": 'O000001',
-    "traderId": '2',
-    "stockId": 'XLMCLP',
-    "kind": 2,
-    "type": 2,
-    "side": 2,
-    "price": '80.0000000000000000000000000000000000',
-    "limit": null,
-    "condition": null,
-    "flag": 'GENERAL',
-    "amount": '1.00000000000000000000000000000000000',
-    "initAmount": '1.00000000000000000000000000000000000',
-    "dateReceived": 1582301424510
-  },
-  {Order2},...
-]
-```
-
-**Receive Your Historical orders**
-```python
-socket.on('historical-orders', handler)
-```
-Output:
-```python
-[
-  {
-    "requestId": 'OOXLMCLP000000000000000000001',
-    "tradeId": 'O000001',
-    "traderId": '1',
-    "stockId": 'XLMCLP',
-    "kind": 2,
-    "type": 2,
-    "side": 2,
-    "price": '50.5000000000000000000000000000000000',
-    "limit": null,
-    "condition": null,
-    "flag": 'GENERAL',
-    "amount": '0.00000000000000000000000000000000000',
-    "initAmount": '1.00000000000000000000000000000000000',
-    "dateReceived": 1582261738700
-  },
-  {Order2},...
-  ]
-```
-**Receive Your Operated Volume**
-```python
-socket.on('operated', handler)
-```
-Output:
-```python
-{
-  "flag": 'L0',
-  "threshold": '0.00000000000000000000000000000000000',
-  "traded": '0.0718085391503182500000000000000000000',
-  "tk": '0.00680000000000000000000000000000000000',
-  "mk": '0.00390000000000000000000000000000000000'
-}
-```
-
-
+</details>
