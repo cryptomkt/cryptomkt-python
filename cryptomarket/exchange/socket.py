@@ -13,6 +13,7 @@ from .patch_json import patch
 
 class Socket(object):
     def __init__(self, socketids, debug=False):
+        # setting the logger
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.DEBUG)
         f_handler = logging.FileHandler('socket.log')
@@ -24,6 +25,7 @@ class Socket(object):
         logger.addHandler(f_handler)
         self.logger = logger
 
+        # initializing the cache
         self.url_worker = 'https://worker.cryptomkt.com'
         self.currencies_data = dict()
         self.balance_data = dict()
@@ -34,13 +36,25 @@ class Socket(object):
         self.historical_book_data = dict()
         self.candles_data = dict()
         self.board_data = dict()
+        # to make subscriptions persistants in reconnections,
+        # we store them here, and in a reconnect, we subscribe again.
+        self.subsciptions = dict()
 
-        self.socketids = socketids
+        # initializing the socket
         sio =  socketio.Client()
 
+        # defining basic events of the socket
         @sio.event
         def connect():
             print('connected to server')
+            # every time we connect or reconnect, we have 
+            # to autenticate us, else we can't recieve data anymore.
+            self.logger.debug('authenticating')
+            sio.emit('user-auth', socketids)
+            subscription_list = [key for key in self.subsciptions.keys()]
+            if len(subscription_list) > 0:
+                self.subscribe(*subscription_list)
+
 
         @sio.event
         def disconnect():
@@ -49,10 +63,7 @@ class Socket(object):
         self.logger.debug('connecting to cryptomarket')
         sio.connect(self.url_worker)
 
-        self.logger.debug('authenticating')
-        sio.emit('user-auth', socketids)
-
-
+        # defining all the cryptomarket events of the socket
         @sio.on('currencies')
         def currencies_handler(data):
             self.logger.debug('currencies recieved: {}'.format(data))
@@ -309,11 +320,14 @@ class Socket(object):
     def subscribe(self, *market_pairs):
         self.logger.debug('starting subscriptions: {}'.format(market_pairs))
         for pair in market_pairs:
+            self.subsciptions[pair] = True
             self.sio.emit('subscribe', pair)
         
     def unsubscribe(self, *market_pairs):
         self.logger.debug('ending subscriptions: {}'.format(market_pairs))
         for pair in market_pairs:
+            if pair in self.subsciptions:
+                del self.subsciptions[pair]
             self.sio.emit('unsubscribe', pair)
 
     def on(self, event, handler):
