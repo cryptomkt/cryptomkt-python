@@ -144,7 +144,7 @@ client.get_ticker(market="XLMCLP")
 ```python
 #can receive "page" as an optional argument.
 
-client.get_book(market="ETHCLP", type="sell", page=1)
+client.get_book(market="ETHCLP", side="sell", page=1)
 ```
 
 <details>
@@ -385,13 +385,16 @@ client.get_active_orders(market="ETHCLP")
         "original": "1",
         "remaining": "1"
       },
+      "avg_execution_price": "0",
       "created_at": "2020-03-09T20:41:58.146000",
-      "execution_price": null,
+      "fee": "0",
       "id": "O1734261",
       "market": "XLMCLP",
       "price": "100",
+      "side": "sell",
       "status": "active",
-      "type": "sell",
+      "stop": null,
+      "type": "limit",
       "updated_at": "2020-03-09T20:41:58.212557"
     },
     #...
@@ -419,30 +422,34 @@ client.get_executed_orders(market="XLMCLP")
         "executed": "1",
         "original": "1"
       },
+      "avg_execution_price": "43.45",
       "created_at": "2020-03-09T21:55:26.096000",
       "executed_at": "2020-03-09T21:55:26",
-      "execution_price": "43.45",
       "fee": "0.295",
       "id": "O0000001",
       "market": "XLMCLP",
       "price": "40",
       "status": "executed",
-      "type": "sell"
+      "side": "sell",
+      "stop": null,
+      "type": "limit",
     },
     {
       "amount": {
         "executed": "1",
         "original": "1"
       },
+      "avg_execution_price": "49.9",
       "created_at": "2020-03-05T22:19:41.317000",
       "executed_at": "2020-03-06T03:20:48",
-      "execution_price": "49.9",
       "fee": "0.194",
       "id": "O0000002",
       "market": "XLMCLP",
       "price": "49.9",
       "status": "executed",
-      "type": "sell"
+      "side": "sell",
+      "stop": null,
+      "type": "limit",
     },
     #...
   ]
@@ -704,6 +711,7 @@ client.get_transactions(currency="CLP")
       "fee_percent": "0+0.680%",
       "hash": null,
       "id": "T000001",
+      "kind": "order",
       "memo": null,
       "type": 1
     },
@@ -718,6 +726,7 @@ client.get_transactions(currency="CLP")
       "fee_percent": "0+0.390%",
       "hash": null,
       "id": "T000002",
+      "kind": "order",
       "memo": null,
       "type": 1
     },
