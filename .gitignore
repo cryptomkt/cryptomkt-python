@@ -1,0 +1,7 @@
+__pycache__/*
+*/__pycache__/*
+.vscode/*
+build/*
+cryptomarket_api.egg-info/*
+dist/*
+p-env/*
