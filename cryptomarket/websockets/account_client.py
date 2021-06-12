@@ -12,8 +12,30 @@ class AccountClient(ClientAuth):
     :param on_error: function called on a websocket error, and called in an authenticated error. it takes one parameter, the error.
     :param on_close: function called on the closing event of the websocket. no parameters
     """
-    def __init__(self, api_key:str, api_secret:str, on_connect:callable=None, on_error:callable=None, on_close:callable=None):
-        super(AccountClient, self).__init__("wss://api.exchange.cryptomkt.com/api/2/ws/account", api_key, api_secret, on_connect=on_connect, on_error=on_error, on_close=on_close)
+    def __init__(
+        self, 
+        api_key:str, 
+        api_secret:str, 
+        on_connect:callable=None, 
+        on_error:callable=None, 
+        on_close:callable=None
+    ):
+        super(AccountClient, self).__init__(
+            "wss://api.exchange.cryptomkt.com/api/2/ws/account", 
+            api_key, 
+            api_secret, 
+            subscription_keys={
+                "unsubscribeBalance":"balance", 
+                "subscribeBalance":"balance",
+                "balance":"balance",
+                "subscribeTransactions":"transaction",
+                "subscribeTransactions":"transaction",
+                "updateTransaction":"transaction"
+            },
+            on_connect=on_connect, 
+            on_error=on_error, 
+            on_close=on_close
+        )
 
     def get_account_balance(self, callback: callable):
         """Get the user account balance.
@@ -46,7 +68,8 @@ class AccountClient(ClientAuth):
         """
         self.send_by_id(method='getBalance', callback=callback)
 
-    def find_transactions(self,
+    def find_transactions(
+        self,
         callback: callable,
         currency: str = None,
         sort: str = None,
@@ -54,7 +77,8 @@ class AccountClient(ClientAuth):
         till: str = None,
         limit: int = None,
         offset: int = None,
-        show_senders: bool = None):
+        show_senders: bool = None
+    ):
         """Get a list of transactions of the account. Accepts only filtering by Datetime
         
         https://api.exchange.cryptomkt.com/#find-transactions
@@ -87,7 +111,8 @@ class AccountClient(ClientAuth):
         params = args.DictBuilder().currency(currency).sort(sort).since(since).till(till).limit(limit).offset(offset).show_senders(show_senders).build()
         self.send_by_id("findTransactions", callback, params)
 
-    def load_transactions(self,
+    def load_transactions(
+        self,
         callback: callable,
         currency: str = None,
         sort: str = None,
@@ -95,7 +120,8 @@ class AccountClient(ClientAuth):
         till: str = None,
         limit: int = None,
         offset: int = None,
-        show_senders: bool = None):
+        show_senders: bool = None
+    ):
         """Get a list of transactions of the account. Accepts only filtering by Index.
 
         https://api.exchange.cryptomkt.com/#load-transactions
@@ -175,3 +201,42 @@ class AccountClient(ClientAuth):
         :returns: The operation result as result argument for the callback. True if success.
         """
         self.send_unsubscription(method='unsubscribeTransactions', callback=callback)
+
+    def subscribe_to_balance(self, callback: callable, result_callback: callable=None):
+        """Subscribe to the balance of the account.
+
+        This subscription aims to provide an easy way to be informed of the current balance state. 
+        If the state has been changed or potentially changed the "balance" event will come with the actual state. 
+        Please be aware that only non-zero values are present.
+
+        https://api.exchange.cryptomkt.com/#subscription-to-the-balance
+
+        :param callback: A callable to call with each update of the result data. It takes one argument, the balance feed.
+        :param result_callback: A callable to call with the subscription result. It takes two arguments, err and result. err is None for successful calls, result is None for calls with error: callback(err, result).
+
+        :returns: A transaction of the account as feed for the callback.
+
+        .. code-block:: python
+        {
+            "id": "76b70d1c-3dd7-423e-976e-902e516aae0e",
+            "index": 7173627250,
+            "type": "bankToExchange",
+            "status": "success",
+            "currency": "BTG",
+            "amount": "0.00001000",
+            "createdAt": "2021-01-31T08:19:33.892Z",
+            "updatedAt": "2021-01-31T08:19:33.967Z"
+        }
+        """
+        self.send_subscription(method='subscribeBalance', callback=callback, params={}, result_callback=result_callback)
+
+    def unsubscribe_to_balance(self, callback: callable=None):
+        """unsubscribe to the balance feed.
+
+        https://api.exchange.cryptomkt.com/#subscription-to-the-balance
+
+        :param callback: Optional. A callable to call with the result data. It takes two arguments, err and result. err is None for successful calls, result is None for calls with error: callback(err, result).
+
+        :returns: The operation result as result argument for the callback. True if success.
+        """
+        self.send_unsubscription(method='unsubscribeBalance', callback=callback)

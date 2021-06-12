@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Union
 import cryptomarket.args as args
 from cryptomarket.websockets.client_auth import ClientAuth
 
-
 class TradingClient(ClientAuth):
     """TradingClient connects via websocket to cryptomarket to enable the user to manage orders. uses SHA256 as auth method and authenticates automatically.
 
@@ -13,22 +12,43 @@ class TradingClient(ClientAuth):
     :param on_error: function called on a websocket error, and called in an authenticated error. it takes one parameter, the error.
     :param on_close: function called on the closing event of the websocket. no parameters
     """
-    def __init__(self, api_key:str, api_secret:str, on_connect:callable=None, on_error:callable=None, on_close:callable=None):
-        super(TradingClient, self).__init__("wss://api.exchange.cryptomkt.com/api/2/ws/trading", api_key, api_secret, on_connect=on_connect, on_error=on_error, on_close=on_close)
+    def __init__(
+        self, 
+        api_key:str, 
+        api_secret:str, 
+        on_connect:callable=None, 
+        on_error:callable=None, 
+        on_close:callable=None
+    ):
+        super(TradingClient, self).__init__(
+            "wss://api.exchange.cryptomkt.com/api/2/ws/trading", 
+            api_key, 
+            api_secret, 
+            subscription_keys={
+                "subscribeReports":"reports",
+                'activeOrders':'reports',
+                'report':'reports',
+            },
+            on_connect=on_connect, 
+            on_error=on_error, 
+            on_close=on_close
+        )
 
-    def create_order(self,
-    client_order_id: str, 
-    symbol: str, 
-    side: str, 
-    quantity: float,
-    order_type: str = None,
-    price: float = None,
-    stop_price: float = None,
-    time_in_force: str = None,
-    expire_time: str = None,
-    strict_validate: bool = False,
-    post_only: bool = False,
-    callback: callable = None):
+    def create_order(
+        self,
+        client_order_id: str, 
+        symbol: str, 
+        side: str, 
+        quantity: float,
+        order_type: str = None,
+        price: float = None,
+        stop_price: float = None,
+        time_in_force: str = None,
+        expire_time: str = None,
+        strict_validate: bool = False,
+        post_only: bool = False,
+        callback: callable = None
+    ):
         """Creates a new order
 
         Requires authentication.
@@ -73,9 +93,11 @@ class TradingClient(ClientAuth):
         params = builder.strict_validate(strict_validate).post_only(post_only).build()
         self.send_by_id(method='newOrder', callback=callback, params=params)
 
-    def cancel_order(self, 
-    client_order_id: str, 
-    callback: callable= None):
+    def cancel_order(
+        self, 
+        client_order_id: str, 
+        callback: callable= None
+    ):
         """Cancel the order with client_order_id.
 
         Requires authentication.

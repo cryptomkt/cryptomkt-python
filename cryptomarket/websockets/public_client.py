@@ -2,8 +2,6 @@ from typing import Any, Dict, List, Union
 
 import cryptomarket.args as args
 from cryptomarket.websockets.client_base import ClientBase
-from cryptomarket.websockets.methods import (candles_feed, method_key,
-                                             orderbook_feed, trades_feed)
 from cryptomarket.websockets.orderbook_cache import OrderbookCache
 
 
@@ -13,9 +11,43 @@ class PublicClient(ClientBase):
     :param callback: A callable to call with the client once the connection is established. if an error ocurrs is return as the fist parameter of the callback: callback(err, client)
     """
     def __init__(self, on_connect=None, on_error=None, on_close=None):
-        super(PublicClient, self).__init__("wss://api.exchange.cryptomkt.com/api/2/ws/public", on_connect=on_connect, on_error=on_error, on_close=on_close)
+        super(PublicClient, self).__init__(
+            "wss://api.exchange.cryptomkt.com/api/2/ws/public", 
+            subscription_keys={
+                # tickers
+                'subscribeTicker':'tickers',
+                'unsubscribeTicker':'tickers',
+                'ticker':'tickers',
+                # orderbooks
+                'subscribeOrderbook':'orderbooks',
+                'unsubscribeOrderbook':'orderbooks',
+                'snapshotOrderbook':'orderbooks',
+                'updateOrderbook':'orderbooks',
+                # trades
+                'subscribeTrades':'trades',
+                'unsubscribeTrades':'trades',
+                'snapshotTrades':'trades',
+                'updateTrades':'trades',
+                # candles
+                'subscribeCandles':'candles',
+                'unsubscribeCandles':'candles',
+                'snapshotCandles':'candles',
+                'updateCandles':'candles',
+            },
+            on_connect=on_connect, 
+            on_error=on_error, 
+            on_close=on_close
+        )
         self.ob_cache = OrderbookCache()
+    
+    def orderbook_feed(self, method):
+        return method == 'snapshotOrderbook' or method == 'updateOrderbook'
 
+    def candles_feed(self, method):
+        return method == 'snapshotCandles' or method == 'updateCandles'
+
+    def trades_feed(self, method):
+        return method == 'snapshotTrades' or method == 'updateTrades'
     
     def handle_notification(self, message):
         params = message['params']
@@ -24,7 +56,7 @@ class PublicClient(ClientBase):
         callback = self.callback_cache.get_subscription_callback(key)
         if callback is None: return
         subscription_data = None
-        if orderbook_feed(method):
+        if self.orderbook_feed(method):
             self.ob_cache.update(method, key, params)
             if self.ob_cache.orderbook_broken(key):
                 self.send_by_id('subscribeOrderbook', None, {'symbol':symbol})
@@ -32,7 +64,7 @@ class PublicClient(ClientBase):
             if self.ob_cache.orderbook_wating(key): return
             subscription_data = self.ob_cache.get_ob(key)
 
-        elif trades_feed(method) or candles_feed(method):
+        elif self.trades_feed(method) or self.candles_feed(method):
             subscription_data = params['data']
 
         else:
@@ -41,7 +73,7 @@ class PublicClient(ClientBase):
         callback(subscription_data)
 
     def build_key(self, method, params):
-        m_key = method_key(method)
+        m_key = self.subscription_keys[method]
         symbol = params['symbol'] if 'symbol' in params else ''
         period = params['period'] if 'period' in params else ''
         key = m_key + ':' + symbol + ':' + period

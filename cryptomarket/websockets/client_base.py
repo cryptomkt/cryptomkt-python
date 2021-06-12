@@ -3,12 +3,21 @@ import time
 from cryptomarket.exceptions import CryptomarketAPIException
 from cryptomarket.websockets.callback_cache import CallbackCache
 from cryptomarket.websockets.manager import WebsocketManager
+from types import Dict
 
 
 class ClientBase:
-    def __init__(self, uri:str, on_connect=None, on_error=None, on_close=None):
+    def __init__(
+        self, 
+        uri:str, 
+        subscription_keys:Dict[str,str]={}, 
+        on_connect=None, 
+        on_error=None, 
+        on_close=None
+    ):
         self.ws_manager = WebsocketManager(self, uri)    
-        self.callback_cache = CallbackCache()    
+        self.callback_cache = CallbackCache()
+        self.subscription_keys = subscription_keys
 
         if on_connect is not None: self.on_connect = on_connect
         else: self.on_connect = lambda: None
@@ -90,4 +99,6 @@ class ClientBase:
                 callback(None, result)
 
     def build_key(self, method, params):
-        return "subscription"
+        if not method in self.subscription_keys: 
+            return "subscription"
+        return self.subscription_map[method]

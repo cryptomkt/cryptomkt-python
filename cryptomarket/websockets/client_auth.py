@@ -8,8 +8,23 @@ from cryptomarket.websockets.client_base import ClientBase
 
 
 class ClientAuth(ClientBase):
-    def __init__(self, uri:str, api_key:str, api_secret:str, on_connect=None, on_error=None, on_close=None):
-        super(ClientAuth, self).__init__(uri, on_connect=on_connect, on_error=on_error, on_close=on_close)
+    def __init__(
+        self, 
+        uri:str, 
+        api_key:str, 
+        api_secret:str, 
+        subscription_keys:Dict[str, str]={}, 
+        on_connect=None, 
+        on_error=None, 
+        on_close=None
+    ):
+        super(ClientAuth, self).__init__(
+            uri, 
+            subscription_keys=subscription_keys, 
+            on_connect=on_connect, 
+            on_error=on_error, 
+            on_close=on_close
+        )
         self.api_key = api_key
         self.api_secret = api_secret
         self.authed = False
