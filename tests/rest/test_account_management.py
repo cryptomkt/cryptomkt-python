@@ -3,7 +3,7 @@ import unittest
 
 from decimal import Decimal
 
-import cryptomkt.args as args
+import cryptomarket.args as args
 
 from test_helpers import *
 

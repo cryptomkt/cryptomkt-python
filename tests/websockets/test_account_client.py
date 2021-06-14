@@ -3,7 +3,7 @@ import time
 import unittest
 import datetime
 
-import cryptomkt.args as args
+import cryptomarket.args as args
 
 from test_helpers import *
 

@@ -25,6 +25,7 @@ class TradingClient(ClientAuth):
             api_key, 
             api_secret, 
             subscription_keys={
+                # reports
                 "subscribeReports":"reports",
                 'activeOrders':'reports',
                 'report':'reports',

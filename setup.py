@@ -3,8 +3,11 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+with open("requirements.txt", "r") as requeriments:
+    REQUIREMENTS = requeriments.readlines()
+
 setuptools.setup(
-    name="cryptomarket-sdk",
+    name="cryptomarket",
     version="0.0.0",
     packages=['cryptomarket', 'cryptomarket.websockets'],
     # include_package_data=True,
@@ -13,9 +16,9 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     keywords=['api', 'cryptomkt', 'cryptomarket', 'bitcoin', 'client'],
     url="https://github.com/cryptomkt/cryptomkt-python",
-    # install_requires=REQUIREMENTS,
-    # author="CryptoMarket",
-    # author_email="pablo@cryptomkt.com",
+    install_requires=REQUIREMENTS,
+    author="CryptoMarket",
+    
     python_requires='>=3.6',
     classifiers=(
         "Intended Audience :: Developers",

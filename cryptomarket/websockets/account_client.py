@@ -25,12 +25,14 @@ class AccountClient(ClientAuth):
             api_key, 
             api_secret, 
             subscription_keys={
+                # transaction
+                "subscribeTransactions":"transaction",
+                "unsubscribeTransactions":"transaction",
+                "updateTransaction":"transaction",
+                # balance
                 "unsubscribeBalance":"balance", 
                 "subscribeBalance":"balance",
                 "balance":"balance",
-                "subscribeTransactions":"transaction",
-                "subscribeTransactions":"transaction",
-                "updateTransaction":"transaction"
             },
             on_connect=on_connect, 
             on_error=on_error, 
@@ -211,22 +213,24 @@ class AccountClient(ClientAuth):
 
         https://api.exchange.cryptomkt.com/#subscription-to-the-balance
 
-        :param callback: A callable to call with each update of the result data. It takes one argument, the balance feed.
+        :param callback: A callable to call with each update of the result data. It takes one argument, the balance feed, a list of balances.
         :param result_callback: A callable to call with the subscription result. It takes two arguments, err and result. err is None for successful calls, result is None for calls with error: callback(err, result).
 
-        :returns: A transaction of the account as feed for the callback.
+        :returns: A list of balances of the account as feed for the callback.
 
         .. code-block:: python
-        {
-            "id": "76b70d1c-3dd7-423e-976e-902e516aae0e",
-            "index": 7173627250,
-            "type": "bankToExchange",
-            "status": "success",
-            "currency": "BTG",
-            "amount": "0.00001000",
-            "createdAt": "2021-01-31T08:19:33.892Z",
-            "updatedAt": "2021-01-31T08:19:33.967Z"
-        }
+        [
+            {
+                "currency": "BTC",
+                "available": "0.00005821",
+                "reserved": "0"
+            },
+            {
+                "currency": "DOGE",
+                "available": "11",
+                "reserved": "0"
+            }
+        ]
         """
         self.send_subscription(method='subscribeBalance', callback=callback, params={}, result_callback=result_callback)
 

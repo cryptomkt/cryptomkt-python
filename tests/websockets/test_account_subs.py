@@ -3,12 +3,12 @@ import time
 import unittest
 import datetime
 
-import cryptomkt.args as args
 
 from test_helpers import *
 
-from cryptomarket.websockets import AccountClient
+from cryptomarket.websockets import AccountClient, TradingClient
 from cryptomarket.client import Client
+import cryptomarket.args as args
 
 minute = 60
 second = 1
@@ -40,7 +40,14 @@ class TestWSClientTradingSubs(unittest.TestCase):
         time.sleep(5 * second)
         self.ws.unsubscribe_to_transactions()
         time.sleep(2 * second)
-
+    
+    def test_subscribe_balance(self):
+        def callback(feed):
+            print(feed)
+            self.assertTrue(good_balances(feed), 'not good balances')
+        
+        self.ws.subscribe_to_balance(callback)
+        time.sleep(3)
         
 
         

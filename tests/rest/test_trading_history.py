@@ -1,7 +1,7 @@
 import json
 import unittest
 
-import cryptomkt.args as args
+import cryptomarket.args as args
 
 from test_helpers import *
 

@@ -3,7 +3,7 @@ import time
 from cryptomarket.exceptions import CryptomarketAPIException
 from cryptomarket.websockets.callback_cache import CallbackCache
 from cryptomarket.websockets.manager import WebsocketManager
-from types import Dict
+from typing import Dict
 
 
 class ClientBase:
@@ -76,7 +76,13 @@ class ClientBase:
             self.handle_response(message)
     
     def handle_notification(self, message):
-        callback = self.callback_cache.get_subscription_callback("subscription")
+        method = message['method']
+        if 'params' not in message:
+            return
+        params = message['params']
+        key = self.build_key(method, params)
+
+        callback = self.callback_cache.get_subscription_callback(key)
         if callback is not None:
             if type(message["params"])==list:
                 for feed in message["params"]:
@@ -101,4 +107,4 @@ class ClientBase:
     def build_key(self, method, params):
         if not method in self.subscription_keys: 
             return "subscription"
-        return self.subscription_map[method]
+        return self.subscription_keys[method]
