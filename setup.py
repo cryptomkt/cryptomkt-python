@@ -1,4 +1,13 @@
+import os
 import setuptools
+import sys
+
+# 'setup.py publish' shortcut.
+if sys.argv[-1] == 'publish':
+    print("publish")
+    os.system('python setup.py sdist bdist_wheel')
+    os.system('twine upload dist/*')
+    sys.exit()
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -8,9 +17,9 @@ with open("requirements.txt", "r") as requeriments:
 
 setuptools.setup(
     name="cryptomarket",
-    version="0.0.0",
+    version="1.0.5",
     packages=['cryptomarket', 'cryptomarket.websockets'],
-    # include_package_data=True,
+    include_package_data=True,
     description="Cryptomarket API client library",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -18,7 +27,6 @@ setuptools.setup(
     url="https://github.com/cryptomkt/cryptomkt-python",
     install_requires=REQUIREMENTS,
     author="CryptoMarket",
-    
     python_requires='>=3.6',
     classifiers=(
         "Intended Audience :: Developers",

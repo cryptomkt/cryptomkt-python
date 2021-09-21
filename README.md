@@ -195,11 +195,11 @@ args.TRANSFER_BY.EMAIL = 'email'
 ```
 
 # Checkout our other SDKs
-<!-- agregar links -->
-node sdk
 
-java sdk
+[node sdk](https://github.com/cryptomkt/cryptomkt-node)
 
-go sdk
+[java sdk](https://github.com/cryptomkt/cryptomkt-java)
 
-ruby sdk
+[go sdk](https://github.com/cryptomkt/cryptomkt-go)
+
+[ruby sdk](https://github.com/cryptomkt/cryptomkt-ruby)
