@@ -100,7 +100,7 @@ class OrderFlow(AuthCallsTestCase):
                 symbol='EOSETH',
                 side=args.SIDE.SELL,
                 quantity='0.01',
-                order_type=args.ORDER_TYPE.LIMIT,
+                # order_type=args.ORDER_TYPE.LIMIT,
                 client_order_id=client_order_id,
                 price='1000')
             if not good_order(order): self.fail("not good order")

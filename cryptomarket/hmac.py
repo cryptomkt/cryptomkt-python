@@ -20,7 +20,6 @@ class HS256(AuthBase):
             msg += "?" + url.query
         if r.body:
             msg += r.body
-
         signature = hmac.new(self.password.encode(), msg.encode(), hashlib.sha256).hexdigest()
         authstr = "HS256 " + b64encode(
                     b':'.join((self.username.encode(), timestamp.encode(), signature.encode()))).decode().strip()
