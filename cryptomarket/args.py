@@ -61,7 +61,10 @@ class DictBuilder:
         self.the_dict = dict()
     
     def build(self):
-        return self.the_dict.copy()
+        orderedDict = dict()
+        for parameter in sorted(self.the_dict):
+            orderedDict[parameter] = self.the_dict[parameter]
+        return orderedDict
     
     def addList(self, key, val:List[str]):
         if val is not None:

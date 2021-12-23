@@ -1234,7 +1234,7 @@ class Client(object):
         .. code-block:: python
         "0.0008"
         """
-        params = args.DictBuilder().currency(currency).amount(amount).build()
+        params = args.DictBuilder().amount(amount).currency(currency).build()
         return self._get(endpoint='account/crypto/estimate-withdraw', params=params)['fee']
 
 
