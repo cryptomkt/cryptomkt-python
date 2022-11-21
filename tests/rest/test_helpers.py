@@ -1,64 +1,112 @@
-from typing import Dict, Any, List
+from dataclasses import asdict
+from typing import Any, Callable, Dict, List
+from cryptomarket.dataclasses import (Address, Balance, Candle, Commission,
+                                      Currency, MetaTransaction,
+                                      NativeTransaction, Network, Order,
+                                      OrderBook, OrderBookLevel, Price,
+                                      PriceHistory, PricePoint, PublicTrade,
+                                      Symbol, Ticker, Transaction)
 
 
 # defined checks if a key is present in a dict, and if its value is str, checks if its defined.
 # return false when the key is not present or when the value is an empty string, return true otherwise.
 def defined(a_dict, key):
-    if key not in a_dict: return False
+    if key not in a_dict:
+        return False
     val = a_dict[key]
-    if isinstance(val, str) and val == "": return False
+    if isinstance(val, str) and val == "":
+        return False
     return True
 
-# good_dict checks all of the values in the fields list to be present in the dict, and if they are 
-# present, check the defined() condition to be true. if any of the fields fails to be defined(), then 
+# good_dict checks all of the values in the fields list to be present in the dict, and if they are
+# present, check the defined() condition to be true. if any of the fields fails to be defined(), then
 # this function returns false
+
+
 def good_dict(a_dict: Dict[str, Any], fields: List[str]) -> bool:
-    if not isinstance(a_dict, dict): return False
+    if not isinstance(a_dict, dict):
+        return False
     for field in fields:
-        if not defined(a_dict, field): return False
+        if not defined(a_dict, field):
+            return False
     return True
 
 
-# good_currency checks the precence of every field in the currency dict
-def good_currency(currency: Dict[str, Any]) -> bool:
-    return good_dict(currency,
+def good_list(check_fn: Callable[[Any], bool], list: List[Any]) -> bool:
+    for elem in list:
+        if not check_fn(elem):
+            print(elem)
+            return False
+    return True
+
+
+def good_currency(currency: Currency) -> bool:
+    good = good_dict(
+        asdict(currency),
         [
-            "id",
-            "fullName",
-            "crypto",
-            "payinEnabled",
-            "payinPaymentId",
-            "payinConfirmations",
-            "payoutEnabled",
-            "payoutIsPaymentId",
-            "transferEnabled",
-            "delisted",
-            # "precisionPayout",
-            # "precisionTransfer",
+            "full_name",
+            "payin_enabled",
+            "payout_enabled",
+            "transfer_enabled",
+            "precision_transfer",
+            "networks",
+        ]
+    )
+    if not good:
+        return False
+    for network in currency.networks:
+        if not good_network(network):
+            print("***bad net***")
+            return False
+    return True
+
+
+def good_network(network: Network):
+    return good_dict(
+        asdict(network),
+        [
+            "network",
+            # "protocol",
+            "default",
+            "payin_enabled",
+            "payout_enabled",
+            "precision_payout",
+            "payout_fee",
+            "payout_is_payment_id",
+            "payin_payment_id",
+            "payin_confirmations",
+            # "address_regrex",
+            # "payment_id_regex",
+            # "low_processing_time",
+            # "high_processing_time",
+            # "avg_processing_time"
         ]
     )
 
-# good_symbol check the precence of every field in the symbol dict
-def good_symbol(symbol: Dict[str, Any]) -> bool:
-    return good_dict(symbol, 
+
+def good_symbol(symbol: Symbol) -> bool:
+    return good_dict(
+        asdict(symbol),
         [
-            'id',
-            'baseCurrency',
-            'quoteCurrency',
-            'quantityIncrement',
-            'tickSize',
-            'takeLiquidityRate',
-            'provideLiquidityRate',
-            # 'feeCurrency'
+            "type",
+            "base_currency",
+            "quote_currency",
+            "status",
+            "quantity_increment",
+            "tick_size",
+            "take_rate",
+            "make_rate",
+            "fee_currency",
+            # "margin_trading",
+            # "max_initial_leverage",
         ]
     )
 
 
-# good_ticker check the precence of every field in the ticker dict
-def good_ticker(ticker: Dict[str, Any]) -> bool:
-    return good_dict(ticker, 
+def good_ticker(ticker: Ticker) -> bool:
+    return good_dict(
+        asdict(ticker),
         [
-            "symbol",
             "ask",
             "bid",
             "last",
@@ -66,60 +114,109 @@ def good_ticker(ticker: Dict[str, Any]) -> bool:
             "high",
             "open",
             "volume",
-            "volumeQuote",
+            "volume_quote",
             "timestamp",
         ]
     )
 
 
-# good_public_trade check the precence of every field in the trade dict
-def good_public_trade(trade: Dict[str, Any]) -> bool:
-    return good_dict(trade, 
+def good_price(price: Price) -> bool:
+    return good_dict(
+        asdict(price),
+        [
+            "currency",
+            "price",
+            "timestamp",
+        ]
+    )
+
+
+def good_price_history(price_history: PriceHistory) -> bool:
+    good = good_dict(
+        asdict(price_history),
+        [
+            "currency",
+            "history"
+        ])
+    if not good:
+        return False
+    for history in price_history.history:
+        if not good_history(history):
+            return False
+    return True
+
+
+def good_ticker_price(price: Price) -> bool:
+    return good_dict(
+        asdict(price),
+        [
+            "price",
+            "timestamp",
+        ]
+    )
+
+
+def good_history(price_history: PricePoint) -> bool:
+    return good_dict(
+        asdict(price_history),
+        [
+            "timestamp",
+            "open",
+            "close",
+            "min",
+            "max",
+        ])
+
+
+def good_public_trade(trade: PublicTrade) -> bool:
+    return good_dict(
+        asdict(trade),
         [
             "id",
             "price",
-            "quantity",
+            "qty",
             "side",
             "timestamp",
         ]
     )
 
-# good_orderbook_level check the precence of every field in the level dict
-def good_orderbook_level(level: Dict[str, Any]) -> bool:
-    return good_dict(level, 
+
+def good_orderbook_level(level: OrderBookLevel) -> bool:
+    return good_dict(
+        asdict(level),
         [
             "price",
-            "size",
+            "quantity",
         ]
     )
 
-# good_orderbook check the precence of every field in the orderbook dict
-# and the fields of each level in each side of the orderbook
-def good_orderbook(orderbook: Dict[str, Any]) -> bool:
-    good_orderbook = good_dict(orderbook, 
+
+def good_orderbook(orderbook: OrderBook) -> bool:
+    good_orderbook = good_dict(
+        asdict(orderbook),
         [
-            "symbol",
             "timestamp",
-            "batchingTime",
             "ask",
             "bid",
         ]
     )
-    if not good_orderbook: return False
+    if not good_orderbook:
+        return False
 
-    for level in orderbook["ask"]:
-        if not good_orderbook_level(level): return False
+    for level in orderbook.ask:
+        if not good_orderbook_level(level):
+            return False
 
-    for level in orderbook["bid"]:
-        if not good_orderbook_level(level): return False
+    for level in orderbook.bid:
+        if not good_orderbook_level(level):
+            return False
 
     return True
 
 
-
-# good_candle check the precence of every field in the candle dict
-def good_candle(candle: Dict[str, Any]) -> bool:
-    return good_dict(candle, 
+def good_candle(candle: Candle) -> bool:
+    return good_dict(
+        asdict(candle),
         [
             "timestamp",
             "open",
@@ -127,66 +224,88 @@ def good_candle(candle: Dict[str, Any]) -> bool:
             "min",
             "max",
             "volume",
-            "volumeQuote",
+            "volume_quote",
         ]
     )
 
 
-# good_candle_list check the precence of every field of the candle dict in every candle of the candle list.
-def good_candle_list(candles: List[Dict[str, Any]]) -> bool:
+def good_candle_list(candles: List[Candle]) -> bool:
     for candle in candles:
-        if not good_candle(candle): return False
+        if not good_candle(candle):
+            return False
     return True
 
 
-# good_balances check the precence of every field on every balance dict
-def good_balances(balances: List[Dict[str, Any]]) -> bool:
-    for balance in balances:
-        good_balance = good_dict(balance, 
-            [
-                "currency",
-                "available",
-                "reserved",
-            ]
-        )
-        if not good_balance: return False
-    return True
+def good_balance(balance: Balance) -> bool:
+    return good_dict(
+        asdict(balance),
+        [
+            "currency",
+            "available",
+            "reserved",
+        ]
+    )
 
 
-# good_order check the precence of every field in the order dict
-def good_order(order: Dict[str, Any]) -> bool:
-    return good_dict(order, 
+def good_order(order: Order) -> bool:
+    good = good_dict(
+        asdict(order),
         [
             "id",
-            "clientOrderId",
+            "client_order_id",
             "symbol",
             "side",
             "status",
             "type",
-            "timeInForce",
+            "time_in_force",
             "quantity",
             "price",
-            "cumQuantity",
-            # "postOnly", # does not appears in the orders in orders history
-            "createdAt",
-            "updatedAt",
+            "quantity_cumulative",
+            "created_at",
+            "updated_at",
+            # "expire_time",  # optional
+            # "stop_price"  # optional
+            # "post_only",  # optional
+            # "trades",  # optional
+            # "original_client_order_id"  # optional
+        ]
+    )
+    if not good:
+        return False
+    if not order.trades is None:
+        if not good_list(good_trade_of_order, order.trades):
+            return False
+    return True
+
+
+def good_trade_of_order(trade) -> bool:
+    return good_dict(
+        asdict(trade),
+        [
+            "id",
+            "quantity",
+            "price",
+            "fee",
+            "taker",
+            "timestamp"
         ]
     )
 
 
-# good_order_list check the precence of every field of the order dict in every order of the order list.
-def good_order_list(orders: List[Dict[str, Any]]) -> bool:
+def good_order_list(orders: List[Order]) -> bool:
     for order in orders:
-        if not good_order(order): return False
+        if not good_order(order):
+            return False
     return True
 
-# good_trade check the precence of every field in the trade dict
+
 def good_trade(trade: Dict[str, Any]) -> bool:
-    return good_dict(trade, 
+    return good_dict(
+        asdict(trade),
         [
             "id",
-            "orderId",
-            "clientOrderId",
+            "order_id",
+            "client_order_id",
             "symbol",
             "side",
             "quantity",
@@ -197,21 +316,96 @@ def good_trade(trade: Dict[str, Any]) -> bool:
     )
 
 
-
-# good_transaction check the precence of every field in the transaction dict
-def good_transaction(transaction: Dict[str, Any]) -> bool:
-    return good_dict(transaction, 
+def good_transaction(transaction: Transaction) -> bool:
+    good = good_dict(
+        asdict(transaction),
         [
             "id",
+            "status",
+            "type",
+            "subtype",
+            "created_at",
+            "updated_at",
+            # "native", # optional
+            # "primetrust", # optional
+            # "meta" # optional
+        ]
+    )
+    if not good:
+        return False
+    if not transaction.native is None:
+        if not good_native_transaction(transaction.native):
+            return False
+
+    if not transaction.meta is None:
+        if not good_meta_transaction(transaction.meta):
+            return False
+    return True
+
+
+def good_native_transaction(transaction: NativeTransaction) -> bool:
+    return good_dict(
+        asdict(transaction),
+        [
+            "tx_id",
             "index",
             "currency",
             "amount",
-            # "fee",
-            # "address",
-            # "hash",
+            # "fee", # optional
+            # "address", # optional
+            # "payment_id", # optional
+            # "hash", # optional
+            # "offchain_id", # optional
+            # "confirmations", # optional
+            # "public_comment", # optional
+            # "error_code", # optional
+            # "senders" # optional
+        ]
+    )
+
+
+def good_meta_transaction(transaction: MetaTransaction) -> bool:
+    return good_dict(
+        asdict(transaction),
+        [
+            "fiat_to_crypto",
+            "id",
+            "provider_name",
+            "order_type",
+            "order_type",
+            "source_currency",
+            "target_currency",
+            "wallet_address",
+            "tx_hash",
+            "target_amount",
+            "source_amount",
             "status",
-            "type",
-            "createdAt",
-            "updatedAt",
+            "created_at",
+            "updated_at",
+            "deleted_at",
+            "payment_method_type"
+        ]
+    )
+
+
+def good_address(address: Address) -> bool:
+    return good_dict(
+        asdict(address),
+        [
+            "address",
+            "currency",
+            # "payment_id", # optional
+            # "public_key" # optional
+        ]
+    )
+
+
+def good_trading_commission(commission: Commission) -> bool:
+    return good_dict(
+        asdict(commission),
+        [
+            "symbol",
+            "take_rate",
+            "make_rate",
         ]
     )

@@ -15,15 +15,14 @@ class WebsocketManager:
         def on_message(ws, message):
             msg = json.loads(message)
             try:
-                handler.handle(msg)
+                handler._handle(msg)
             except Exception as e:
                 handler.on_error(e)
                 self.close()
 
         def on_error(ws, error):
-            self._log.error("websocket error: "+ error)
+            self._log.error("websocket error: " + error)
             handler.on_error(error)
-
 
         def on_close(ws):
             self._log.debug('websocket connection closed')
@@ -33,13 +32,13 @@ class WebsocketManager:
             self._log.debug(f'websocket connection open at: {ws.url}')
             self.connected = True
             handler._on_open()
-            
+
         self.ws = websocket.WebSocketApp(
             self.uri,
-            on_message = on_message,
-            on_error = on_error,
-            on_close = on_close,
-            on_open= on_open,
+            on_message=on_message,
+            on_error=on_error,
+            on_close=on_close,
+            on_open=on_open,
         )
 
         self.thread = Thread(target=self.ws.run_forever)
@@ -60,4 +59,3 @@ class WebsocketManager:
             self._log.error("unable to close socket: " + str(e))
         self.connected = False
         self.thread.join(5)
-            

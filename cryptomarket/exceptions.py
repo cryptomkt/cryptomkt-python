@@ -7,18 +7,18 @@ class CryptomarketSDKException(Exception):
     def __init__(self, message):
         self.message = message
 
-        
+
 class CryptomarketAPIException(CryptomarketSDKException):
     def __init__(self, response=None):
         self.code = 0
         if response is None:
             self.message = ""
             return
-        
+
         try:
             json_res = response.json()
         except ValueError:
-            self.message = 'Invalid JSON error message from Cryptomarket: {}'.format(response.text)
+            self.message = f'{response.text}'
         else:
             error = json_res['error']
             self.code = error['code']
@@ -27,7 +27,7 @@ class CryptomarketAPIException(CryptomarketSDKException):
                 self.message += '. ' + error['description']
         self.status_code = response.status_code
         self.response = response
-    
+
     @classmethod
     def from_dict(cls, response):
         e = CryptomarketAPIException()
@@ -40,12 +40,15 @@ class CryptomarketAPIException(CryptomarketSDKException):
         e.message = message
         return e
 
-
     def __str__(self):
-        return f'CryptomarketAPIError(code={self.code}): {self.message}'
+        if self.code != None and self.code != 0:
+            return f'(code={self.code}): {self.message}'
+        else:
+            return self.message
+
 
 class ArgumentFormatException(CryptomarketSDKException):
-    def __init__(self, message, valid_options:List[str]=None):
+    def __init__(self, message, valid_options: List[str] = None):
         self.message = message
         if valid_options is not None:
             self.message += ' Valid options are:'
@@ -53,6 +56,6 @@ class ArgumentFormatException(CryptomarketSDKException):
                 self.message += f' {option},'
             if len(valid_options) > 0:
                 self.message = self.message[0:-1]
-    
+
     def __str__(self):
         return self.message

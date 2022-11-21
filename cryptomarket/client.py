@@ -1,633 +1,480 @@
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
+
+from dacite import from_dict
 
 import cryptomarket.args as args
+from cryptomarket.dataclasses import (
+    Address, AmountLock, Balance, Candle,
+    Commission, Currency, Order, OrderBook,
+    Price, PriceHistory, Symbol, Ticker,
+    Trade, Transaction, SubAccount)
+from cryptomarket.dataclasses.aclSettings import ACLSettings
+from cryptomarket.dataclasses.publicTrade import PublicTrade
 from cryptomarket.httpClient import HttpClient
 
 
 class Client(object):
-    def __init__(self, api_key:Optional[str] = None, secret_key:Optional[str] = None):
-        self.httpClient = HttpClient(api_key, secret_key)
-        self.authed = False
-    
+    """Cryptomarket rest client.
+    :param api_key: The API key
+    :param api_secret: The API secret
+    :param window: Maximum difference between the creation of the request and the moment of request processing in milliseconds. Max is 60_000. Defaul is 10_000"""
+
+    def __init__(self, api_key: Optional[str] = None, secret_key: Optional[str] = None, window: Optional[int] = None):
+        self.httpClient = HttpClient(api_key, secret_key, window)
+        if not api_key is None and not secret_key is None:
+            self.httpClient.authorize()
+
+        # aliases of trades
+        self.get_trades_by_symbol = self.get_trades_of_symbol
+        # aliases of orders
+        self.create_new_order = self.create_spot_order
+        self.create_spot_order = self.create_spot_order
+        self.create_new_spot_order = self.create_spot_order
+
     def close(self):
         self.httpClient.close_session()
 
-    def _get(self, endpoint:str, params=None):
-        if not self.authed: self.httpClient.authorize()
-        return self.httpClient.get(endpoint, params)
-    
-    def _public_get(self, endpoint:str, params=None):
+    def _get(self, endpoint: str, params=None):
         return self.httpClient.get(endpoint, params)
 
-    def _post(self, endpoint:str, params=None):
-        if not self.authed: self.httpClient.authorize()
+    def _post(self, endpoint: str, params=None):
         return self.httpClient.post(endpoint, params)
 
-    def _put(self, endpoint:str, params=None):
-        if not self.authed: self.httpClient.authorize()
+    def _put(self, endpoint: str, params=None):
         return self.httpClient.put(endpoint, params)
 
-    def _delete(self, endpoint:str, params=None):
-        if not self.authed: self.httpClient.authorize()
+    def _patch(self, endpoint: str, params=None):
+        return self.httpClient.patch(endpoint, params)
+
+    def _delete(self, endpoint: str, params=None):
         return self.httpClient.delete(endpoint, params)
 
     # PUBLIC METHOD CALLS
 
-    def get_currencies(self, currencies: List[str] = None) -> List[Dict[str, Any]]:
-        """Get a list of all currencies or specified currencies.
+    def get_currencies(self, currencies: List[str] = None) -> Dict[str, Currency]:
+        """Get a dict of all currencies or specified currencies
+
+        Requires no API key Access Rights
 
         https://api.exchange.cryptomkt.com/#currencies
 
-        :param currencies: Optional. A list of currencies ids.
+        :param currencies: Optional. A list of currencies ids
 
-        :returns: A list of available currencies.
-
-        .. code-block:: python
-        [
-            {
-                "id": "BTC",
-                "fullName": "Bitcoin",
-                "crypto": true,
-                "payinEnabled": true,
-                "payinPaymentId": false,
-                "payinConfirmations": 2,
-                "payoutEnabled": true,
-                "payoutIsPaymentId": false,
-                "transferEnabled": true,
-                "delisted": false,
-                "payoutFee": "0.00958",
-                "payoutMinimalAmount": "0.00958",
-                "precisionPayout": 10,
-                "precisionTransfer": 10
-            },
-            {
-                "id": "ETH",
-                "fullName": "Ethereum",
-                "crypto": true,
-                "payinEnabled": true,
-                "payinPaymentId": false,
-                "payinConfirmations": 2,
-                "payoutEnabled": true,
-                "payoutIsPaymentId": false,
-                "transferEnabled": true,
-                "delisted": false,
-                "payoutFee": "0.001",
-                "payoutMinimalAmount": "0.00958",
-                "precisionPayout": 20,
-                "precisionTransfer": 15
-            }
-        ]
+        :returns: A dict of available currencies. indexed by currency id
         """
         params = args.DictBuilder().currencies(currencies).build()
-        return self._public_get(endpoint='public/currency', params=params)
-    
-    def get_currency(self, currency: str = None) -> Dict[str, Any]:
-        """Get the data of a currency.
+        result = dict()
+        response = self._get(endpoint='public/currency', params=params)
+        for key in response:
+            result[key] = from_dict(data_class=Currency, data=response[key])
+        return result
+
+    def get_currency(self, currency: str = None) -> Currency:
+        """Get the data of a currency
+
+        Requires no API key Access Rights
 
         https://api.exchange.cryptomkt.com/#currencies
 
-        :param currency: A currency id.
+        :param currency: A currency id
 
-        :returns: A currency.
-
-        .. code-block:: python
-        {
-            "id": "ETH",
-            "fullName": "Ethereum",
-            "crypto": true,
-            "payinEnabled": true,
-            "payinPaymentId": false,
-            "payinConfirmations": 20,
-            "payoutEnabled": true,
-            "payoutIsPaymentId": false,
-            "transferEnabled": true,
-            "delisted": false,
-            "payoutFee": "0.042800000000",
-            "payoutMinimalAmount": "0.00958",
-            "precisionPayout": 10,
-            "precisionTransfer": 10,
-        }
+        :returns: A currency
         """
-        return self._public_get(endpoint=f'public/currency/{currency}')
-    
-    def get_symbols(self, symbols: List[str] = None) -> List[Dict[str, Any]]:
-        """Get a list of all symbols or for specified symbols.
-        
-        A symbol is the combination of the base currency (first one) and quote currency (second one).
+        response = self._get(endpoint=f'public/currency/{currency}')
+        return from_dict(data_class=Currency, data=response)
+
+    def get_symbols(self, symbols: List[str] = None) -> Dict[str, Symbol]:
+        """Get a dict of all symbols or for specified symbols
+
+        A symbol is the combination of the base currency (first one) and quote currency (second one)
+
+        Requires no API key Access Rights
 
         https://api.exchange.cryptomkt.com/#symbols
 
-        :param symbols: Optional. A list of symbol ids.
+        :param symbols: Optional. A list of symbol ids
 
-        :returns: A list of symbols traded on the exchange.
-
-        .. code-block:: python
-        [
-            {
-                'id': 'ETHEUR', 
-                'baseCurrency': 'ETH', 
-                'quoteCurrency': 'EUR', 
-                'quantityIncrement': '0.01', 
-                'tickSize': '0.1', 
-                'takeLiquidityRate': '0.002', 
-                'provideLiquidityRate': '0.001', 
-                'feeCurrency': 'EUR'
-            }, 
-            {
-                'id': 'ETHBTC', 
-                'baseCurrency': 
-                'ETH', 'quoteCurrency': 'BTC', 
-                'quantityIncrement': '0.0001', 
-                'tickSize': '0.000001', 
-                'takeLiquidityRate': '0.002', 
-                'provideLiquidityRate': '0.001', 
-                'feeCurrency': 'BTC'
-            }
-        ]
+        :returns: A dict of symbols traded on the exchange, indexed by symbol id
         """
         params = args.DictBuilder().symbols(symbols).build()
-        return self._public_get(endpoint='public/symbol/', params=params)
+        response = self._get(endpoint='public/symbol/', params=params)
+        result = dict()
+        for key in response:
+            result[key] = from_dict(data_class=Symbol, data=response[key])
+        return result
 
-    def get_symbol(self, symbol: str) -> Dict[str, Any]:
-        """Get a symbol by its id.
-        
-        A symbol is the combination of the base currency (first one) and quote currency (second one).
+    def get_symbol(self, symbol: str) -> Symbol:
+        """Get a symbol by its id
+
+        A symbol is the combination of the base currency (first one) and quote currency (second one)
+
+        Requires no API key Access Rights
 
         https://api.exchange.cryptomkt.com/#symbols
 
-        :param symbol: A symbol id.
+        :param symbol: A symbol id
 
-        :returns: A symbol traded on the exchange.
-
-        .. code-block:: python
-        {
-            "id": "ETHBTC",
-            "baseCurrency": "ETH",
-            "quoteCurrency": "BTC",
-            "quantityIncrement": "0.0001",
-            "tickSize": "0.000001",
-            "takeLiquidityRate": "0.002",
-            "provideLiquidityRate": "0.001",
-            "feeCurrency": "BTC"
-        }
+        :returns: A symbol traded on the exchange
         """
-        return self._get(endpoint=f'public/symbol/{symbol}')
+        response = self._get(endpoint=f'public/symbol/{symbol}')
+        return from_dict(data_class=Symbol, data=response)
 
+    def get_tickers(self, symbols: List[str] = None) -> Dict[str, Ticker]:
+        """Get a dict of tickers for all symbols or for specified symbols
 
-    def get_tickers(self, symbols: List[str] = None) -> List[Dict[str, Any]]:
-        """Get tickers for all symbols or for specified symbols.            
-
-        :param symbols: Optional. A list of symbol ids.
-
-        :returns: A list of tickers.
-
-        .. code-block:: python
-        [
-            {
-                "symbol":"ETHUSD",
-                "ask":"481.246",
-                "bid":"481.031",
-                "last":"481.090",
-                "low":"457.098",
-                "high":"484.550",
-                "open":"462.287",
-                "volume":"178669.5122",
-                "volumeQuote":"84162894.0360008",
-                "timestamp":"2020-11-17T20:30:05.535Z",
-            },
-            {
-                "symbol":"ETHBTC",
-                "ask":"0.027311",
-                "bid":"0.027303",
-                "last":"0.027303",
-                "low":"0.026869",
-                "high":"0.027991",
-                "open":"0.027476",
-                "volume":"49252.6430",
-                "volumeQuote":"1360.7600145487",
-                "timestamp":"2020-11-17T20:30:05.524Z",
-            }
-        ]
-        """
-        params = args.DictBuilder().symbols(symbols).build()
-        return self._public_get(endpoint='public/ticker/', params=params)
-    
-    def get_ticker(self, symbol: str) -> Dict[str, Any]:
-        """Get the ticker of a symbol.
+        Requires no API key Access Rights
 
         https://api.exchange.cryptomkt.com/#tickers
 
-        :param symbol: A symbol id.
+        :param symbols: Optional. A list of symbol ids
 
-        :returns: The ticker of a symbol.
-
-        .. code-block:: python  
-        {
-            "symbol":"ETHBTC",
-            "ask":"0.027238",
-            "bid":"0.027235",
-            "last":"0.027260",
-            "low":"0.026869",
-            "high":"0.027991",
-            "open":"0.027506",
-            "volume":"49024.5773",
-            "volumeQuote":"1354.4721925569",
-            "timestamp":"2020-11-17T20:37:00.199Z",
-        }
+        :returns: A dict of symbols traded on the exchange, indexed by symbol id
         """
-        return self._get(endpoint=f'public/ticker/{symbol}')
+        params = args.DictBuilder().symbols(symbols).build()
+        response = self._get(endpoint='public/ticker/', params=params)
+        result = dict()
+        for key in response:
+            result[key] = from_dict(data_class=Ticker, data=response[key])
+        return result
 
-    def get_trades(self, 
-    symbols: List[str] = None,
-    sort: str = None, 
-    since: str = None,
-    till: str = None, 
-    limit: int = None,
-    offset: int = None) -> Dict[str, List[Dict[str, Any]]]:
-        """Get trades for all symbols or for specified symbols.
+    def get_ticker(self, symbol: str) -> Ticker:
+        """Get the ticker of a symbol
 
-        'since' param and 'till' param must have the same format, both index or both timestamp.
+        Requires no API key Access Rights
+
+        https://api.exchange.cryptomkt.com/#tickers
+
+        :param symbol: A symbol id
+
+        :returns: A symbol traded on the exchange
+        """
+        response = self._get(endpoint=f'public/ticker/{symbol}')
+        return from_dict(data_class=Ticker, data=response)
+
+    def get_prices(self, to: str, source: str = None) -> Dict[str, Price]:
+        """Get a dict of quotation prices of currencies
+
+        Requires no API key Access Rights
+
+        https://api.exchange.cryptomkt.com/#prices
+
+        :param to: Target currency code
+        :param source: Optional. Source currency rate
+
+        :returns: A dict of quotation prices of currencies, indexed by source currency code
+        """
+        params = args.DictBuilder().from_(source).to(to).build()
+        response = self._get(
+            endpoint=f'public/price/rate',
+            params=params
+        )
+        result = dict()
+        for key in response:
+            result[key] = from_dict(data_class=Price, data=response[key])
+        return result
+
+    def get_prices_history(
+        self,
+        to: str,
+        source: str = None,
+        since: str = None,
+        until: str = None,
+        period: Optional[Union[
+            args.PERIOD, Literal[
+                'M1', 'M3', 'M15', 'M30', 'H1', 'H4', 'D1', 'D7', '1M'
+            ]
+        ]] = None,
+        sort: Optional[Union[args.SORT, Literal['ASC', 'DESC']]] = None,
+        limit: int = None
+    ) -> Dict[str, PriceHistory]:
+        """Get quotation prices history
+
+        Requires no API key Access Rights
+
+        https://api.exchange.cryptomkt.com/#prices
+
+        :param to: Target currency code
+        :param source: Optional. Source currency rate
+        :param period: Optional. A valid tick interval. 'M1' (one minute), 'M3', 'M5', 'M15', 'M30', 'H1' (one hour), 'H4', 'D1' (one day), 'D7', '1M' (one month). Default is 'M30'
+        :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'
+        :param since: Optional. Initial value of the queried interval
+        :param until: Optional. Last value of the queried interval
+        :param limit: Optional. Prices per currency pair. Defaul is 1. Min is 1. Max is 1000
+
+        :returns: A dict of quotation prices of currencies, indexed by source currency code
+        """
+        params = args.DictBuilder().from_(source).to(to).since(since).until(
+            until).period(period).sort(sort).limit(limit).build()
+        response = self._get(
+            endpoint=f'public/price/history', params=params)
+        result = dict()
+        for key in response:
+            result[key] = from_dict(
+                data_class=PriceHistory, data=response[key])
+        return result
+
+    def get_ticker_last_prices(self, symbols: List[str] = None) -> Dict[str, Price]:
+        """Get a dict of the ticker's last prices for all symbols or for the specified symbols
+
+        Requires no API key Access Rights
+
+        https://api.exchange.cryptomkt.com/#prices
+
+        :param symbols: Optional. A list of symbol ids
+
+        :returns: A dict of ticker prices of currencies, indexed by symbol
+        """
+        params = args.DictBuilder().symbols(symbols).build()
+        response = self._get(
+            endpoint=f'public/price/ticker', params=params)
+        result = dict()
+        for key in response:
+            result[key] = from_dict(data_class=Price, data=response[key])
+        return result
+
+    def get_ticker_last_price_of_symbol(self, symbol: str) -> Price:
+        """Get ticker's last prices of a symbol
+
+        Requires no API key Access Rights
+
+        https://api.exchange.cryptomkt.com/#prices
+
+        :param symbol: A symbol id
+
+        :returns: The ticker's last price of a symbol
+        """
+        response = self._get(endpoint=f'public/price/ticker/{symbol}')
+        return from_dict(data_class=Price, data=response)
+
+    def get_trades(
+        self,
+        symbols: List[str] = None,
+        sort_by: Optional[Union[args.SORT_BY,
+                                Literal['id', 'timestamp']]] = None,
+        sort: Optional[Union[args.SORT, Literal['ASC', 'DESC']]] = None,
+        since: str = None,
+        till: str = None,
+        limit: int = None
+    ) -> Dict[str, List[PublicTrade]]:
+        """Get a dict of trades for all symbols or for specified symbols
+
+        'from' param and 'till' param must have the same format, both id or both timestamp
+
+        Requires no API key Access Rights
 
         https://api.exchange.cryptomkt.com/#trades
 
-        :param symbols: Optional. A list of symbol ids.
-        :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'.
-        :param since: Optional. Initial value of the queried interval. As id or as Datetime.
-        :param till: Optional. Last value of the queried interval. As id or as Datetime.
-        :param limit: Optional. Trades per query. Defaul is 100. Max is 1000.
-        :param offset: Optional. Default is 0. Max is 100000. 
+        :param symbols: Optional. A list of symbol ids
+        :param sort_by: Optional. Sorting parameter. 'id' or 'timestamp'. Default is 'timestamp'
+        :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'
+        :param since: Optional. Initial value of the queried interval
+        :param until: Optional. Last value of the queried interval
+        :param limit: Optional. Prices per currency pair. Defaul is 10. Min is 1. Max is 1000
 
-        :returns: A list of trades for each symbol of the query.
-
-        .. code-block:: python
-        {
-            "ETHUSD":[
-                {
-                    "id":1005147943,
-                    "price":"481.617",
-                    "quantity":"2.4000",
-                    "side":"buy",
-                    "timestamp":"2020-11-17T20:49:46.140Z"
-                },
-                {
-                    "id":1005147795,
-                    "price":"481.654",
-                    "quantity":"0.0005",
-                    "side":"buy",
-                    "timestamp":"2020-11-17T20:49:32.053Z"
-                }
-            ],
-            "ETHBTC":[
-                {
-                    "id":1005147904,
-                    "price":"0.027275",
-                    "quantity":"0.2834",
-                    "side":"buy",
-                    "timestamp":"2020-11-17T20:49:42.710Z"
-                },
-                {
-                    "id":1005147903,
-                    "price":"0.027274",
-                    "quantity":"0.3265",
-                    "side":"buy",
-                    "timestamp":"2020-11-17T20:49:42.710Z"
-                }
-            ]
-        }
+        :returns: A dict with a list of trades for each symbol of the query. Indexed by symbol
         """
-        params = args.DictBuilder().symbols(symbols).sort(sort).since(since).till(till).limit(limit).offset(offset).build()
-        return self._public_get(endpoint='public/trades/', params=params)
+        params = args.DictBuilder().symbols(symbols).sort(sort).by(
+            sort_by).since(since).till(till).limit(limit).build()
+        response = self._get(endpoint='public/trades', params=params)
+        result = dict()
+        for key in response:
+            result[key] = [
+                from_dict(
+                    data_class=PublicTrade,
+                    data=trade_data
+                ) for trade_data in response[key]]
+        return result
 
-    def get_trades_of_symbol(self,
-    symbol: str,
-    sort: str = None,
-    by: str = None,
-    since: str = None,
-    till: str = None,
-    limit: int = None,
-    offset: int = None) -> List[Dict[str, Any]]:
-        """Get trades of a symbol.
+    def get_trades_of_symbol(
+        self,
+        symbol: str,
+        sort_by: Optional[Union[args.SORT_BY,
+                                Literal['id', 'timestamp']]] = None,
+        sort: Optional[Union[args.SORT, Literal['ASC', 'DESC']]] = None,
+        since: str = None,
+        till: str = None,
+        limit: int = None,
+        offset: int = None
+    ) -> List[PublicTrade]:
+        """Get trades of a symbol
 
-        'since' param and 'till' param must have the same format, both index or both timestamp.
+        'from' param and 'till' param must have the same format, both id or both timestamp
+
+        Requires no API key Access Rights
 
         https://api.exchange.cryptomkt.com/#trades
 
-        :param symbols: Optional. A list of symbol ids.
-        :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'.
-        :param since: Optional. Initial value of the queried interval. As id or as Datetime.
-        :param till: Optional. Last value of the queried interval. As id or as Datetime.
-        :param limit: Optional. Trades per query. Defaul is 100. Max is 1000.
-        :param offset: Optional. Default is 0. Max is 100000. 
+        :param symbol: A symbol id
+        :param sort_by: Optional. Sorting parameter. 'id' or 'timestamp'. Default is 'timestamp'
+        :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'
+        :param since: Optional. Initial value of the queried interval
+        :param until: Optional. Last value of the queried interval
+        :param limit: Optional. Prices per currency pair. Defaul is 10. Min is 1. Max is 1000
+        :param offset: Optional. Default is 0. Min is 0. Max is 100000
 
-        :returns: A list of trades of the queried symbol.
-
-        .. code-block:: python
-        [
-            {
-                "id": 9533117,
-                "price": "0.046001",
-                "quantity": "0.220",
-                "side": "sell",
-                "timestamp": "2017-04-14T12:18:40.426Z"
-            },
-            {
-                "id": 9533116,
-                "price": "0.046002",
-                "quantity": "0.022",
-                "side": "buy",
-                "timestamp": "2017-04-14T11:56:37.027Z"
-            }
-        ]
+        :returns: A list of trades of the symbol
         """
-        params = args.DictBuilder().sort(sort).by(by).since(since).till(till).limit(limit).offset(offset).build()
-        return self._public_get(endpoint=f"public/trades/{symbol}", params=params)
+        params = args.DictBuilder().sort(sort).by(sort_by).since(
+            since).till(till).limit(limit).offset(offset).build()
+        response = self._get(
+            endpoint=f"public/trades/{symbol}", params=params)
+        return [
+            from_dict(
+                data_class=PublicTrade,
+                data=trade_data
+            ) for trade_data in response]
 
-    def get_order_books(self, 
-    symbols: List[str] = None,
-    limit: int = None) -> Dict[str, Dict[str, Any]]:
-        """Get order book for all symbols or for the specified symbols.
+    def get_order_books(
+        self,
+        symbols: List[str] = None,
+        depth: int = None
+    ) -> Dict[str, OrderBook]:
+        """Get a dict of orderbooks for all symbols or for the specified symbols
 
-        An Order Book is an electronic list of buy and sell orders for a specific symbol, structured by price level.
+        An Order Book is an electronic list of buy and sell orders for a specific symbol, structured by price level
 
-        https://api.exchange.cryptomkt.com/#order-book
+        Requires no API key Access Rights
 
-        :param symbols: Optional. A list of symbol ids.
-        :param limit: Optional. Limit of order book levels. Set to 0 to view full list of order book levels.
+        https://api.exchange.cryptomkt.com/#order-books
 
-        :returns: The order book for each queried symbol.
+        :param symbols: Optional. A list of symbol ids
+        :param depth: Optional. Order Book depth. Default value is 100. Set to 0 to view the full Order Book
 
-        .. code-block:: python
-        {
-            "ETHUSD":{
-                "symbol":"ETHUSD",
-                "timestamp":"2020-11-17T22:02:17.617Z",
-                "batchingTime":"2020-11-17T22:02:17.628Z",
-                "ask":[
-                    {
-                        "price":"479.844",
-                        "size":"2.4000"
-                    },
-                    {
-                        "price":"479.858",
-                        "size":"0.4650"
-                    }
-                ],
-                "bid":[
-                    {
-                        "price":"479.815",
-                        "size":"6.2310"
-                    },
-                    {
-                        "price":"479.795",
-                        "size":"2.4000"
-                    }
-                ]
-            },
-            "ETHBTC":{
-                "symbol":"ETHBTC",
-                "timestamp":"2020-11-17T22:02:17.611Z",
-                "batchingTime":"2020-11-17T22:02:17.627Z",
-                "ask":[
-                    {
-                        "price":"0.027297",
-                        "size":"0.6483"
-                    },
-                    {
-                        "price":"0.027298",
-                        "size":"5.9372"
-                    }
-                ],
-                "bid":[
-                    {
-                        "price":"0.027295",
-                        "size":"0.9000"
-                    },
-                    {
-                        "price":"0.027294",
-                        "size":"0.2831"
-                    }
-                ]
-            }
-        }
+        :returns: A dict with the order book for each queried symbol. indexed by symbol
         """
-        params = args.DictBuilder().symbols(symbols).limit(limit).build()
-        return self._public_get(endpoint='public/orderbook/', params=params)
-    
-    def get_order_book(self, 
-    symbol: str,
-    limit: int = None) -> Dict[str, Any]:
-        """Get An order book of a symbols.
+        params = args.DictBuilder().symbols(symbols).depth(depth).build()
+        response = self._get(endpoint='public/orderbook', params=params)
+        result = dict()
+        for key in response:
+            result[key] = OrderBook.from_dict(response[key])
+        return result
 
-        An Order Book is an electronic list of buy and sell orders for a specific symbol, structured by price level.
+    def get_order_book_of_symbol(
+        self,
+        symbol: str,
+        depth: int = None
+    ) -> OrderBook:
+        """Get order book of a symbol
 
-        https://api.exchange.cryptomkt.com/#order-book
+        An Order Book is an electronic list of buy and sell orders for a specific symbol, structured by price level
 
-        :param symbol: A symbol id.
-        :param limit: Optional. Limit of order book levels. Set to 0 to view full list of order book levels.
-        
-        :returns: The order book for the symbol.
+        Requires no API key Access Rights
 
-        .. code-block:: python
-        {
-            "symbol":"ETHBTC",
-            "timestamp":"2020-11-17T22:08:19.426Z",
-            "batchingTime":"2020-11-17T22:08:19.440Z",
-            "ask":[
-                {
-                    "price":"0.027288",
-                    "size":"0.9000"
-                },
-                {
-                    "price":"0.027292",
-                    "size":"0.3265"
-                }
-            ],
-            "bid":[
-                {
-                    "price":"0.027281",
-                    "size":"4.9000"
-                },
-                {
-                    "price":"0.027280",
-                    "size":"11.1017"
-                }
-            ]
-        }
+        https://api.exchange.cryptomkt.com/#order-books
+
+        :param symbol: A symbol id
+        :param depth: Optional. Order Book depth. Default value is 100. Set to 0 to view the full Order Book
+
+        :returns: The order book of the symbol
         """
-        params = args.DictBuilder().limit(limit).build()
-        return self._public_get(endpoint=f'public/orderbook/{symbol}', params=params)
-    
-    def market_depth(self,
-    symbol: str,
-    volume: int) -> Dict[str, Any]:
-        """Get An order book with market depth data of a symbol.
+        params = args.DictBuilder().depth(depth).build()
+        response = self._get(
+            endpoint=f'public/orderbook/{symbol}', params=params)
+        return OrderBook.from_dict(response)
 
-        An Order Book is an electronic list of buy and sell orders for a specific symbol, structured by price level.
+    def get_order_book_volume_of_symbol(
+        self,
+        symbol: str,
+        volume: int = None
+    ) -> Dict[str, Any]:
+        """Get order book of a symbol with the desired volume for market depth search
 
-        https://api.exchange.cryptomkt.com/#order-book
+        An Order Book is an electronic list of buy and sell orders for a specific symbol, structured by price level
 
-        :param symbol: A symbol id.
+        Requires no API key Access Rights
+
+        https://api.exchange.cryptomkt.com/#order-books
+
+        :param symbol: A symbol id
         :param volume: Optional. Desired volume for market depth search
 
-        :returns: The order book for the symbol with market depth data.
-
-        .. code-block:: python
-        {
-            "ask": [
-                {
-                "price": "9779.68",
-                "size": "2.497"
-                }
-            ],
-            "bid": [
-                {
-                "price": "9779.67",
-                "size": "0.03719"
-                },
-                {
-                "price": "9779.29",
-                "size": "0.171"
-                },
-                {
-                "price": "9779.27",
-                "size": "0.171"
-                },
-                {
-                "price": "9779.21",
-                "size": "0.171"
-                }
-            ],
-            "timestamp": "2020-02-11T11:30:38.597950917Z",
-            "askAveragePrice": "9779.68",
-            "bidAveragePrice": "9779.29"
-        }
+        :returns: The order book of the symbol
         """
         params = args.DictBuilder().volume(volume).build()
-        return self._public_get(endpoint=f'public/orderbook/{symbol}', params=params)
+        response = self._get(
+            endpoint=f'public/orderbook/{symbol}', params=params)
+        return OrderBook.from_dict(response)
 
-
-    def get_candles(self, 
-    symbols: List[str] = None,
-    period: str = None,
-    sort: str = None,
-    since: str = None,
-    till: str = None, 
-    limit: int = None,
-    offset: int = None) -> Dict[str, List[Dict[str, List[Dict[str, Any]]]]]:
-        """Get candles for all symbols or for specified symbols.
-
-        Candels are used for OHLC representation.
-
-        https://api.exchange.cryptomkt.com/#candles
-
-        :param symbols: Optional. A list of symbol ids.
-        :param period: Optional. A valid tick interval. 'M1' (one minute), 'M3', 'M5', 'M15', 'M30', 'H1' (one hour), 'H4', 'D1' (one day), 'D7', '1M' (one month). Default is 'M30'.
-        :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'.
-        :param since: Optional. Initial value of the queried interval.
-        :param till: Optional. Last value of the queried interval.
-        :param limit: Optional. Candles per query. Defaul is 100. Max is 1000.
-        :param offset: Optional. Default is 0. Max is 100000. 
-
-        :returns: The candles for each queried symbol.
-
-        .. code-block:: python
-        {
-            "ETHUSD":[
-                {
-                    "timestamp":"2017-05-05T15:00:00.000Z",
-                    "open":"10",
-                    "close":"10",
-                    "min":"10",
-                    "max":"10",
-                    "volume":"0.1",
-                    "volumeQuote":"1"
-                },
-                {
-                    "timestamp":"2017-05-05T16:00:00.000Z",
-                    "open":"80",
-                    "close":"50",
-                    "min":"50",
-                    "max":"80",
-                    "volume":"1.679",
-                    "volumeQuote":"113.95"
-                }
-            ],
-            "ETHBTC":[
-                {
-                    "timestamp":"2015-08-20T19:00:00.000Z",
-                    "open":"0.006",
-                    "close":"0.0061",
-                    "min":"0.005",
-                    "max":"0.0065",
-                    "volume":"0.515",
-                    "volumeQuote":"0.0031271"
-                },
-                {
-                    "timestamp":"2015-08-20T19:30:00.000Z",
-                    "open":"0.0061",
-                    "close":"0.00611",
-                    "min":"0.00588",
-                    "max":"0.0063",
-                    "volume":"0.47",
-                    "volumeQuote":"0.002887398"
-                }
+    def get_candles(
+        self,
+        symbols: List[str] = None,
+        period: Optional[Union[
+            args.PERIOD, Literal[
+                'M1', 'M3', 'M15', 'M30', 'H1', 'H4', 'D1', 'D7', '1M'
             ]
-        }
-        """
-        params = args.DictBuilder().symbols(symbols).period(period).sort(sort).since(since).till(till).limit(limit).offset(offset).build()
-        return self._public_get(endpoint='public/candles/', params=params)
-    
+        ]] = None,
+        sort: Optional[Union[args.SORT, Literal['ASC', 'DESC']]] = None,
+        since: str = None,
+        till: str = None,
+        limit: int = None
+    ) -> Dict[str, List[Candle]]:
+        """Get a dict of candles for all symbols or for specified symbols
 
-    def get_candles_of_symbol(self, 
-    symbol: str,
-    period: str = None,
-    sort: str = None,
-    since: str = None,
-    till: str = None, 
-    limit: int = None,
-    offset: int = None) -> Dict[str, List[Dict[str, List[Dict[str, Any]]]]]:
-        """Get candles for a specified symbol.
+        Candels are used for OHLC representation
 
-        Candels are used for OHLC representation.
+        The result contains candles with non-zero volume only (no trades = no candles)
+
+        Requires no API key Access Rights
 
         https://api.exchange.cryptomkt.com/#candles
 
-        :param symbol: The symbol id.
-        :param period: Optional. A valid tick interval. 'M1' (one minute), 'M3', 'M5', 'M15', 'M30', 'H1' (one hour), 'H4', 'D1' (one day), 'D7', '1M' (one month). Default is 'M30'.
-        :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'.
-        :param since: Optional. Initial value of the queried interval.
-        :param till: Optional. Last value of the queried interval.
-        :param limit: Optional. Candles per query. Defaul is 100. Max is 1000.
-        :param offset: Optional. Default is 0. Max is 100000. 
+        :param symbol: A symbol id
+        :param period: Optional. A valid tick interval. 'M1' (one minute), 'M3', 'M5', 'M15', 'M30', 'H1' (one hour), 'H4', 'D1' (one day), 'D7', '1M' (one month). Default is 'M30'
+        :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'
+        :param from: Optional. Initial value of the queried interval. As DateTime
+        :param till: Optional. Last value of the queried interval. As DateTime
+        :param limit: Optional. Prices per currency pair. Defaul is 10. Min is 1. Max is 1000
 
-        :returns: The candles for each queried symbol.
-
-        .. code-block:: python
-        [
-            {
-                "timestamp":"2017-05-05T15:00:00.000Z",
-                "open":"10",
-                "close":"10",
-                "min":"10",
-                "max":"10",
-                "volume":"0.1",
-                "volumeQuote":"1"
-            },
-            {
-                "timestamp":"2017-05-05T16:00:00.000Z",
-                "open":"80",
-                "close":"50",
-                "min":"50",
-                "max":"80",
-                "volume":"1.679",
-                "volumeQuote":"113.95"
-            }
-        ]
+        :returns: A dict with a list of candles for each symbol of the query. indexed by symbol
         """
-        params = args.DictBuilder().period(period).sort(sort).since(since).till(till).limit(limit).offset(offset).build()
-        return self._public_get(endpoint=f"public/candles/{symbol}", params=params)
+        params = args.DictBuilder().symbols(symbols).period(period).sort(
+            sort).since(since).till(till).limit(limit).build()
+        response = self._get(endpoint='public/candles/', params=params)
+        result = dict()
+        for key in response:
+            result[key] = [from_dict(data_class=Candle, data=candle_data)
+                           for candle_data in response[key]]
+        return result
 
+    def get_candles_of_symbol(
+        self,
+        symbol: str,
+        period: Optional[Union[
+            args.PERIOD, Literal[
+                'M1', 'M3', 'M15', 'M30', 'H1', 'H4', 'D1', 'D7', '1M'
+            ]
+        ]] = None,
+        sort: Optional[Union[args.SORT, Literal['ASC', 'DESC']]] = None,
+        since: str = None,
+        till: str = None,
+        limit: int = None,
+        offset: int = None
+    ) -> List[Candle]:
+        """Get candles of a symbol
+
+        Candels are used for OHLC representation
+
+        The result contains candles with non-zero volume only (no trades = no candles)
+
+        Requires no API key Access Rights
+
+        https://api.exchange.cryptomkt.com/#candles
+
+        :param symbol: A symbol id
+        :param period: Optional. A valid tick interval. 'M1' (one minute), 'M3', 'M5', 'M15', 'M30', 'H1' (one hour), 'H4', 'D1' (one day), 'D7', '1M' (one month). Default is 'M30'
+        :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'
+        :param from: Optional. Initial value of the queried interval. As DateTime
+        :param till: Optional. Last value of the queried interval. As DateTime
+        :param limit: Optional. Prices per currency pair. Defaul is 100. Min is 1. Max is 1000
+        :param offset: Optional. Default is 0. Min is 0. Max is 100000
+
+        :returns: A list of candles of a symbol
+        """
+        params = args.DictBuilder().period(period).sort(sort).since(
+            since).till(till).limit(limit).offset(offset).build()
+        response = self._get(
+            endpoint=f"public/candles/{symbol}", params=params)
+        return [from_dict(data_class=Candle, data=candle_data) for candle_data in response]
 
     #################
     # AUTHENTICATED #
@@ -637,757 +484,866 @@ class Client(object):
     # TRADING #
     ###########
 
-    def get_trading_balance(self) -> List[Dict[str, Any]]:
-        """Get the trading balance.
+    def get_spot_trading_balances(self) -> List[Balance]:
+        """Get the user's spot trading balance for all currencies with balance
 
-        Requires authentication.
+        Requires the "Orderbook, History, Trading balance" API key Access Right
 
-        https://api.exchange.cryptomkt.com/#trading-balance
+        https://api.exchange.cryptomkt.com/#get-spot-trading-balance
 
-        :returns: the trading balance.
 
-        .. code-block:: python
-        [
-            {
-                "currency": "ETH",
-                "available": "10.000000000",
-                "reserved": "0.560000000"
-            },
-            {
-                "currency": "BTC",
-                "available": "0.010205869",
-                "reserved": "0"
-            }
-        ]
+        :returns: A list of spot trading balances
         """
-        return self._get(endpoint='trading/balance')
+        response = self._get(endpoint='spot/balance')
+        return [from_dict(data_class=Balance, data=balance_data)
+                for balance_data in response]
 
-    def get_active_orders(self, symbol: str = None) -> List[Dict[str, Any]]:
-        """Get the account active orders.
+    def get_spot_trading_balance_of_currency(self, currency: str) -> Balance:
+        """Get the user spot trading balance of a currency
 
-        Requires authentication.
+        Requires the "Orderbook, History, Trading balance" API key Access Right
 
-        https://api.exchange.cryptomkt.com/#get-active-orders
+        https://api.exchange.cryptomkt.com/#get-spot-trading-balance
 
-        :param symbol: Optional. A symbol for filtering active orders.
+        :param currency: The currency code to query the balance
 
-        :returns: The account active orders.
+        :returns: the spot trading balance of a currency
+        """
+        response = self._get(endpoint=f'spot/balance/{currency}')
+        return from_dict(data_class=Balance, data=response)
 
-        .. code-block:: python
-        [
-            {
-                "id": 840450210,
-                "clientOrderId": "c1837634ef81472a9cd13c81e7b91401",
-                "symbol": "ETHBTC",
-                "side": "buy",
-                "status": "partiallyFilled",
-                "type": "limit",
-                "timeInForce": "GTC",
-                "quantity": "0.020",
-                "price": "0.046001",
-                "cumQuantity": "0.005",
-                "postOnly": false,
-                "createdAt": "2017-05-12T17:17:57.437Z",
-                "updatedAt": "2017-05-12T17:18:08.610Z"
-            }
-        ]
+    def get_all_active_spot_orders(self, symbol: str = None) -> List[Order]:
+        """Get the user's active spot orders
+
+        Requires the "Place/cancel orders" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#get-all-active-spot-orders
+
+        :param symbol: Optional. A symbol for filtering the active spot orders
+
+        :returns: A list of orders
         """
         params = args.DictBuilder().symbol(symbol).build()
-        return self._get(endpoint='order', params=params)
-    
-    def get_active_order(self, client_order_id: str, wait: int= None) -> Dict[str, Any]:
-        """Get an order by its client order id.
+        response = self._get(endpoint='spot/order', params=params)
+        return [from_dict(data_class=Order, data=data) for data in response]
 
-        Requires authentication.
+    def get_active_spot_order(self, client_order_id: str) -> Order:
+        """Get an active spot order by its client order id
 
-        https://api.exchange.cryptomkt.com/#get-active-order-by-clientorderid
+        Requires the "Place/cancel orders" API key Access Right
 
-        :param client_order_id: The clientOrderId of the order.
-        :param wait: Optional. Time in milliseconds. Max value is 60000. Default is None. While using long polling request: if order is filled, cancelled or expired, order info will be returned instantly. For other order statuses, actual order info will be returned after specified wait time.
+        https://api.exchange.cryptomkt.com/#get-active-spot-orders
 
-        :returns: An order of the account.
+        :param client order id: The client order id of the order
 
-        .. code-block:: python
-        {
-            "id": 840450210,
-            "clientOrderId": "c1837634ef81472a9cd13c81e7b91401",
-            "symbol": "ETHBTC",
-            "side": "buy",
-            "status": "partiallyFilled",
-            "type": "limit",
-            "timeInForce": "GTC",
-            "quantity": "0.020",
-            "price": "0.046001",
-            "cumQuantity": "0.005",
-            "postOnly": false,
-            "createdAt": "2017-05-12T17:17:57.437Z",
-            "updatedAt": "2017-05-12T17:18:08.610Z"
-        }
+        :returns: A spot order of the account
         """
-        params = args.DictBuilder().wait(wait).build()
-        return self._get(endpoint=f'order/{client_order_id}')
+        response = self._get(endpoint=f'spot/order/{client_order_id}')
+        return from_dict(data_class=Order, data=response)
 
-    def create_order(self, 
-    symbol: str, 
-    side: str, 
-    quantity: str,
-    client_order_id: str = None, 
-    order_type: str = None,
-    price: str = None,
-    stop_price: str = None,
-    time_in_force: str = None,
-    expire_time: str = None,
-    strict_validate: bool = None,
-    post_only: bool = None) -> Dict[str, Any]:
-        """Creates a new order.
+    def create_spot_order(
+        self,
+        symbol: str,
+        side: Union[args.SIDE, Literal['buy', 'sell']],
+        quantity: str,
+        type: Optional[Union[args.ORDER_TYPE, Literal[
+            'limit', 'market', 'stopLimit', 'stopMarket', 'takeProfitLimit', 'takeProfitMarket'
+        ]]] = None,
+        time_in_force: Optional[Union[args.TIME_IN_FORCE, Literal[
+            'GTC', 'IOC', 'FOK', 'Day', 'GTD'
+        ]]] = None,
+        client_order_id: str = None,
+        price: str = None,
+        stop_price: str = None,
+        expire_time: str = None,
+        strict_validate: bool = None,
+        post_only: bool = None,
+        take_rate: str = None,
+        make_rate: str = None
+    ) -> Order:
+        """Creates a new spot order
 
-        Requires authentication.
+        For fee, for price accuracy and quantity, and for order status information see the api docs
 
-        https://api.exchange.cryptomkt.com/#create-new-order
+        Requires the "Place/cancel orders" API key Access Right
 
-        :param symbol: Trading symbol.
-        :param side: 'buy' or 'sell'.
-        :param quantity: Order quantity.
-        :param client_order_id: Optional. If given must be unique within the trading day, including all active orders. If not given, is generated by the server.
-        :param order_type: Optional. 'limit', 'market', 'stopLimit' or 'stopMarket'. Default is 'limit'.
-        :param time_in_force: Optional. 'GTC', 'IOC', 'FOK', 'Day', 'GTD'. Default to 'GTC'.
-        :param price: Required for 'limit' and 'stopLimit'. limit price of the order.
-        :param stop_price: Required for 'stopLimit' and 'stopMarket' orders. stop price of the order.
-        :param expire_time: Required for orders with timeInForce = 'GDT'.
-        :param strict_validate: Optional. If False, the server rounds half down for tickerSize and quantityIncrement. Example of ETHBTC: tickSize = '0.000001', then price '0.046016' is valid, '0.0460165' is invalid. 
-        :param post_only: Optional. If True, your post_only order causes a match with a pre-existing order as a taker, then the order will be cancelled.
+        https://api.exchange.cryptomkt.com/#create-new-spot-order
 
-        :returns: An order of the account.
+        :param symbol: Trading symbol
+        :param side: Either 'buy' or 'sell'
+        :param quantity: Order quantity
+        :param client order id: Optional. If given must be unique within the trading day, including all active orders. If not given, is generated by the server
+        :param type: Optional. 'limit', 'market', 'stopLimit', 'stopMarket', 'takeProfitLimit' or 'takeProfitMarket'. Default is 'limit'
+        :param time in force: Optional. 'GTC', 'IOC', 'FOK', 'Day', 'GTD'. Default to 'GTC'
+        :param price: Optional. Required for 'limit' and 'stopLimit'. limit price of the order
+        :param stop price: Optional. Required for 'stopLimit' and 'stopMarket' orders. stop price of the order
+        :param expire time: Optional. Required for orders with timeInForce = GDT
+        :param strict validate: Optional. If False, the server rounds half down for tickerSize and quantityIncrement. Example of ETHBTC: tickSize = '0.000001', then price '0.046016' is valid, '0.0460165' is invalid
+        :param post only: Optional. If True, your post_only order causes a match with a pre-existing order as a taker, then the order will be cancelled
+        :param take rate: Optional. Liquidity taker fee, a fraction of order volume, such as 0.001 (for 0.1% fee). Can only increase the fee. Used for fee markup.
+        :param make rate: Optional. Liquidity provider fee, a fraction of order volume, such as 0.001 (for 0.1% fee). Can only increase the fee. Used for fee markup.
 
-        .. code-block:: python
-        {
-            "id": 0,
-            "clientOrderId": "d8574207d9e3b16a4a5511753eeef175",
-            "symbol": "ETHBTC",
-            "side": "sell",
-            "status": "new",
-            "type": "limit",
-            "timeInForce": "GTC",
-            "quantity": "0.063",
-            "price": "0.046016",
-            "cumQuantity": "0.000",
-            "postOnly": false,
-            "createdAt": "2017-05-15T17:01:05.092Z",
-            "updatedAt": "2017-05-15T17:01:05.092Z"
-        }
+        :returns: A new spot order
         """
-        builder = args.DictBuilder().symbol(symbol).side(side).quantity(quantity).order_type(order_type).price(price).stop_price(stop_price)
-        params = builder.time_in_force(time_in_force).expire_time(expire_time).strict_validate(strict_validate).post_only(post_only).build()
+        builder = args.DictBuilder().client_order_id(client_order_id).symbol(symbol).side(
+            side).quantity(quantity).order_type(type).price(price).stop_price(stop_price)
+        params = builder.time_in_force(time_in_force).expire_time(expire_time).strict_validate(
+            strict_validate).post_only(post_only).take_rate(take_rate).make_rate(make_rate).build()
+        response = self._post(endpoint='spot/order', params=params)
+        return from_dict(data_class=Order, data=response)
 
-        if client_order_id is not None:
-            return self._put(f'order/{client_order_id}', params)
-        # else
-        return self._post(endpoint='order', params=params)
+    def create_spot_order_list(
+        self,
+        contingency_type: Union[args.CONTINGENCY_TYPE, Literal['allOrNone', 'oneCancelOther', 'oneTriggerOneCancelOther']],
+        orders: List[args.OrderRequest],
+        order_list_id: Optional[str] = None,
+    ) -> List[Order]:
+        """creates a list of spot orders
 
-    def cancel_all_orders(self, symbol: str = None) -> List[Dict[str, Any]]:
-        """Cancel all active orders, or all active orders for a specified symbol.
+        Types or contingency:
 
-        Requires authentication.
+        - CONTINGENCY.ALL_OR_NONE (CONTINGENCY.AON)
+        - CONTINGENCY.ONE_CANCEL_OTHER (CONTINGENCY.OCO)
+        - CONTINGENCY.ONE_TRIGGER_ONE_CANCEL_OTHER (CONTINGENCY.OTOCO)
 
-        https://api.exchange.cryptomkt.com/#cancel-orders
+        Restriction in the number of orders:
 
-        :param symbol: Optional. If given, cancels all orders of the symbol. If not given, cancels all orders of all symbols.
+        - An AON list must have 2 or 3 orders
+        - An OCO list must have 2 or 3 orders
+        - An OTOCO must have 3 or 4 orders
 
-        :returns: A list with all the canceled orders.
+        Symbol restrictions:
+
+        - For an AON order list, the symbol code of orders must be unique for each order in the list.
+        - For an OCO order list, there are no symbol code restrictions.
+        - For an OTOCO order list, the symbol code of orders must be the same for all orders in the list (placing orders in different order books is not supported).
+
+        ORDER_TYPE restrictions:
+        - For an AON order list, orders must be ORDER_TYPE.LIMIT or ORDER_TYPE.Market
+        - For an OCO order list, orders must be ORDER_TYPE.LIMIT, ORDER_TYPE.STOP_LIMIT, ORDER_TYPE.STOP_MARKET, ORDER_TYPE.TAKE_PROFIT_LIMIT or ORDER_TYPE.TAKE_PROFIT_MARKET.
+        - An OCO order list cannot include more than one limit order (the same
+        applies to secondary orders in an OTOCO order list).
+        - For an OTOCO order list, the first order must be ORDER_TYPE.LIMIT, ORDER_TYPE.MARKET, ORDER_TYPE.STOP_LIMIT, ORDER_TYPE.STOP_MARKET, ORDER_TYPE.TAKE_PROFIT_LIMIT or ORDER_TYPE.TAKE_PROFIT_MARKET.
+        - For an OTOCO order list, the secondary orders have the same restrictions as an OCO order
+        - Default is ORDER_TYPE.Limit
+
+        https://api.exchange.cryptomkt.com/#create-new-spot-order-list
+
+        :param contingency_type: order list type.
+        :param orders: the list of orders
+        :param order_list_id: order list identifier. If not provided, it will be generated by the system. Must be equal to the client order id of the first order in the request
+
+        :returns: the list of the created orders
+        """
+        params = args.DictBuilder().contingency_type(contingency_type).orders(
+            orders).order_list_id(order_list_id).build()
+        response = self._post(endpoint='spot/order/list', params=params)
+        return [from_dict(data_class=Order, data=data) for data in response]
+
+    def replace_spot_order(
+        self,
+        client_order_id: str,
+        new_client_order_id: str,
+        quantity: str,
+        price: str = None,
+        strict_validate: bool = None
+    ) -> Order:
+        """Replaces a spot order
+
+        For fee, for price accuracy and quantity, and for order status information see the api docs
+
+        Requires the "Place/cancel orders" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#replace-spot-order
+
+        :param client order id: client order id of the old order
+        :param new client order id: client order id for the new order
+        :param quantity: Order quantity
+        :param strict validate: Price and quantity will be checked for incrementation within the symbol’s tick size and quantity step. See the symbol's tick_size and quantity_increment
+        :param price: Required if order type is 'limit', 'stopLimit', or 'takeProfitLimit'. Order price
+
+        :returns: The new spot order
+        """
+        params = args.DictBuilder().new_client_order_id(new_client_order_id).quantity(
+            quantity).price(price).strict_validate(strict_validate).build()
+        response = self._patch(
+            endpoint=f'spot/order/{client_order_id}', params=params)
+        return from_dict(data_class=Order, data=response)
+
+    def cancel_all_orders(self, symbol: str = None) -> List[Order]:
+        """Cancel all active spot orders, or all active orders for a specified symbol
+
+        Requires the "Place/cancel orders" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#cancel-all-spot-orders
+
+
+        :returns: A list with the canceled spot order
         """
         params = args.DictBuilder().symbol(symbol).build()
-        return self._delete(endpoint='order', params=params)
+        response = self._delete(endpoint='spot/order', params=params)
+        return [from_dict(data_class=Order, data=data) for data in response]
 
-    def cancel_order(self, client_order_id: str) -> Dict[str, Any]:
-        """Cancel the order with client_order_id.
+    def cancel_spot_order(self, client_order_id: str) -> Dict[str, Any]:
+        """Cancel the order with the client order id
 
-        Requires authentication.
+        Requires the "Place/cancel orders" API key Access Right
 
-        https://api.exchange.cryptomkt.com/#cancel-order-by-clientorderid
+        https://api.exchange.cryptomkt.com/#cancel-spot-order
 
-        :param client_order_id: the client id of the order to cancel.
+        :param client order id: client order id of the order to cancel
 
-        :returns: The canceled order.
-
-        .. code-block:: python
-        {
-            "id": 0,
-            "clientOrderId": "d8574207d9e3b16a4a5511753eeef175",
-            "symbol": "ETHBTC",
-            "side": "sell",
-            "status": "canceled",
-            "type": "limit",
-            "timeInForce": "GTC",
-            "quantity": "0.063",
-            "price": "0.046016",
-            "cumQuantity": "0.000",
-            "postOnly": false,
-            "createdAt": "2017-05-15T17:01:05.092Z",
-            "updatedAt": "2017-05-15T17:01:05.092Z"
-        }
+        :returns: The canceled spot order
         """
-        return self._delete(endpoint=f'order/{client_order_id}')
+        response = self._delete(endpoint=f'spot/order/{client_order_id}')
+        return from_dict(data_class=Order, data=response)
 
-    def get_trading_commission(self, symbol: str):
-        """Get personal trading commission rates for a symbol.
+    def get_all_trading_commissions(self) -> List[Commission]:
+        """Get the personal trading commission rates for all symbols
 
-        Requires authentication.
+        Requires the "Place/cancel orders" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#get-all-trading-commission
+
+
+        :returns: A list of commission rates
+        """
+        response = self._get(endpoint='spot/fee')
+        return [from_dict(data_class=Commission, data=data) for data in response]
+
+    def get_trading_commission(self, symbol: str) -> Commission:
+        """Get the personal trading commission rate of a symbol
+
+        Requires the "Place/cancel orders" API key Access Right
 
         https://api.exchange.cryptomkt.com/#get-trading-commission
 
-        :param symbol: The symbol of the comission rates.
+        :param symbol: The symbol of the commission rate
 
-        :returns: The commission rate for a symbol.
+        :returns: The commission rate of a symbol
         """
-        return self._get(endpoint=f'trading/fee/{symbol}')
+        response = self._get(endpoint=f'spot/fee/{symbol}')
+        return from_dict(data_class=Commission, data=response)
 
     ###################
     # TRADING HISTORY #
     ###################
 
-    def get_orders_by_client_order_id(self, client_order_id: str) -> Dict[str, Any]:
-        """Get order of the account with client_order_id.
+    def get_spot_orders_history(
+        self,
+        symbols: List[str] = None,
+        sort_by: Union[args.SORT_BY, Literal['id', 'timestamp']] = None,
+        sort: Union[args.SORT, Literal['ASC', 'DESC']] = None,
+        since: str = None,
+        till: str = None,
+        limit: int = None,
+        offset: int = None
+    ) -> List[Order]:
+        """Get all the spot orders
 
-        Requires authentication.
+        Orders without executions are deleted after 24 hours
 
-        https://api.exchange.cryptomkt.com/#orders-history
+        'from' param and 'till' param must have the same format, both id or both timestamp
 
-        :param client_order_id: the clientOrderId of the orders.
+        Requires the "Orderbook, History, Trading balance" API key Access Right
 
-        :returns: An order list.
+        https://api.exchange.cryptomkt.com/#spot-orders-history
 
-        .. code-block:: python
-        [
-            {
-                "id": 828680667,
-                "clientOrderId": "f4307c6e507e49019907c917b6d7a084",
-                "symbol": "ETHBTC",
-                "side": "sell",
-                "status": "partiallyFilled",
-                "type": "limit",
-                "timeInForce": "GTC",
-                "quantity": "13.942",
-                "price": "0.011384",
-                "avgPrice": "0.045000",
-                "cumQuantity": "5.240",
-                "createdAt": "2017-01-16T14:18:50.321Z",
-                "updatedAt": "2017-01-19T15:23:56.876Z"
-            }
-        ]
+        :param symbol: Optional. Filter orders by symbol
+        :param sort_by: Optional. Sorting parameter. 'id' or 'timestamp'. Default is 'timestamp'
+        :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'
+        :param from: Optional. Initial value of the queried interval
+        :param till: Optional. Last value of the queried interval
+        :param limit: Optional. Prices per currency pair. Defaul is 100. Max is 1000
+        :param offset: Optional. Default is 0. Max is 100000
+
+        :returns: A list of orders
         """
-        params = args.DictBuilder().client_order_id(client_order_id).build()
-        return self._get(endpoint='history/order', params=params)
-        
-    
-    def get_orders_history(self, 
-    symbol: str = None,
-    since: str = None,
-    till: str = None,
-    limit: int = None,
-    offset: int = None) -> List[Dict[str, Any]]:
-        """Get the account order history.
+        params = args.DictBuilder().symbols(symbols).sort(sort).by(
+            sort_by).since(since).till(till).limit(limit).offset(offset).build()
+        response = self._get(endpoint='spot/history/order', params=params)
+        return [from_dict(data_class=Order, data=data) for data in response]
 
-        Requires authentication.
+    def get_spot_trades_history(
+        self,
+        order_id: str = None,
+        symbol: str = None,
+        sort_by: Union[args.SORT_BY, Literal['id', 'timestamp']] = None,
+        sort: Union[args.SORT, Literal['ASC', 'DESC']] = None,
+        since: str = None,
+        till: str = None,
+        limit: int = None,
+        offset: int = None
+    ) -> List[Trade]:
+        """Get the user's spot trading history
 
-        https://api.exchange.cryptomkt.com/#orders-history
+        Requires the "Orderbook, History, Trading balance" API key Access Right
 
-        :param symbol: Optional. Filter orders by symbol.
-        :param since: Optional. Initial value of the queried interval. 
-        :param till: Optional. Last value of the queried interval.
-        :param limit: Optional. Orders per query. Defaul is 100. Max is 1000.
-        :param offset: Optional. Default is 0. Max is 100000. 
+        https://api.exchange.cryptomkt.com/#spot-trades-history
 
-        :returns: Orders in the interval.
+        :param order id: Optional. Order unique identifier as assigned by the exchange
+        :param symbol: Optional. Filter orders by symbol
+        :param sort_by: Optional. Sorting parameter. 'id' or 'timestamp'. Default is 'timestamp'
+        :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'
+        :param from: Optional. Initial value of the queried interval
+        :param till: Optional. Last value of the queried interval
+        :param limit: Optional. Prices per currency pair. Defaul is 100. Max is 1000
+        :param offset: Optional. Default is 0. Max is 100000
 
-        .. code-block:: python
-        [
-            {
-                "id": 828680665,
-                "clientOrderId": "f4307c6e507e49019907c917b6d7a084",
-                "symbol": "ETHBTC",
-                "side": "sell",
-                "status": "partiallyFilled",
-                "type": "limit",
-                "timeInForce": "GTC",
-                "quantity": "13.942",
-                "price": "0.011384",
-                "avgPrice": "0.055487",
-                "cumQuantity": "5.240",
-                "createdAt": "2017-01-16T14:18:47.321Z",
-                "updatedAt": "2017-01-19T15:23:54.876Z"
-            },
-            {
-                "id": 828680667,
-                "clientOrderId": "f4307c6e507e49019907c917b6d7a084",
-                "symbol": "ETHBTC",
-                "side": "sell",
-                "status": "partiallyFilled",
-                "type": "limit",
-                "timeInForce": "GTC",
-                "quantity": "13.942",
-                "price": "0.011384",
-                "avgPrice": "0.045000",
-                "cumQuantity": "5.240",
-                "createdAt": "2017-01-16T14:18:50.321Z",
-                "updatedAt": "2017-01-19T15:23:56.876Z"
-            }
-        ]
+        :returns: A list of trades
         """
-        params = args.DictBuilder().symbol(symbol).since(since).till(till).limit(limit).offset(offset).build()
-        return self._get(endpoint='history/order', params=params)
-
-    def get_trades_history(self,
-    symbol: str = None,
-    sort: str = None,
-    by: str = None,
-    since: str = None,
-    till: str = None,
-    limit: int = None,
-    offset: int = None,
-    margin: str = None) -> List[Dict[str, Any]]:
-        """Get the account's trading history.
-
-        Requires authentication.
-
-        https://api.exchange.cryptomkt.com/#trades-history
-
-        :param symbol: Optional. Filter trades by symbol.
-        :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'.
-        :param by: Optional. Defines the sorting type.'timestamp' or 'id'. Default is 'timestamp'.
-        :param since: Optional. Initial value of the queried interval. As id or as Datetime.
-        :param till: Optional. Last value of the queried interval. As id or as Datetime.
-        :param limit: Optional. Trades per query. Defaul is 100. Max is 1000.
-        :param offset: Optional. Default is 0. Max is 100000. 
-        :param margin: Optional. Filtering of margin orders. 'include', 'only' or 'ignore'. Default is 'include'
-
-        :returns: Trades in the interval.
-
-        .. code-block:: python
-        [
-            {
-                "id": 9535486,
-                "orderId": 816088377,
-                "clientOrderId": "f8dbaab336d44d5ba3ff578098a68454",
-                "symbol": "ETHBTC",
-                "side": "sell",
-                "quantity": "0.061",
-                "price": "0.045487",
-                "fee": "0.000002775",
-                "timestamp": "2017-05-17T12:32:57.848Z"
-            },
-            {
-                "id": 9535437,
-                "orderId": 816088021,
-                "clientOrderId": "27b9bfc068b44194b1f453c7af511ed6",
-                "symbol": "ETHBTC",
-                "side": "buy",
-                "quantity": "0.038",
-                "price": "0.046000",
-                "fee": "-0.000000174",
-                "timestamp": "2017-05-17T12:30:57.848Z"
-            }
-        ]
-        """
-        params = args.DictBuilder().symbol(symbol).sort(sort).by(by).since(since).till(till).limit(limit).offset(offset).margin(margin).build()
-        return self._get(endpoint='history/trades', params=params)
-
-    # TODO this method does not get trades, the problem is in the docs
-    def get_trades_by_order(self, order_id: str) -> List[Dict[str, Any]]:
-        """Get the account's trading order with a specified order id.
-
-        Requires authentication.
-
-        https://api.exchange.cryptomkt.com/#trades-by-order
-
-        :param order_id: Order unique identifier assigned by exchange.
-  
-        :returns: The trades of an order.
-
-        TODO: example does not look like a trade, instead looks like an order
-        .. code-block:: python
-        [           
-            {
-                "id": 828680665,
-                "orderId": 816088021,
-                "clientOrderId": "f4307c6e507e49019907c917b6d7a084",
-                "symbol": "ETHBTC",
-                "side": "sell",
-                "status": "partiallyFilled",
-                "type": "limit",
-                "timeInForce": "GTC",
-                "price": "0.011384",
-                "quantity": "13.942",
-                "postOnly": false,
-                "cumQuantity": "5.240",
-                "createdAt": "2017-01-16T14:18:47.321Z",
-                "updatedAt": "2017-01-19T15:23:54.876Z"
-            }
-        ]
-        """
-        return self._get(endpoint=f'history/order/{order_id}/trades')
+        params = args.DictBuilder().order_id(order_id).symbol(symbol).sort(
+            sort).by(sort_by).since(since).till(till).limit(limit).offset(offset).build()
+        response = self._get(endpoint='spot/history/trade', params=params)
+        return [from_dict(data_class=Trade, data=data) for data in response]
 
     ######################
-    # ACCOUNT MANAGEMENT #
+    # WALLET MANAGEMENT  #
     ######################
 
-    def get_account_balance(self) -> List[Dict[str, Any]]:
-        """Get the account balance.
+    def get_wallet_balances(self) -> List[Balance]:
+        """Get the user's wallet balances for all currencies with balance
 
-        Requires authentication.
+        Requires the "Payment information" API key Access Right
 
-        https://api.exchange.cryptomkt.com/#account-balance
+        https://api.exchange.cryptomkt.com/#wallet-balance
 
-        :returns: The account balance.
 
-        .. code-block:: python
-        [
-            {
-                "currency": "BTC",
-                "available": "0.0504600",
-                "reserved": "0.0000000"
-            },
-            {
-                "currency": "ETH",
-                "available": "30.8504600",
-                "reserved": "0.0000000"
-            }
-        ]
+        :returns: A list of wallet balances
         """
-        return self._get(endpoint='account/balance')
+        response = self._get(endpoint='wallet/balance')
+        return [from_dict(data_class=Balance, data=data) for data in response]
 
-    def get_deposit_crypto_address(self, currency: str) -> Dict[str, Any]:
-        """Get the current address of a currency.
+    def get_wallet_balance_of_currency(self, currency: str = None) -> Balance:
+        """Get the user's wallet balance of a currency
 
-        Requires authentication.
+        Requires the "Payment information" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#wallet-balance
+
+        :param currency: The currency code to query the balance
+
+        :returns: The wallet balance of the currency
+        """
+        response = self._get(endpoint=f'wallet/balance/{currency}')
+        return from_dict(data_class=Balance, data=response)
+
+    def get_deposit_crypto_addresses(self) -> List[Address]:
+        """Get the current addresses of the user
+
+        Requires the "Payment information" API key Access Right
 
         https://api.exchange.cryptomkt.com/#deposit-crypto-address
 
-        :param currency: currency to get the address.
 
-        :returns: The current address for the currency.
-
-        .. code-block:: python
-        {
-            "address": "NXT-G22U-BYF7-H8D9-3J27W",
-            "publicKey": "f79779a3a0c7acc75a62afe8125de53106c6a19c1ebdf92a3598676e58773df0"
-        }
+        :returns: A list of currency addresses
         """
-        return self._get(endpoint=f'account/crypto/address/{currency}')
+        response = self._get(endpoint=f'wallet/crypto/address')
+        return [from_dict(data_class=Address, data=data) for data in response]
 
-    def create_deposit_crypto_address(self, currency:str) -> Dict[str, Any]:
-        """Creates a new address for the currency.
+    def get_deposit_crypto_address_of_currency(self, currency: str) -> Address:
+        """Get the current addresses of a currency of the user
 
-        Requires authentication.
+        Requires the "Payment information" API key Access Right
 
         https://api.exchange.cryptomkt.com/#deposit-crypto-address
 
-        :param currency: currency to create a new address.
+        :param currency: Currency to get the address
 
-        :returns: The created address.
-
-        .. code-block:: python
-        {
-            "address": "NXT-G22U-BYF7-H8D9-3J27W",
-            "publicKey": "f79779a3a0c7acc75a62afe8125de53106c6a19c1ebdf92a3598676e58773df0"
-        }
+        :returns: A currency address
         """
-        return self._post(endpoint=f'account/crypto/address/{currency}')
+        params = args.DictBuilder().currency(currency).build()
+        response = self._get(endpoint='wallet/crypto/address', params=params)
+        return [from_dict(data_class=Address, data=data) for data in response][0]
 
-    
-    def last_10_deposit_crypto_address(self, currency: str) -> List[Dict[str, Any]]:
-        """Get the last 10 addresses used for deposit by currency.
+    def create_deposit_crypto_address(self, currency: str) -> Address:
+        """Creates a new address for a currency
 
-        Requires authentication.
+        Requires the "Payment information" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#deposit-crypto-address
+
+        :param currency: currency to create a new address
+
+        :returns: The created address for the currency
+        """
+        params = args.DictBuilder().currency(currency).build()
+        response = self._post(
+            endpoint=f'wallet/crypto/address', params=params)
+        return from_dict(data_class=Address, data=response)
+
+    def last_10_deposit_crypto_address(self, currency: str) -> List[Address]:
+        """Get the last 10 unique addresses used for deposit, by currency
+
+        Addresses used a long time ago may be omitted, even if they are among the last 10 unique addresses
+
+        Requires the "Payment information" API key Access Right
 
         https://api.exchange.cryptomkt.com/#last-10-deposit-crypto-address
 
-        :param currency: currency to get the list of addresses.
+        :param currency: currency to get the list of addresses
 
-        :returns: A list of addresses.
-
-        .. code-block:: python
-        [
-            {
-                "address": "NXT-G22U-BYF7-H8D9-3J27W",
-                "publicKey": "f79779a3a0c7acc75a62afe8125de53106c6a19c1ebdf92a3598676e58773df0"
-            }
-        ]
+        :returns: A list of addresses
         """
-        return self._get(endpoint=f'account/crypto/addresses/{currency}')
+        params = args.DictBuilder().currency(currency).build()
+        response = self._get(
+            endpoint=f'wallet/crypto/address/recent-deposit', params=params)
+        return [from_dict(data_class=Address, data=data) for data in response]
 
-    def last_10_used_crypto_address(self, currency: str) -> List[Dict[str, Any]]:
-        """Get the last 10 unique addresses used for withdraw by currency.
+    def last_10_withdrawal_crypto_address(self, currency: str) -> List[Address]:
+        """Get the last 10 unique addresses used for withdrawals, by currency
 
-        Requires authentication.
+        Addresses used a long time ago may be omitted, even if they are among the last 10 unique addresses
 
-        https://api.exchange.cryptomkt.com/#last-10-used-crypto-address
+        Requires the "Payment information" API key Access Right
 
-        :param currency: currency to get the list of addresses.
+        https://api.exchange.cryptomkt.com/#last-10-withdrawal-crypto-addresses
 
-        :returns: A list of addresses.
+        :param currency: currency to get the list of addresses
 
-        .. code-block:: python
-        [
-            {
-                "address": "NXT-G22U-BYF7-H8D9-3J27W",
-                "paymentId": "f79779a3a0c7acc75a62afe8125de53106c6a19c1ebdf92a3598676e58773df0"
-            }
-        ]
+        :returns: A list of addresses
         """
-        return self._get(endpoint=f'account/crypto/used-addresses/{currency}')
-    
-    def withdraw_crypto(self,
-    currency: str,
-    amount: str,
-    address: str,
-    payment_id: str = None,
-    include_fee: bool = None,
-    auto_commit: bool = None) -> str:
-        """Withdraw cryptocurrency.
+        params = args.DictBuilder().currency(currency).build()
+        response = self._get(
+            endpoint=f'wallet/crypto/address/recent-withdraw', params=params)
+        return [from_dict(data_class=Address, data=data) for data in response]
 
-        Requires authentication.
+    def withdraw_crypto(
+        self,
+        currency: str,
+        amount: str,
+        address: str,
+        payment_id: str = None,
+        include_fee: bool = None,
+        auto_commit: bool = None,
+        use_offchain: Literal['never', 'optionaly', 'required'] = None,
+        public_comment: str = None
+    ) -> str:
+        """Please take note that changing security settings affects withdrawals:
+
+        - It is impossible to withdraw funds without enabling the two-factor authentication (2FA)
+
+        - Password reset blocks withdrawals for 72 hours
+
+        - Each time a new address is added to the whitelist, it takes 48 hours before that address becomes active for withdrawal
+
+        Successful response to the request does not necessarily mean the resulting transaction got executed immediately. It has to be processed first and may eventually be rolled back
+
+        To see whether a transaction has been finalized call :py:func:`.Client.get_transaction`
+
+        Requires the "Withdraw cryptocurrencies" API key Access Right
 
         https://api.exchange.cryptomkt.com/#withdraw-crypto
 
-        :param currency: currency code of the crypto to withdraw.
-        :param amount: the amount to be sent to the specified address.
-        :param address: the address identifier.
-        :param paymentId: Optional.
-        :param includeFee: Optional. If True then the total spent amount includes fees. Default False.
-        :param autoCommit: Optional. If False then you should commit or rollback transaction in an hour. Used in two phase commit schema. Default True.
+        :param currency: currency code of the crypto to withdraw
+        :param amount: amount to be sent to the specified address
+        :param address: address identifier
+        :param payment_id: Optional.
+        :param include_fee: Optional. If true then the amount includes fees. Default is false
+        :param auto_commit: Optional. If false then you should commit or rollback the transaction in an hour. Used in two phase commit schema. Default is true
+        :param use_offchain: Optional. Whether the withdrawal may be comitted offchain. Accepted values are 'never', 'optionaly' and 'required'. Default is TODO
+        :param public_comment: Optional. Maximum lenght is 255
 
-        :returns: The transaction id, asigned by the exchange.
-
-        .. code-block:: python
-        "d2ce578f-647d-4fa0-b1aa-4a27e5ee597b"
+        :returns: The transaction id
         """
-        params = args.DictBuilder().currency(currency).address(address).amount(amount).payment_id(payment_id).include_fee(include_fee).auto_commit(auto_commit).build()
-        return self._post(endpoint='account/crypto/withdraw', params=params)['id']
+        params = args.DictBuilder().currency(currency).address(address).amount(amount).use_offchain(use_offchain).payment_id(
+            payment_id).include_fee(include_fee).auto_commit(auto_commit).public_comment(public_comment).build()
+        return self._post(endpoint='wallet/crypto/withdraw', params=params)['id']
 
-    def transfer_convert_between_currencies(self, 
-    from_currency: str, 
-    to_currency: str, 
-    amount: str) -> List[str]:
-        """Converts between currencies.
+    def withdraw_crypto_commit(self, id: str) -> bool:
+        """Commit a withdrawal
 
-        Requires authentication.
-
-        https://api.exchange.cryptomkt.com/#transfer-convert-between-currencies
-
-        :param from_currency: currency code of origin.
-        :param to_currency: currency code of destiny.
-        :param amount: the amount to be sent. 
-
-        :returns: A list of transaction identifiers.
-
-        .. code-block:: python
-        ["d2ce578f-647d-4fa0-b1aa-4a27e5ee597b", "d2ce57hf-6g7d-4ka0-b8aa-4a27e5ee5i7b"]
-        """
-        params = args.DictBuilder().from_currency(from_currency).to_currency(to_currency).amount(amount).build()
-        return self._post(endpoint='account/crypto/transfer-convert', params=params)['result']
-    
-
-    def commit_withdraw_crypto(self, id: str) -> bool:
-        """Commit a withdrawal of cryptocurrency.
-
-        Requires authentication.
+        Requires the "Withdraw cryptocurrencies" API key Access Right
 
         https://api.exchange.cryptomkt.com/#withdraw-crypto-commit-or-rollback
 
-        :param id: the withdrawal transaction identifier.
-        
-        :returns: The transaction result. True if the commit is successful.
+        :param id: the withdrawal transaction identifier
 
-        .. code-block:: python
-        True
+        :returns: The transaction result. true if the commit is successful
         """
-        return self._put(endpoint=f'account/crypto/withdraw/{id}')['result']
+        return self._put(endpoint=f'wallet/crypto/withdraw/{id}')['result']
 
-    def rollback_withdraw_crypto(self, id: str) -> bool:
-        """Rollback a withdrawal of cryptocurrency.
+    def withdraw_crypto_rollback(self, id: str) -> bool:
+        """Rollback a withdrawal
 
-        Requires authetication.
+        Requires the "Withdraw cryptocurrencies" API key Access Right
 
         https://api.exchange.cryptomkt.com/#withdraw-crypto-commit-or-rollback
 
-        :param id: the withdrawal transaction identifier.
-        
-        :returns: The transaction result. True if the rollback is successfull.
+        :param id: the withdrawal transaction identifier
 
-        .. code-block:: python
-        True
+        :returns: The transaction result. true if the rollback is successful
         """
-        return self._delete(endpoint=f'account/crypto/withdraw/{id}')['result']
-    
-    def get_estimate_withdraw_fee(self, currency: str, amount: str) -> str:
-        """Get an estimate of the withdrawal fee.
+        return self._delete(endpoint=f'wallet/crypto/withdraw/{id}')['result']
 
-        Requires authetication.
+    def get_estimate_withdrawal_fee(self, currency: str, amount: str) -> str:
+        """Get an estimate of the withdrawal fee
+
+        Requires the "Payment information" API key Access Right
 
         https://api.exchange.cryptomkt.com/#estimate-withdraw-fee
 
-        :param currency: Currency code for withdraw.
-        :param amount: Expected withdraw amount.
-        
-        :returns: The expected fee
+        :param currency: the currency code for withdrawal
+        :param amount: the expected withdraw amount
 
-        .. code-block:: python
-        "0.0008"
+        :returns: The expected fee
         """
         params = args.DictBuilder().amount(amount).currency(currency).build()
-        return self._get(endpoint='account/crypto/estimate-withdraw', params=params)['fee']
+        return self._get(endpoint='wallet/crypto/fee/estimate', params=params)['fee']
 
+    def check_if_crypto_address_belong_to_current_account(self, address: str) -> bool:
+        """Check if an address is from this account
 
-    def check_if_crypto_address_is_mine(self, address: str):
-        """Check if an address is from this account.
-
-        Requires authentication.
+        Requires the "Payment information" API key Access Right
 
         https://api.exchange.cryptomkt.com/#check-if-crypto-address-belongs-to-current-account
 
-        :param address: The address to check.
-        
-        :returns: The transaction result. True if it is from the current account.
+        :param address: address to check
+
+        :returns: True if it is from the current account
+        """
+        params = args.DictBuilder().address(address).build()
+        return self._get(endpoint=f'wallet/crypto/address/check-mine', params=params)['result']
+
+    def convert_between_currencies(
+        self,
+        from_currency: str,
+        to_currency: str,
+        amount: str
+    ) -> List[str]:
+        """Converts between currencies
+
+        Successful response to the request does not necessarily mean the resulting transaction got executed immediately. It has to be processed first and may eventually be rolled back
+
+        To see whether a transaction has been finalized, call getTransaction...#TODO:link the right function
+
+        Requires the "Payment information" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#convert-between-currencies
+
+        :param from currency: currency code of origin
+        :param to currency: currency code of destiny
+        :param amount: the amount to be converted
+
+        :returns: A list of transaction identifiers of the convertion
+        """
+        params = args.DictBuilder().from_currency(from_currency).to_currency(
+            to_currency).amount(amount).build()
+        return self._post(endpoint='wallet/convert', params=params)['result']
+
+    def transfer_between_wallet_and_exchange(
+        self,
+        currency: str,
+        amount: str,
+        source: Union[args.ACCOUNT, Literal['wallet', 'spot']],
+        destination: Union[args.ACCOUNT, Literal['wallet', 'spot']],
+    ) -> str:
+        """Transfer funds between account types
+
+        'source' param and 'destination' param must be different account types
+
+        Requires the "Payment information" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#transfer-between-wallet-and-exchange
+
+        :param currency: currency code for transfering
+        :param amount: amount to be transfered
+        :param source: transfer source account type. Either 'wallet' or 'spot'
+        :param destination: transfer source account type. Either 'wallet' or 'spot'
+
+        :returns: the transaction identifier of the transfer
+        """
+        params = args.DictBuilder().currency(currency).amount(
+            amount).source(source).destination(destination).build()
+        return self._post(endpoint='wallet/transfer', params=params)[0]
+
+    def transfer_money_to_another_user(
+        self,
+        currency: str,
+        amount: str,
+        identify_by: Union[args.IDENTIFY_BY, Literal['email', 'username']],
+        identifier: str
+    ) -> Dict[str, str]:
+        """Transfer funds to another user
+
+        Requires the "Withdraw cryptocurrencies" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#transfer-money-to-another-user
+
+        :param currency: currency code
+        :param amount: amount to be transfered
+        :param identify_by: type of identifier. Either 'email' or 'username'
+        :param identifier: the email or username of the recieving user
+
+        :returns: the transaction identifier of the transfer
+        """
+        params = args.DictBuilder().currency(currency).amount(
+            amount).identify_by(identify_by).identifier(identifier).build()
+        return self._post(endpoint='wallet/internal/withdraw', params=params)['result']
+
+    def get_transaction_history(
+        self,
+        ids: List[str] = None,
+        currencies: List[str] = None,
+        types: Optional[List[Union[args.TRANSACTION_TYPE, Literal[
+            'DEPOSIT', 'WITHDRAW', 'TRANSFER', 'SWAP'
+        ]]]] = None,
+        subtypes: Optional[List[Union[args.TRANSACTION_SUBTYPE, Literal[
+            'UNCLASSIFIED', 'BLOCKCHAIN', 'AIRDROP', 'AFFILIATE', 'STAKING', 'BUY_CRYPTO', 'OFFCHAIN', 'FIAT', 'SUB_ACCOUNT', 'WALLET_TO_SPOT', 'SPOT_TO_WALLET', 'WALLET_TO_DERIVATIVES', 'DERIVATIVES_TO_WALLET', 'CHAIN_SWITCH_FROM', 'CHAIN_SWITCH_TO', 'INSTANT_EXCHANGE'
+        ]]]] = None,
+        statuses: List[Union[args.TRANSACTION_STATUS, Literal[
+            'CREATED', 'PENDING', 'FAILED', 'SUCCESS', 'ROLLED_BACK'
+        ]]] = None,
+        sort_by: Optional[Union[args.SORT_BY,
+                                Literal['created_at', 'id']]] = None,
+        sort: Optional[Union[args.SORT, Literal['ASC', 'DESC']]] = None,
+        id_from: int = None,
+        id_till: int = None,
+        since: str = None,
+        till: str = None,
+        limit: int = None,
+        offset: int = None
+    ) -> List[Transaction]:
+        """Get the transaction history of the account
+
+        Important:
+
+        - The list of supported transaction types may be expanded in future versions
+
+        - Some transaction subtypes are reserved for future use and do not purport to provide any functionality on the platform
+
+        - The list of supported transaction subtypes may be expanded in future versions
+
+        Requires the "Payment information" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#get-transactions-history
+
+        :param ids: Optional. List of transaction identifiers to query
+        :param types: Optional. List of types to query. valid types are: 'DEPOSIT', 'WITHDRAW', 'TRANSFER' and 'SWAP'
+        :param subtyes: Optional. List of subtypes to query. valid subtypes are: 'UNCLASSIFIED', 'BLOCKCHAIN', 'AIRDROP', 'AFFILIATE', 'STAKING', 'BUY_CRYPTO', 'OFFCHAIN', 'FIAT', 'SUB_ACCOUNT', 'WALLET_TO_SPOT', 'SPOT_TO_WALLET', 'WALLET_TO_DERIVATIVES', 'DERIVATIVES_TO_WALLET', 'CHAIN_SWITCH_FROM', 'CHAIN_SWITCH_TO' and 'INSTANT_EXCHANGE'
+        :param statuses: Optional. List of statuses to query. valid subtypes are: 'CREATED', 'PENDING', 'FAILED', 'SUCCESS' and 'ROLLED_BACK'
+        :param sort_by: Optional. sorting parameter.'created_at' or 'id'. Default is 'created_at'
+        :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'
+        :param id_from: Optional. Interval initial value when ordering by id. Min is 0
+        :param id_till: Optional. Interval end value when ordering by id. Min is 0
+        :param since: Optional. Interval initial value when ordering by 'created_at'. As Datetime
+        :param till: Optional. Interval end value when ordering by 'created_at'. As Datetime
+        :param limit: Optional. Transactions per query. Defaul is 100. Max is 1000
+        :param offset: Optional. Default is 0. Max is 100000
+
+        :returns: A list of transactions
+        """
+        params = args.DictBuilder().currencies(currencies).transaction_types(types).transaction_subtypes(subtypes).transaction_statuses(statuses).id_from(
+            id_from).id_till(id_till).tx_ids(ids).sort_by(sort_by).sort(sort).since(since).till(till).limit(limit).offset(offset).build()
+        response = self._get(endpoint='wallet/transactions', params=params)
+        return [from_dict(data_class=Transaction, data=data) for data in response]
+
+    def get_transaction(self, id: str) -> Transaction:
+        """Get a transaction by its identifier
+
+        Requires the "Payment information" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#get-transactions-history
+
+        :param id: The identifier of the transaction
+
+        :returns: A transaction of the account
+        """
+        response = self._get(endpoint=f'wallet/transactions/{id}')
+        return from_dict(data_class=Transaction, data=response)
+
+    def check_if_offchain_is_available(
+        self,
+        currency: str,
+        address: str,
+        payment_id: str = None
+    ) -> bool:
+        """get the status of the offchain
+
+        Requires the "Payment information" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#check-if-offchain-is-available
+
+        :param currency: currency code
+        :param address: address identifier
+        :param payment id: Optional.
+
+        :returns: True if the offchain is available
 
         .. code-block:: python
         True
         """
-        return self._get(endpoint=f'account/crypto/is-mine/{address}')['result']
+        params = args.DictBuilder().currency(currency).address(
+            address).payment_id(payment_id).build()
+        return self._post(endpoint='wallet/crypto/check-offchain-available', params=params)
 
-    def transfer_money_from_trading_balance_to_bank_balance(self,
-    currency: str,
-    amount: str) -> str:
-        """Transfer money from trading account and a bank account.
-        
-        Requires authentication.
+    def get_amount_locks(self, currency, active, limit, offset, since, till) -> List[AmountLock]:
+        """Get the list of amount locks
 
-        https://api.exchange.cryptomkt.com/#transfer-money-between-trading-account-and-bank-account
+        Requires the "Payment information" API key Access Right
 
-        :param currency: Currency code for transfering.
-        :param amount: Amount to be transfered between balances.
-        
-        :returns: The transaction identifier of the transfer.
+        https://api.exchange.cryptomkt.com/#get-amount-locks
 
-        .. code-block:: python
-        "d2ce578f-647d-4fa0-b1aa-4a27e5ee597b"
+        :param currency: Optional. Currency code
+        :param active: Optional. value showing whether the lock is active
+        :param limit: Optional. Dafault is 100. Min is 0. Max is 1000
+        :param offset: Optional. Default is 0. Min is 0
+        :param from: Optional. Interval initial value. As Datetime
+        :param till: Optional. Interval end value. As Datetime
+
+        :returns: A list of locks
         """
-        params = args.DictBuilder().currency(currency).amount(amount).transfer_type(args.TRANSFER_TYPE.EXCHANGE_TO_BANK).build()
-        return self._post(endpoint='account/transfer', params=params)['id']
+        params = args.DictBuilder().currency(currency).active(active).limit(
+            limit).offset(offset).since(since).till(till).build()
+        response = self._get(endpoint='wallet/amount-locks', params=params)
+        return [from_dict(data_class=AmountLock, data=data) for data in response]
 
-    def transfer_money_from_bank_balance_to_trading_balance(self, 
-    currency: str, 
-    amount: str) -> str:
-        """Transfer money from bank account to trading account.
-        
-        Requires authentication.
+    ######################
+    #    SUBACCOUNTS     #
+    ######################
 
-        https://api.exchange.cryptomkt.com/#transfer-money-between-trading-account-and-bank-account
+    def get_sub_account_list(self) -> List[SubAccount]:
+        """Get the list of sub accounts
 
-        :param currency: Currency code for transfering.
-        :param amount: Amount to be transfered between balances.
-        
-        :returns: The transaction identifier of the transfer.
+        Requires no API key Access Rights. Requires to be authenticated
 
-        .. code-block:: python
-        "d2ce578f-647d-4fa0-b1aa-4a27e5ee597b"
+        https://api.exchange.cryptomkt.com/#get-sub-accounts-list
         """
-        params = args.DictBuilder().currency(currency).amount(amount).transfer_type(args.TRANSFER_TYPE.BANK_TO_EXCHANGE).build()
-        return self._post(endpoint='account/transfer', params=params)['id']
+        response = self._get(endpoint='sub-account')
+        return [from_dict(data_class=SubAccount, data=data) for data in response["result"]]
 
-    def transfer_money_to_another_user(self, 
-    currency: str, 
-    amount: str, 
-    transfer_by: str, 
-    identifier: str) -> Dict[str, str]:
-        """Transfer money to another user.
+    def freeze_sub_accounts(self, sub_account_ids: List[str]) -> bool:
+        """Freezes the sub accounts listed.
+        A frozen wouldn't be able to:
+        - login
+        - withdraw funds
+        - trade
+        - complete pending orders
+        - use API keys
 
-        Requires authentication.
+        For any sub-account listed, all orders will be canceled and all funds will be transferred form the Trading balance
 
-        https://api.exchange.cryptomkt.com/#transfer-money-to-another-user-by-email-or-username
+        Requires no API key Access Rights. Requires to be authenticated
 
-        :param currency: currency code.
-        :param amount: amount to be transfered between balances.
-        :param by: either 'email' or 'username'.
-        :param identifier: the email or the username.
-        
-        :returns: The transaction identifier of the transfer.
+        https://api.exchange.cryptomkt.com/#freeze-sub-account
 
-        .. code-block:: python
-        "fd3088da-31a6-428a-b9b6-c482673ff0f2"
+        :param sub_account_ids: A list of sub account ids. Ids as hexadecimal code
+
+        :returns: A boolean indicating whether the sub accounts where frozen. True if successful
         """
-        params = args.DictBuilder().currency(currency).amount(amount).transfer_by(transfer_by).identifier(identifier).build()
-        return self._post(endpoint='account/transfer/internal', params=params)['result']
+        params = args.DictBuilder().sub_account_ids(sub_account_ids).build()
+        return self._post(endpoint='sub-account/freeze', params=params)["result"]
 
-    def get_transactions_history(self,
-    currency: str,
-    sort: str = None,
-    by: str = None,
-    since: str = None,
-    till: str = None,
-    limit: int = None,
-    offset: int = None,
-    show_senders: bool = None) -> List[Dict[str, Any]]:
-        """Get the transactions of the account by currency.
+    def activate_sub_accounts(self, sub_account_ids: List[str]):
+        """Activates sub accounts listed
 
-        Requires authentication.
+        unfreezes sub accounts
 
-        https://api.exchange.cryptomkt.com/#get-transactions-history
+        Requres no API key Access Rights. Requires to be authenticated
 
-        :param currency: Currency code to get the transaction history.
-        :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'.
-        :param by: Optional. Defines the sorting type.'timestamp' or 'id'. Default is 'timestamp'.
-        :param since: Optional. Initial value of the queried interval. As id or as Datetime.
-        :param till: Optional. Last value of the queried interval. As id or as Datetime.
-        :param limit: Optional. Transactions per query. Defaul is 100. Max is 1000.
-        :param offset: Optional. Default is 0. Max is 100000. 
-        :param show_senders: Optional. If True, show the sender address for payins.
+        https://api.exchange.cryptomkt.com/#activate-sub-account
 
-        :returns: A list with the transactions in the interval.
+        :param sub_account_ids: A list of sub account ids. Ids as hexadecimal code
 
-        .. code-block:: python
-        [
-            {
-                "id": "6a2fb54d-7466-490c-b3a6-95d8c882f7f7",
-                "index": 20400458,
-                "currency": "ETH",
-                "amount": "38.616700000000000000000000",
-                "fee": "0.000880000000000000000000",
-                "address": "0xfaEF4bE10dDF50B68c220c9ab19381e20B8EEB2B",        
-                "hash": "eece4c17994798939cea9f6a72ee12faa55a7ce44860cfb95c7ed71c89522fe8",
-                "status": "pending",
-                "type": "payout",
-                "createdAt": "2017-05-18T18:05:36.957Z",
-                "updatedAt": "2017-05-18T19:21:05.370Z"
-            }
-        ]
+        :returns: A boolean indicating whether the sub accounts where activated. True if successful
         """
-        params = args.DictBuilder().currency(currency).sort(sort).by(by).since(since).till(till).limit(limit).offset(offset).show_senders(show_senders).build()
-        return self._get(endpoint='account/transactions', params=params)
-    
-    def get_transaction(self, id: str) -> Dict[str, Any]:
-        """Get the transactions of the account by its identifier.
+        params = args.DictBuilder().sub_account_ids(sub_account_ids).build()
+        return self._post(endpoint='sub-account/activate', params=params)["result"]
 
-        Requires authentication.
+    def transfer_funds(
+        self,
+        sub_account_id: str,
+        amount: str,
+        currency: str,
+        type: Union[args.TRANSFER_TYPE, Literal['to_sub_account', 'from_sub_account']],
+    ) -> str:
+        """Transfer funds
 
-        https://api.exchange.cryptomkt.com/#get-transactions-history
+        Transfers funds from the super-account to a sub-account or from a sub-account to the super-account
 
-        :param id: The identifier of the transaction.
+        Requires the "Withdraw cryptocurrencies" API key Access Right
 
-        :returns: The transaction with the given id.
+        https://api.exchange.cryptomkt.com/#transfer-funds
 
-        .. code-block:: python
-        {
-            "id": "6a2fb54d-7466-490c-b3a6-95d8c882f7f7",
-            "index": 20400458,
-            "currency": "ETH",
-            "amount": "38.616700000000000000000000",
-            "fee": "0.000880000000000000000000",
-            "address": "0xfaEF4bE10dDF50B68c220c9ab19381e20B8EEB2B",        
-            "hash": "eece4c17994798939cea9f6a72ee12faa55a7ce44860cfb95c7ed71c89522fe8",
-            "status": "pending",
-            "type": "payout",
-            "createdAt": "2017-05-18T18:05:36.957Z",
-            "updatedAt": "2017-05-18T19:21:05.370Z"
-        }
+        :param sub_account_id: id of the sub-account to transfer with the super-account
+        :param amount: amount of funds to transfer
+        :param currency: currency of transfer
+        :param type: 'to_sub_account' or 'from_sub_account'
+
+        :return: the transaction id
         """
-        return self._get(endpoint=f'account/transactions/{id}')
+        params = args.DictBuilder().sub_account_id(sub_account_id).amount(
+            amount).currency(currency).type(type).build()
+        return self._post(endpoint='sub-account/transfer', params=params)['result']
+
+    def get_ACL_settings(self, sub_account_ids: List[str]) -> List[ACLSettings]:
+        """Get a list of withdrawal settings for all sub-accounts or for the specified sub-accounts
+
+        Requires the "Payment information" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#get-acl-settings
+
+        :param sub_account_ids: A list of sub account ids. Ids as hexadecimal code
+
+        :return: A list of ACL settings for subaccounts
+        """
+        params = args.DictBuilder().sub_account_ids(sub_account_ids).build()
+        response = self._get(endpoint='sub-account/acl', params=params)
+        return [from_dict(data_class=ACLSettings, data=data) for data in response["result"]]
+
+    def change_ACL_settings(self, sub_account_ids: List[str], acl_settings: ACLSettings) -> List[ACLSettings]:
+        """Change the ACL settings of sub-accounts
+
+        Disables or enables withdrawals for a sub-account
+
+        Requires the "Payment information" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#change-acl-settings
+
+        :param sub_account_ids: A list of sub-account ids. Ids as hexadecimal code
+        :param acl_settgins: the new acl settings for the sub-accounts (id of dataclass ignored)
+
+        :return: A list of acl settings of the changed sub-accounts
+        """
+        params = args.DictBuilder().sub_account_ids(
+            sub_account_ids).acl_settings(acl_settings).build()
+        response = self._post(endpoint='sub-account/acl', params=params)
+        return [from_dict(data_class=ACLSettings, data=data) for data in response["result"]]
+
+    def get_sub_account_balance(self, sub_account_id: str) -> Dict[str, List[Balance]]:
+        """Get the non-zero balances of a sub-account
+
+        Report will include the wallet and Trading balances.
+
+        Works independent of account state.
+
+        Requires the "Payment information" API key Access Right.
+
+        https://api.exchange.cryptomkt.com/#get-sub-account-balance
+
+        :param sub_account_id: id of the sub-account to get the balances
+
+        :return: a dict of list of balances, indexes are 'wallet' and 'spot'
+        """
+        response = self._get(endpoint=f'sub-account/balance/{sub_account_id}')
+        result = dict()
+        for key in response["result"]:
+            result[key] = [from_dict(data_class=Balance, data=data)
+                           for data in response["result"][key]]
+        return result
+
+    def get_sub_account_crypto_address(self, sub_account_id: str, currency: str) -> str:
+        """Get the sub-account crypto address for a currency.
+
+        Requires the "Payment information" API key Access Right.
+
+        https://api.exchange.cryptomkt.com/#get-sub-account-crypto-address
+
+        :param sub_account_id: id of the sub-account to get the crypto address
+        :param currency: the currency of the crypto address
+
+        :returns: An Address
+        """
+        response = self._get(
+            endpoint=f'sub-account/crypto/address/{sub_account_id}/{currency}')
+        return from_dict(data_class=Address, data=response["result"]["address"])

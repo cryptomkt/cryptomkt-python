@@ -1,22 +1,25 @@
 # CryptoMarket-Python
-[main page](https://www.cryptomkt.com/)
 
+[main page](https://www.cryptomkt.com/)
 
 [sign up in CryptoMarket](https://www.cryptomkt.com/account/register).
 
 # Installation
+
 To install Cryptomarket use pip
+
 ```
 pip install cryptomarket
 ```
+
 # Documentation
 
 This sdk makes use of the [api version 2](https://api.exchange.cryptomkt.com/v2) of cryptomarket
 
-
 # Quick Start
 
 ## rest client
+
 ```python
 from cryptomarket.client import Client
 from cryptomarket.exceptions import CryptomarketSDKException
@@ -48,74 +51,117 @@ orders = client.get_active_orders('EOSETH')
 order = client.create_order('EOSETH', 'buy', '10', order_type=args.ORDER_TYPE.MARKET)
 ```
 
-## websocket client
+## Websocket Clients
 
-All websocket calls work with callbacks, subscriptions use a callback with one argument for the subscription feed. All the other callbacks takes two arguments, err and result: callback(err, result). If the transaction is successful err is None and the result is in result. If the transaction fails, result is None and the error is in err.
+there are three websocket clients, `MarketDataClient`, the `SpotTradingClient` and the `WalletManagementClient`. The `MarketDataClient` is public, while the others require authentication to be used.
 
-There are three websocket clients, the PublicClient, the TradingClient and the AccountClient.
+Some subscription callbacks take a second argument, indicating the type of notification, either 'snapshsot' or 'update'.
+
+### MarketDataClient
+
+There are no unsubscriptions methods for the `MarketDataClient`. To stop recieving messages is recomended to close the `MarketDataClient`.
 
 ```python
-from cryptomarket.websocket import PublicClient, TradingClient, AccountClient
+# instance a client
+client = MarketDataClient()
+client.connect()
+# close the client
+client.close()
+# subscribe to public trades
+def callback(trades_by_symbol: Dict[str, List[WSTrade]], notification_type):
+    for symbol in trades_by_symbol:
+        trade_list = trades_by_symbol[symbol]
+        for trade in trade_list:
+            print(trade)
+client.subscribe_to_trades(
+  callback=callback,
+  symbols=['ETHBTC'],
+  limit=5,
+)
 
-# THE PUBLIC CLIENT
-
-wsclient = PublicClient()
-
-wsclient.connect() # blocks until connected
-
-def my_callback(err, data):
-    if err is not None: # deal with error
-    print(data)
-
-# get currencies
-wsclient.get_currencies(my_callback)
-
-
-# get an order book feed, 
-# feed_callback is for the subscription feed, with one argument
-# result_callback is for the subscription result (success or failure)
-def feed_callback(feed):
-    print(feed)
-
-wsclient.subscribe_to_order_book('EOSETH', callback=feed_callback, result_calback=my_callback)
-
-# THE TRADING CLIENT
-
-wsclient = TradingClient(api_key, api_secret)
-
-wsclient.connect() # blocks until connected and authenticated.
-
-# get your trading balances
-wsclient.get_trading_balance(my_callback)
-
-# get your active orders
-wsclient.get_active_orders(my_callback)
-
-# create a new order
-clientOrderId = '123123123'
-wsclient.create_order('EOSETH', 'buy', '3', callback=my_callback)
-
-# THE ACCONUT CLIENT
-
-wsclient = AccountClient(api_key, api_secret)
-
-wsclient.connect() # blocks until connected
-
-wsclient.get_account_balance(my_callback)
+# subscribe to symbol tickers
+def ticker_callback(tikers_of_symbol: Dict[str, WSTicker]):
+    for symbol in tikers_of_symbol:
+        ticker = tikers_of_symbol[symbol]
+        print(ticker)
+client.subscribe_to_ticker(
+    callback=ticker_callback,
+    speed=args.TICKER_SPEED._3_SECONDS,
+    result_callback=lambda err, result: print(f'err:{err}, result:{result}')
+)
 ```
 
+### SpotTradingClient
+
+```python
+# instance a client with a 15 seconds window
+client = TradingClient(api_key, api_secret, window=15_000)
+client.connect()
+# close the client
+client.close()
+
+# subscribe to order reports
+def print_feed(feed, feed_type):
+    for report in feed:
+        print(report)
+client.subscribe_to_reports(callback)
+# unsubscribe from order reports
+client.unsubscribe_to_reports()
+
+client_order_id = str(int(time.time()*1000))
+
+# create an order
+create_spot_order(
+  client_order_id=client_order_id,
+  symbol='EOSETH',
+  side='sell',
+  quantity='0.01',
+  price='10000',
+)
+
+# candel an order
+client.cancel_spot_order(client_order_id)
+
+```
+
+### WalletManagementClient
+
+```python
+# instance a client
+client = WalletClient(api_key, api_secret)
+client.connect()
+# close the client
+defer client.close()
+
+# subscribe to wallet transactions
+def callback(transaction):
+  print(transaction)
+client.subscribe_to_transactions(callback)
+
+# unsubscribe from wallet transactions
+err = client.unsubscribe_to_transactions()
+
+# get wallet balances
+def callback(err, balances):
+  if err:
+      print(err)
+      return
+  print(balances)
+client.get_wallet_balances(callback)
+```
 
 ## exception handling
+
 ```python
 from cryptomarket.client import Client
 from cryptomarket.exceptions import CryptomarketSDKException
 
 client = Client(api_key, secret_key)
 
-# catch a wrong argument 
+# catch a wrong argument
 try:
     order = client.create_order(
-        symbol='EOSETH', 
+        symbol='EOSETH',
         side='selllll', # wrong
         quantity='3'
     )
@@ -127,72 +173,40 @@ try:
     order = client.create_order(
         symbol='eosehtt',  # non existant symbol
         side='sell',
-        quantity='10', 
+        quantity='10',
     )
 except CryptomarketSDKException as e:
     print(f'exception catched {e}')
 
 
-wsclient = TradingClient(api_key, api_secret)
-
-# websocket errors are passed as the first argument to the callback
-def callback(err, result):
-    if err is not None:
-        print('an error ocurred')
-        print(err)
-    else:
-        print('successful transaction')
-        print(result)
-
-wsclient.authenticate(callback=callback)
-
-# catch authorization error
-# to catch an authorization error on client connection, a on_error function must be passed to the client
-wsclient = TradingClient(apiKey, apiSecret, on_error=lambda err: print(err))
+client = WalletClient(api_key, api_secret)
+try:
+  client.connect()
+except Exception as e:
+  # here we are catching connection and authentication errors
+  print(e)
 ```
 
-# Constants of interest
+websocket methods take callbacks with two parameters, the first is the possible error, the second is the result of response from the server, for example:
+
+```python
+def callback(err, balances):
+  if err:
+      print(err)
+      return
+  print(balances)
+client.get_wallet_balances(callback)
+```
+
+websocket subscriptions also have this type of callback, but is called **result_callback** instead
+
+## Constants of interest
 
 All constants required for calls are in the `cryptomarket.args` module.
-each enum has the name of the argument that needs it.
-Here is the full list
-```python
-import cryptomarket.args as args
 
-args.SORT.ASCENDING = 'ASC'
-args.SORT.DESCENDING = 'DESC'
+## Dataclasses
 
-args.BY.TIMESTAMP = 'timestamp'
-args.BY.ID = 'id'
-
-args.PERIOD._1_MINS = 'M1'
-args.PERIOD._3_MINS = 'M3'
-args.PERIOD._5_MINS = 'M5'
-args.PERIOD._15_MINS = 'M15'
-args.PERIOD._30_MINS = 'M30'
-args.PERIOD._1_HOURS = 'H1'
-args.PERIOD._4_HOURS = 'H4'
-args.PERIOD._1_DAYS = 'D1'
-args.PERIOD._7_DAYS = 'D7'
-args.PERIOD._1_MONTH = '1M'
-
-args.SIDE.BUY = 'buy'
-args.SIDE.SELL = 'sell'
-
-args.ORDER_TYPE.LIMIT = 'limit'
-args.ORDER_TYPE.MARKET = 'market'
-args.ORDER_TYPE.STOPLIMIT = 'stopLimit'
-args.ORDER_TYPE.STOPMARKET = 'stopMarket'
-
-args.TIME_IN_FORCE.GTC = 'GTC' # Good till canceled
-args.TIME_IN_FORCE.IOC = 'IOC' # Immediate or cancell
-args.TIME_IN_FORCE.FOK = 'FOK' # Fill or kill
-args.TIME_IN_FORCE.DAY = 'Day' # Good for the day
-args.TIME_IN_FORCE.GTD = 'GDT' # Good till date
-
-args.TRANSFER_BY.USERNAME = 'username',
-args.TRANSFER_BY.EMAIL = 'email'
-```
+All classes returned by the client are in the `cryptomarket.dataclasses` module
 
 # Checkout our other SDKs
 

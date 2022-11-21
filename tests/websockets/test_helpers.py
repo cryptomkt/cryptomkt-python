@@ -1,217 +1,233 @@
-from typing import Dict, Any, List
+import time
+from dataclasses import asdict
+from typing import Any, Dict, List
+
+from cryptomarket.dataclasses import (Balance, OrderBookLevel, Report,
+                                      WSCandle, WSMiniTicker, WSOrderBook,
+                                      WSOrderBookTop, WSPublicTrade, WSTicker,
+                                      WSTrade)
+from tests.rest.test_helpers import good_list
 
 
-# defined checks if a key is present in a dict, and if its value is str, checks if its defined.
-# return false when the key is not present or when the value is an empty string, return true otherwise.
 def defined(a_dict, key):
-    if key not in a_dict: return False
+    if key not in a_dict:
+        return False
     val = a_dict[key]
-    if isinstance(val, str) and val == "": return False
+    if isinstance(val, str) and val == "":
+        return False
     return True
 
-# good_dict checks all of the values in the fields list to be present in the dict, and if they are 
-# present, check the defined() condition to be true. if any of the fields fails to be defined(), then 
-# this function returns false
+
 def good_dict(a_dict: Dict[str, Any], fields: List[str]) -> bool:
-    if not isinstance(a_dict, dict): return False
+    if not isinstance(a_dict, dict):
+        return False
     for field in fields:
-        if not defined(a_dict, field): return False
+        if not defined(a_dict, field):
+            return False
     return True
 
 
-# good_currency checks the precence of every field in the currency dict
-def good_currency(currency: Dict[str, Any]) -> bool:
-    return good_dict(currency,
+def good_wsticker(ticker: WSTicker) -> bool:
+    return good_dict(
+        asdict(ticker),
         [
-            "id",
-            "fullName",
-            "crypto",
-            "payinEnabled",
-            "payinPaymentId",
-            "payinConfirmations",
-            "payoutEnabled",
-            "payoutIsPaymentId",
-            "transferEnabled",
-            "delisted",
-            # "precisionPayout",
-            # "precisionTransfer",
-        ]
-    )
-
-# good_symbol check the precence of every field in the symbol dict
-def good_symbol(symbol: Dict[str, Any]) -> bool:
-    return good_dict(symbol, 
-        [
-            'id',
-            'baseCurrency',
-            'quoteCurrency',
-            'quantityIncrement',
-            'tickSize',
-            'takeLiquidityRate',
-            'provideLiquidityRate',
-            # 'feeCurrency'
+            "t",
+            "a",
+            "A",
+            "b",
+            "B",
+            "c",
+            "o",
+            "h",
+            "l",
+            "v",
+            "q",
+            "p",
+            "P",
+            "L",
         ]
     )
 
 
-# good_ticker check the precence of every field in the ticker dict
-def good_ticker(ticker: Dict[str, Any]) -> bool:
-    return good_dict(ticker, 
+def good_mini_ticker(miniticker: WSMiniTicker) -> bool:
+    return good_dict(
+        asdict(miniticker),
         [
-            "symbol",
-            "ask",
-            "bid",
-            "last",
-            "low",
-            "high",
-            "open",
-            "volume",
-            "volumeQuote",
-            "timestamp",
+            "t",
+            "o",
+            "c",
+            "h",
+            "l",
+            "v",
+            "q"
         ]
     )
 
 
-# good_public_trade check the precence of every field in the trade dict
-def good_public_trade(trade: Dict[str, Any]) -> bool:
-    return good_dict(trade, 
+def good_public_trade(trade: WSPublicTrade) -> bool:
+    return good_dict(
+        asdict(trade),
         [
-            "id",
+            "t",
+            "i",
+            "p",
+            "q",
+            "s",
+        ]
+    )
+
+
+def good_orderbook_level(level: OrderBookLevel) -> bool:
+    return good_dict(
+        asdict(level),
+        [
             "price",
             "quantity",
-            "side",
-            "timestamp",
         ]
     )
 
-# good_orderbook_level check the precence of every field in the level dict
-def good_orderbook_level(level: Dict[str, Any]) -> bool:
-    return good_dict(level, 
+
+def good_wsorder_book(orderbook: WSOrderBook) -> bool:
+    good_orderbook = good_dict(
+        asdict(orderbook),
         [
-            "price",
-            "size",
+            "t",
+            "s",
+            "a",
+            "b",
         ]
     )
+    if not good_orderbook:
+        return False
 
-# good_orderbook check the precence of every field in the orderbook dict
-# and the fields of each level in each side of the orderbook
-def good_orderbook(orderbook: Dict[str, Any]) -> bool:
-    good_orderbook = good_dict(orderbook, 
-        [
-            "symbol",
-            "timestamp",
-            # "batchingTime",
-            "ask",
-            "bid",
-        ]
-    )
-    if not good_orderbook: return False
+    for level in orderbook.a:
+        if not good_orderbook_level(level):
+            return False
 
-    for level in orderbook["ask"]:
-        if not good_orderbook_level(level): return False
-
-    for level in orderbook["bid"]:
-        if not good_orderbook_level(level): return False
+    for level in orderbook.b:
+        if not good_orderbook_level(level):
+            return False
 
     return True
 
 
-
-# good_candle check the precence of every field in the candle dict
-def good_candle(candle: Dict[str, Any]) -> bool:
-    return good_dict(candle, 
+def good_orderbook_top(orderbook_top: WSOrderBookTop) -> bool:
+    return good_dict(
+        asdict(orderbook_top),
         [
-            "timestamp",
-            "open",
-            "close",
-            "min",
-            "max",
-            "volume",
-            "volumeQuote",
+            "t",
+            "a",
+            "b",
+            "A",
+            "B",
         ]
     )
 
 
-# good_candle_list check the precence of every field of the candle dict in every candle of the candle list.
-def good_candle_list(candles: List[Dict[str, Any]]) -> bool:
+def good_candle(candle: WSCandle) -> bool:
+    return good_dict(
+        asdict(candle),
+        [
+            "t",
+            "o",
+            "c",
+            "h",
+            "l",
+            "v",
+            "q",
+        ]
+    )
+
+
+def good_candle_list(candles: List[WSCandle]) -> bool:
     for candle in candles:
-        if not good_candle(candle): return False
+        if not good_candle(candle):
+            return False
     return True
 
 
-# good_balances check the precence of every field on every balance dict
-def good_balances(balances: List[Dict[str, Any]]) -> bool:
+def good_balances(balances: List[Balance]) -> bool:
     for balance in balances:
-        good_balance = good_dict(balance, 
+        good_balance = good_dict(
+            asdict(balance),
             [
                 "currency",
                 "available",
                 "reserved",
             ]
         )
-        if not good_balance: return False
+        if not good_balance:
+            return False
     return True
 
 
-# good_order check the precence of every field in the order dict
-def good_order(order: Dict[str, Any]) -> bool:
-    return good_dict(order, 
+def good_wstrade(trade: WSTrade) -> bool:
+    return good_dict(
+        asdict(trade),
         [
-            "id",
-            "clientOrderId",
-            "symbol",
-            "side",
-            "status",
-            "type",
-            "timeInForce",
-            "quantity",
-            "price",
-            "cumQuantity",
-            # "postOnly", # does not appears in the orders in orders history
-            "createdAt",
-            "updatedAt",
+            't',
+            'i',
+            'p',
+            'q',
+            's',
         ]
     )
 
 
-# good_order_list check the precence of every field of the order dict in every order of the order list.
-def good_order_list(orders: List[Dict[str, Any]]) -> bool:
-    for order in orders:
-        if not good_order(order): return False
-    return True
-
-# good_trade check the precence of every field in the trade dict
-def good_trade(trade: Dict[str, Any]) -> bool:
-    return good_dict(trade, 
+def good_report(report: Report):
+    return good_dict(
+        asdict(report),
         [
-            "id",
-            "orderId",
-            "clientOrderId",
-            "symbol",
-            "side",
-            "quantity",
-            "price",
-            "fee",
-            "timestamp",
+            'id',
+            'client_order_id',
+            'symbol',
+            'side',
+            'status',
+            'type',
+            'time_in_force',
+            'quantity',
+            'price',
+            'cum_quantity',
+            'post_only',
+            'created_at',
+            'updated_at',
+            'stop_price',
+            'expire_time',
+            'original_client_order_id',
+            # 'trade_id',
+            # 'trade_quantity',
+            # 'trade_price',
+            # 'trade_fee',
+            # 'trade_taker',
+            # 'report_type',
+            # 'order_list_id',
+            # 'contingency_type',
         ]
     )
 
 
+def good_report_list(report_list: List[Report]):
+    return good_list(good_report, report_list)
 
-# good_transaction check the precence of every field in the transaction dict
-def good_transaction(transaction: Dict[str, Any]) -> bool:
-    return good_dict(transaction, 
-        [
-            "id",
-            "index",
-            "currency",
-            "amount",
-            # "fee",
-            # "address",
-            # "hash",
-            "status",
-            "type",
-            "createdAt",
-            "updatedAt",
-        ]
-    )
+
+class Veredict:
+    failed = False
+    message = ''
+    done = False
+
+    @classmethod
+    def fail(cls, message):
+        cls.failed = True
+        cls.message = message
+        cls.done = True
+
+    @classmethod
+    def reset(cls):
+        cls.failed = False
+        cls.message = ''
+        cls.done = False
+
+    @classmethod
+    def wait_done(cls):
+        while not cls.done:
+            time.sleep(1)

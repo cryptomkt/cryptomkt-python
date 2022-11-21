@@ -1,32 +1,44 @@
-import hashlib
-import hmac
-import time
+from hashlib import sha256
+from hmac import HMAC
+from time import time
 from base64 import b64encode
-from urllib.parse import urlparse
+from urllib.parse import urlsplit
 
 from requests.auth import AuthBase
 
 
 class HS256(AuthBase):
-    def __init__(self, username, password):
-        self.username = username
-        self.password = password
+    def __init__(self, api_key: str, secret_key: str, window: int = None):
+        self.api_key = api_key
+        self.secret_key = secret_key
+        self.window = window
 
     def __call__(self, r):
-        url = urlparse(r.url)
-        timestamp = str(int(time.time()))
-        msg = r.method + timestamp + url.path
-        if url.query != "":
-            msg += "?" + url.query
+        url = urlsplit(r.url)
+        message = [r.method, url.path]
+        if url.query:
+            message.append('?')
+            message.append(url.query)
         if r.body:
-            msg += r.body
-        signature = hmac.new(self.password.encode(), msg.encode(), hashlib.sha256).hexdigest()
-        authstr = "HS256 " + b64encode(
-                    b':'.join((self.username.encode(), timestamp.encode(), signature.encode()))).decode().strip()
-        r.headers['Authorization'] = authstr
+            message.append(r.body)
+
+        timestamp = str(int(time() * 1000))
+        window = str(self.window) if self.window else None
+        message.append(timestamp)
+        if window:
+            message.append(window)
+
+        signature = HMAC(key=self.secret_key.encode(),
+                         msg=''.join(message).encode(),
+                         digestmod=sha256).hexdigest()
+        data = [self.api_key, signature, timestamp]
+        if window:
+            data.append(window)
+
+        base64_encoded = b64encode(':'.join(data).encode()).decode()
+        r.headers['Authorization'] = f'HS256 {base64_encoded}'
         return r
 
     @staticmethod
     def get_signature(message, password):
-        return hmac.new(password.encode(), message.encode(), hashlib.sha256).hexdigest()
-
+        return HMAC(password.encode(), message.encode(), sha256).hexdigest()

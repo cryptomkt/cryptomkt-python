@@ -1,56 +1,85 @@
 import json
 import time
+from typing import Union
 import unittest
-
-import cryptomarket.args as args
 
 from test_helpers import *
 
-from cryptomarket.exceptions import CryptomarketSDKException
 from cryptomarket.websockets import TradingClient
+from tests.rest.test_helpers import good_balance, good_trading_commission
 
 
-with open('/home/ismael/cryptomarket/apis/keys.json') as fd:
+with open('/home/ismael/cryptomarket/keys-v3.json') as fd:
     keys = json.load(fd)
+
 
 class TestWSTradingClient(unittest.TestCase):
 
     def setUp(self):
-        self.ws = TradingClient(keys['apiKey'], keys['apiSecret'],on_error=lambda err: print(err))
+        self.ws = TradingClient(
+            keys['apiKey'],
+            keys['apiSecret'],
+            window=20000,
+            on_error=lambda err: print(err),
+        )
         self.ws.connect()
-    
+        Veredict.reset()
+
     def tearDown(self):
         self.ws.close()
-    
-    def test_create_get_and_cancel_order(self):
+
+    def test_order_flow(self):
         client_order_id = str(int(time.time()))
+
         def on_active_orders(err, order_list):
-            self.assertIsNone(err,"error in request: " + str(err))
-            self.assertTrue(good_order_list(order_list),"not good orders")
+            if err is not None:
+                Veredict.fail(f'{err}')
+                return
+            if not good_report_list(order_list):
+                Veredict.fail("not a good order list")
+                return
+            order: Report
             for order in order_list:
-                self.assertTrue(order['clientOrderId'] != client_order_id+"new",'order not canceled')
+                if order.client_order_id == client_order_id+"new":
+                    Veredict.fail('order not canceled')
+                    return
+            Veredict.done = True
 
-        def on_canceled_order(err, canceled_order):
-            self.assertIsNone(err,"error in request: " + str(err))
-            self.assertTrue(canceled_order['reportType'] == 'canceled', "should be canceled")
-            self.assertTrue(good_order(canceled_order),"not good order")
-            
-            self.ws.get_active_orders(on_active_orders)
+        def on_canceled_order(err, canceled_order: Union[Report, None]):
+            if err is not None:
+                Veredict.fail(f'{err}')
+                return
+            if not canceled_order.report_type == 'canceled':
+                Veredict.fail('order not canceled')
+                return
+            if not good_report(canceled_order):
+                Veredict.fail('not a good report')
+                return
+            self.ws.get_active_spot_orders(on_active_orders)
 
+        def on_replaced_order(err, replaced_order: Union[Report, None]):
+            if err is not None:
+                Veredict.fail(f'{err}')
+                return
+            if not good_report(replaced_order):
+                Veredict.fail("not a good report")
+                return
+            if not replaced_order.report_type == 'replaced':
+                Veredict.fail("order not replaced")
+                return
+            client_order_id = replaced_order.client_order_id
+            self.ws.cancel_spot_order(client_order_id, on_canceled_order)
 
-        def on_replaced_order(err, order_replaced):
-            self.assertIsNone(err,"error in request: " + str(err))
-            self.assertTrue(good_order(order_replaced), "not good order")
-            self.assertTrue(order_replaced['reportType']== 'replaced', "should be replaced")
-
-            client_order_id = order_replaced['clientOrderId']
-            self.ws.cancel_order(client_order_id, on_canceled_order)
-
-        def on_order_created(err, new_order):
-            self.assertIsNone(err,"error in request: " + str(err))
-            self.assertTrue(good_order(new_order), "not good order")
-            self.assertTrue(new_order['status']=='new', "should be new")
-            self.ws.replace_order(
+        def on_created_order(err, created_order: Union[Report, None]):
+            if err is not None:
+                Veredict.fail(f'{err}')
+                return
+            if not good_report(created_order):
+                Veredict.fail("not a good report")
+                return
+            if not created_order.status == 'new':
+                Veredict.fail('not a new order')
+            self.ws.replace_spot_order(
                 client_order_id,
                 client_order_id+"new",
                 '0.01',
@@ -58,22 +87,82 @@ class TestWSTradingClient(unittest.TestCase):
                 callback=on_replaced_order,
             )
 
-        self.ws.create_order(
-            client_order_id,
-            'EOSETH',
-            'sell',
-            '0.01',
+        self.ws.create_spot_order(
+            client_order_id=client_order_id,
+            symbol='EOSETH',
+            side='sell',
+            quantity='0.01',
             price='10000',
-            callback=on_order_created)
-        time.sleep(7)
+            callback=on_created_order)
+        Veredict.wait_done()
+        if Veredict.failed:
+            self.fail(Veredict.message)
 
-    def test_get_trading_balance(self):
+    def test_get_trading_balances(self):
         def check_good_balances(err, balances):
-            self.assertTrue(err is None,"error in request: " + str(err))
-            self.assertTrue(len(balances)>0, "no balances")
-            self.assertTrue(good_balances(balances), "not good balances")
-        self.ws.get_trading_balance(check_good_balances)
-        time.sleep(3)
+            if err is not None:
+                Veredict.fail(f'{err}')
+                return
+            if not len(balances) > 0:
+                Veredict.fail("no balances")
+                return
+            if not good_balances(balances):
+                Veredict.fail("not good balances")
+                return
+            Veredict.done = True
+
+        self.ws.get_spot_trading_balances(check_good_balances)
+        Veredict.wait_done()
+        if Veredict.failed:
+            self.fail(Veredict.message)
+
+    def test_get_trading_balance_of_currency(self):
+        def check_good_balance(err, balance):
+            if err is not None:
+                Veredict.fail(f'{err}')
+                return
+            if not good_balance(balance):
+                Veredict.fail("not good balance")
+                return
+            Veredict.done = True
+
+        self.ws.get_spot_trading_balance_of_currency('EOS', check_good_balance)
+        Veredict.wait_done()
+        if Veredict.failed:
+            self.fail(Veredict.message)
+
+    def test_get_spot_trading_commissions(self):
+        def check_good_trading_commission(err, commissions):
+            if err is not None:
+                Veredict.fail(f'{err}')
+                return
+
+            for commission in commissions:
+                if not good_trading_commission(commission):
+                    Veredict.fail('not a good commission')
+                    return
+            Veredict.done = True
+
+        self.ws.get_spot_commisions(check_good_trading_commission)
+        Veredict.wait_done()
+        if Veredict.failed:
+            self.fail(Veredict.message)
+
+    def test_get_spot_trading_commission_of_symbol(self):
+        def check_good_trading_commission(err, commission):
+            if err is not None:
+                Veredict.fail(f'{err}')
+                return
+            if not good_trading_commission(commission):
+                Veredict.fail('not a good commission')
+                return
+            Veredict.done = True
+
+        self.ws.get_spot_commision_of_symbol(
+            'EOSETH', check_good_trading_commission)
+        Veredict.wait_done()
+        if Veredict.failed:
+            self.fail(Veredict.message)
 
 
 if __name__ == '__main__':
