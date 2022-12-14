@@ -27,8 +27,10 @@ class CONTINGENCY_TYPE(CHECKER):
     AON = "allOrNone"
     ONE_CANCEL_OTHER = "oneCancelOther"
     OCO = "oneCancelOther"
-    OTOCO = "oneTriggerOneCancelOther"
+    ONE_TRIGGER_OTHER = "oneTriggerOther"
+    OTO = "oneTriggerOther"
     ONE_TRIGGER_ONE_CANCEL_OTHER = "oneTriggerOneCancelOther"
+    OTOCO = "oneTriggerOneCancelOther"
 
 
 class SORT(CHECKER):

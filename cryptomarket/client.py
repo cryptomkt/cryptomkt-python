@@ -604,18 +604,21 @@ class Client(object):
 
         - CONTINGENCY.ALL_OR_NONE (CONTINGENCY.AON)
         - CONTINGENCY.ONE_CANCEL_OTHER (CONTINGENCY.OCO)
+        - CONTINGENCY.ONE_TRIGGER_OTHER (CONTINGENCY.OTO)
         - CONTINGENCY.ONE_TRIGGER_ONE_CANCEL_OTHER (CONTINGENCY.OTOCO)
 
         Restriction in the number of orders:
 
         - An AON list must have 2 or 3 orders
         - An OCO list must have 2 or 3 orders
+        - An OTO list must have 2 or 3 orders
         - An OTOCO must have 3 or 4 orders
 
         Symbol restrictions:
 
         - For an AON order list, the symbol code of orders must be unique for each order in the list.
         - For an OCO order list, there are no symbol code restrictions.
+        - For an OTO order list, there are no symbol code restrictions.
         - For an OTOCO order list, the symbol code of orders must be the same for all orders in the list (placing orders in different order books is not supported).
 
         ORDER_TYPE restrictions:
@@ -623,6 +626,7 @@ class Client(object):
         - For an OCO order list, orders must be ORDER_TYPE.LIMIT, ORDER_TYPE.STOP_LIMIT, ORDER_TYPE.STOP_MARKET, ORDER_TYPE.TAKE_PROFIT_LIMIT or ORDER_TYPE.TAKE_PROFIT_MARKET.
         - An OCO order list cannot include more than one limit order (the same
         applies to secondary orders in an OTOCO order list).
+        - For an OTO order list, there are no order type resctrictions.
         - For an OTOCO order list, the first order must be ORDER_TYPE.LIMIT, ORDER_TYPE.MARKET, ORDER_TYPE.STOP_LIMIT, ORDER_TYPE.STOP_MARKET, ORDER_TYPE.TAKE_PROFIT_LIMIT or ORDER_TYPE.TAKE_PROFIT_MARKET.
         - For an OTOCO order list, the secondary orders have the same restrictions as an OCO order
         - Default is ORDER_TYPE.Limit
