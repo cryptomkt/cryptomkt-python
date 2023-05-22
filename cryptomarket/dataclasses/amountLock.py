@@ -1,14 +1,15 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
 class AmountLock:
-    id: int = None
-    currency: str = None
-    amount: str = None
-    date_end: str = None
-    description: str = None
-    cancelled: bool = None
-    cancelled_at: str = None
-    cancel_description: str = None
-    created_at: str = None
+    id: int
+    currency: str
+    amount: str
+    date_end: str
+    description: str
+    cancelled: bool
+    created_at: str
+    cancelled_at: Optional[str] = None
+    cancel_description: Optional[str] = None

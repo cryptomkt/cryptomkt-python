@@ -1,12 +1,14 @@
 import time
-from typing import Dict
-from cryptomarket.exceptions import CryptomarketSDKException
+from datetime import datetime, timedelta
+from typing import Dict, Optional
 
+from cryptomarket.exceptions import (CryptomarketAPIException,
+                                     CryptomarketSDKException)
 from cryptomarket.hmac import HS256
 from cryptomarket.websockets.client_base import ClientBase
 
 
-class ClientAuth(ClientBase):
+class ClientAuthenticable(ClientBase):
     def __init__(
         self,
         uri: str,
@@ -18,7 +20,7 @@ class ClientAuth(ClientBase):
         on_error=None,
         on_close=None
     ):
-        super(ClientAuth, self).__init__(
+        super(ClientAuthenticable, self).__init__(
             uri,
             subscription_methods_data=subscription_methods_data,
             on_connect=on_connect,
@@ -28,23 +30,36 @@ class ClientAuth(ClientBase):
         self.window = window
         self.api_key = api_key
         self.api_secret = api_secret
-        self.authed = False
+        self.authed: bool = False
+        self._auth_error: Optional[CryptomarketAPIException] = None
 
-    def connect(self):
-        super().connect()
+    def connect(self, timeout=30) -> Optional[CryptomarketSDKException]:
+        timeout_time = datetime.now()+timedelta(seconds=timeout)
+        err = super().connect(timeout)
+        if err:
+            return err
 
-        def wait_auth(err, result):
-            if err is not None:
-                raise err
-            self.authed = True
-        self.authenticate(wait_auth)
-        n_tries = 10
-        try_number = 1
-        while not self.authed and try_number < n_tries:
-            try_number += 1
+        def authenticate_client(err, result):
+            if err:
+                self._auth_error = err
+            elif result:
+                self.authed = True
+            else:
+                self._auth_error = CryptomarketSDKException(
+                    'authentication failed')
+        self.authenticate(authenticate_client)
+
+        def auth_done():
+            return self.authed or self._auth_error or datetime.now() >= timeout_time
+        while not auth_done():
             time.sleep(1)
+
+        if self._auth_error:
+            self.close()
+            return self._auth_error
         if not self.authed:
-            raise CryptomarketSDKException('Authentication failed')
+            self.close()
+            return CryptomarketSDKException('authentication timeout')
 
     def authenticate(self, callback: callable = None):
         """Authenticates the websocket
@@ -58,11 +73,11 @@ class ClientAuth(ClientBase):
         .. code-block:: python
         True
         """
-        timestamp = int(time.time())
-        msg = [str(timestamp)]
+        timestamp = int(time.time()*1_000)
+        msg = str(timestamp)
         if self.window:
-            msg.append(str(self.window*1000))
-        signature = HS256.get_signature(''.join(msg), self.api_secret)
+            msg += str(self.window)
+        signature = HS256.get_signature(msg, self.api_secret)
         params = {
             'type': 'HS256',
             'api_key': self.api_key,

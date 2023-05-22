@@ -1,19 +1,26 @@
-from dataclasses import dataclass, field
-from typing import List
+from dataclasses import dataclass
+from enum import Enum
+from typing import List, Optional
+
+
+class ErrorCode(str, Enum):
+    INVALID_ADDRESS = 'INVALID_ADDRESS'
+    INVALID_PAYMENT_ID = 'INVALID_PAYMENT_ID'
+    BAD_PRECISION = 'BAD_PRECISION'
 
 
 @dataclass
 class NativeTransaction:
-    tx_id: str = None
-    index: int = None
-    currency: str = None
-    amount: str = None
-    fee: str = None
-    address: str = None
-    payment_id: str = None
-    hash: str = None
-    offchain_id: str = None
-    confirmations: int = None
-    public_comment: str = None
-    error_code: str = None
-    senders: List[str] = field(default_factory=list)
+    tx_id: str
+    index: int
+    currency: str
+    amount: str
+    fee: Optional[str] = None
+    address: Optional[str] = None
+    payment_id: Optional[str] = None
+    hash: Optional[str] = None
+    offchain_id: Optional[str] = None
+    confirmations: Optional[int] = None
+    public_comment: Optional[str] = None
+    error_code: Optional[ErrorCode] = None
+    senders: Optional[List[str]] = None

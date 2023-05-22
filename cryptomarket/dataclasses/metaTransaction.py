@@ -7,7 +7,6 @@ class MetaTransaction:
     id: int
     provider_name: str
     order_type: str
-    order_type: str
     source_currency: str
     target_currency: str
     wallet_address: str

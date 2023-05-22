@@ -1,18 +1,22 @@
-from typing import Callable, List, Literal, Optional, Union
+from typing import Callable, List, Optional, Union
 
 from dacite import from_dict
+from typing_extensions import Literal
+
 import cryptomarket.args as args
 from cryptomarket.dataclasses.balance import Balance
 from cryptomarket.dataclasses.commission import Commission
 from cryptomarket.dataclasses.report import Report
 from cryptomarket.exceptions import CryptomarketAPIException
-from cryptomarket.websockets.client_auth import ClientAuth
-from cryptomarket.websockets.subscriptionMethodData import SubscriptionMethodData
+from cryptomarket.websockets.client_auth import ClientAuthenticable
+from cryptomarket.websockets.subscriptionMethodData import \
+    SubscriptionMethodData
 
 _REPORTS = 'reports'
+_BALANCES = 'balances'
 
 
-class TradingClient(ClientAuth):
+class TradingClient(ClientAuthenticable):
     """TradingClient connects via websocket to cryptomarket to enable the user to manage orders. uses SHA256 as auth method and authenticates automatically.
 
     :param api_key: the user api key
@@ -43,6 +47,10 @@ class TradingClient(ClientAuth):
                 'spot_orders': SubscriptionMethodData(_REPORTS, 'snapshot'),
                 'spot_subscribe': SubscriptionMethodData(_REPORTS, 'command'),
                 'spot_unsubscribe': SubscriptionMethodData(_REPORTS, 'command'),
+                # spot balance
+                'spot_balance': SubscriptionMethodData(_BALANCES, 'snapshot'),
+                'spot_balance_subscribe': SubscriptionMethodData(_BALANCES, 'command'),
+                'spot_balance_unsubscribe': SubscriptionMethodData(_BALANCES, 'command'),
             },
             on_connect=on_connect,
             on_error=on_error,
@@ -60,16 +68,17 @@ class TradingClient(ClientAuth):
         https://api.exchange.cryptomkt.com/#socket-spot-trading
 
         :param callback: callable that recieves a list of reports.
-        :param result_callback: A callable that recieves the result of the subscription. True if successful
+        :param result_callback: A callable of two arguments, takes either a CryptomarketAPIException, or the result of the subscription. True if successful
         """
         def intercept_feed(feed, feed_type):
             if isinstance(feed, list):
                 callback(
                     [from_dict(data_class=Report, data=data) for data in feed],
-                    feed_type
-                )
+                    feed_type)
             else:
-                callback([from_dict(data_class=Report, data=feed)], feed_type)
+                callback(
+                    [from_dict(data_class=Report, data=feed)],
+                    feed_type)
         self._send_subscription(
             'spot_subscribe',
             callback=intercept_feed,
@@ -85,12 +94,61 @@ class TradingClient(ClientAuth):
 
         https://api.exchange.cryptomkt.com/#socket-spot-trading
 
-        :param callback: A callable that recieves the result of the unsubscription. True if successful
+        :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or the result of the unsubscription. True if successful
         """
         self._send_unsubscription(
             'spot_unsubscribe',
             callback=callback
         )
+
+    def subscribe_to_spot_balance(
+        self,
+        mode: Union[args.SubscriptionMode, Literal['updates', 'batches']],
+        callback: Callable[[List[Balance]], None],
+        result_callback: Optional[Callable[[
+            Union[CryptomarketAPIException, None], Union[bool, None]], None]] = None,
+    ):
+        """subscribe to a feed of the user's spot balances
+
+        only non-zero values are present
+
+        https://api.exchange.cryptomkt.com/#subscribe-to-spot-balances
+
+        :param mode: Either 'updates' or 'batches'. Update messages arrive after an update. Batch messages arrive at equal intervals after an update
+        :param callback: callable that recieves a list of balances.
+        :param result_callback: A callable of two arguments, takes either a CryptomarketAPIException, or the result of the subscription. True if successful
+        """
+        params = args.DictBuilder().subscription_mode(mode).build()
+
+        def intercept_feed(feed, feed_type):
+            if isinstance(feed, list):
+                callback([from_dict(data_class=Balance, data=balance)
+                          for balance in feed])
+            else:
+                callback([from_dict(data_class=Balance, data=feed)])
+
+        self._send_subscription(
+            'spot_balance_subscribe',
+            callback=intercept_feed,
+            result_callback=result_callback,
+            params=params
+        )
+
+    def unsubscribe_to_spot_balance(
+        self,
+        callback: Optional[Callable[[
+            Union[CryptomarketAPIException, None], Union[bool, None]], None]] = None,
+    ):
+        """stop recieving the feed of balances
+
+        https://api.exchange.cryptomkt.com/#subscribe-to-spot-balances
+
+        :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or the result of the unsubscription. True if successful
+        """
+        params = args.DictBuilder().subscription_mode(
+            args.SubscriptionMode.UPDATES).build()
+        self._send_unsubscription(
+            'spot_balance_unsubscribe', callback=callback, params=params)
 
     def get_active_spot_orders(
         self,
@@ -101,30 +159,26 @@ class TradingClient(ClientAuth):
 
         https://api.exchange.cryptomkt.com/#get-active-spot-orders
 
-        :param callback: A callable called with a list of reports of the active spot orders
+        :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or the list of reports of the active spot orders
         """
         def intercept_response(err, response):
-            if err is not None:
+            if err:
                 callback(err, None)
                 return
-            result = []
-            for report in response:
-                result.append(from_dict(
-                    data_class=Report,
-                    data=report
-                ))
-            callback(None, result)
+            reports = [from_dict(data_class=Report, data=report)
+                       for report in response]
+            callback(None, reports)
         self._send_by_id('spot_get_orders', callback=intercept_response)
 
     def create_spot_order(
         self,
         symbol: str,
-        side: Union[args.SIDE, Literal['buy', 'sell']],
+        side: Union[args.Side, Literal['buy', 'sell']],
         quantity: str,
-        type: Optional[Union[args.ORDER_TYPE, Literal[
+        type: Optional[Union[args.OrderType, Literal[
             'limit', 'market', 'stopLimit', 'stopMarket', 'takeProfitLimit', 'takeProfitMarket'
         ]]] = None,
-        time_in_force: Optional[Union[args.TIME_IN_FORCE, Literal[
+        time_in_force: Optional[Union[args.TimeInForce, Literal[
             'GTC', 'IOC', 'FOK', 'Day', 'GTD'
         ]]] = None,
         client_order_id: Optional[str] = None,
@@ -156,20 +210,19 @@ class TradingClient(ClientAuth):
         :param post_only: Optional. If True, your post_only order causes a match with a pre-existing order as a taker, then the order will be cancelled
         :param take_rate: Optional. Liquidity taker fee, a fraction of order volume, such as 0.001 (for 0.1% fee). Can only increase the fee. Used for fee markup.
         :param make_rate: Optional. Liquidity provider fee, a fraction of order volume, such as 0.001 (for 0.1% fee). Can only increase the fee. Used for fee markup.
-        :param callback: A callable called with a report of the created order
+        :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or a report of the created order
         """
         params = args.DictBuilder().symbol(symbol).side(side).quantity(quantity).order_type(type).time_in_force(time_in_force).client_order_id(
             client_order_id).price(price).stop_price(stop_price).expire_time(expire_time).post_only(post_only).take_rate(take_rate).make_rate(make_rate).build()
 
-        def intercept_response(err, response):
-            if err is not None:
-                callback(err, None)
-                return
-            result = from_dict(
-                data_class=Report,
-                data=response
-            )
-            callback(None, result)
+        if callback:
+            def intercept_response(err, response):
+                if err:
+                    callback(err, None)
+                    return
+                callback(None, from_dict(data_class=Report, data=response))
+        else:
+            intercept_response = None
         self._send_by_id(
             'spot_new_order',
             callback=intercept_response,
@@ -178,7 +231,7 @@ class TradingClient(ClientAuth):
 
     def create_spot_order_list(
         self,
-        contingency_type: Union[args.CONTINGENCY_TYPE, Literal['allOrNone', 'oneCancelOther', 'oneTriggerOneCancelOther']],
+        contingency_type: Union[args.ContingencyType, Literal['allOrNone', 'oneCancelOther', 'oneTriggerOneCancelOther']],
         orders: List[args.OrderRequest],
         order_list_id: Optional[str] = None,
         callback: Optional[Callable[[
@@ -218,22 +271,21 @@ class TradingClient(ClientAuth):
         :param contingency_type: order list type.
         :param orders: the list of orders
         :param order_list_id: order list identifier. If not provided, it will be generated by the system. Must be equal to the client order id of the first order in the request
-        :param callback: A callable called with a list of reports of the created orders
+        :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or a list of reports of the created orders
         """
         params = args.DictBuilder().order_list_id(
             order_list_id).contingency_type(contingency_type).orders(orders).build()
 
-        def intercept_response(err, response):
-            if err is not None:
-                callback(err, None)
-                return
-            result = []
-            for report in response:
-                result.append(from_dict(
-                    data_class=Report,
-                    data=report
-                ))
-            callback(None, result)
+        if callback:
+            def intercept_response(err, response):
+                if err:
+                    callback(err, None)
+                    return
+                reports = [from_dict(data_class=Report, data=report)
+                           for report in response]
+                callback(None, reports)
+        else:
+            intercept_response = None
         self._send_by_id('spot_new_order_list',
                          callback=intercept_response, params=params)
 
@@ -248,19 +300,18 @@ class TradingClient(ClientAuth):
         https://api.exchange.cryptomkt.com/#cancel-spot-order-2
 
         :param client_order_id: the client order id of the order to cancel
-        :param callback: A callable called with a report of the canceled order
+        :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or a report of the canceled order
         """
         params = args.DictBuilder().client_order_id(client_order_id).build()
 
-        def intercept_result(err, response):
-            if err is not None:
-                callback(err, None)
-                return
-            result = from_dict(
-                data_class=Report,
-                data=response
-            )
-            callback(None, result)
+        if callback:
+            def intercept_result(err, response):
+                if err:
+                    callback(err, None)
+                    return
+                callback(None, from_dict(data_class=Report, data=response))
+        else:
+            intercept_result = None
         self._send_by_id('spot_cancel_order',
                          callback=intercept_result, params=params)
 
@@ -283,20 +334,18 @@ class TradingClient(ClientAuth):
         :param quantity: new order quantity
         :param price: new order price
         :param strict_validate:  price and quantity will be checked for the incrementation with tick size and quantity step. See symbol's tick_size and quantity_increment
-        :param callback: A callable called a report of the new version of the order
+        :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or a report of the new version of the order
         """
         params = args.DictBuilder().client_order_id(client_order_id).new_client_order_id(
             new_client_order_id).quantity(quantiy).price(price).strict_validate(strict_validate).build()
-
-        def intercept_result(err, response):
-            if err is not None:
-                callback(err, None)
-                return
-            result = from_dict(
-                data_class=Report,
-                data=response
-            )
-            callback(None, result)
+        if callback:
+            def intercept_result(err, response):
+                if err:
+                    callback(err, None)
+                    return
+                callback(None, from_dict(data_class=Report, data=response))
+        else:
+            intercept_result = None
         self._send_by_id('spot_replace_order',
                          callback=intercept_result, params=params)
 
@@ -309,42 +358,38 @@ class TradingClient(ClientAuth):
 
         https://api.exchange.cryptomkt.com/#cancel-spot-orders
 
-        :param callback: A callable called with a list of reports of the canceled orders
+        :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or a list of reports of the canceled orders
         """
-        def intercept_result(err, response):
-            if err is not None:
-                callback(err, None)
-                return
-            result = []
-            for report in response:
-                result.append(from_dict(
-                    data_class=Report,
-                    data=report
-                ))
-            callback(None, result)
+        if callback:
+            def intercept_result(err, response):
+                if err:
+                    callback(err, None)
+                    return
+                reports = [from_dict(data_class=Report, data=report)
+                           for report in response]
+                callback(None, reports)
+        else:
+            intercept_result = None
         self._send_by_id('spot_cancel_orders', callback=intercept_result)
 
     def get_spot_trading_balances(
         self,
-        callback: Callable
+        callback: Callable[[
+            Union[CryptomarketAPIException, None], Union[List[Report], None]], None] = None,
     ):
         """Get the user's spot trading balance for all currencies with balance
 
         https://api.exchange.cryptomkt.com/#get-spot-trading-balances
 
-        :param callback: A callable called with a list of balances
+        :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or a list of balances
         """
         def intercept_result(err, response):
-            if err is not None:
+            if err:
                 callback(err, None)
                 return
-            result = []
-            for balance in response:
-                result.append(from_dict(
-                    data_class=Balance,
-                    data=balance
-                ))
-            callback(None, result)
+            balances = [from_dict(data_class=Balance, data=balance)
+                        for balance in response]
+            callback(None, balances)
         self._send_by_id('spot_balances', callback=intercept_result)
 
     def get_spot_trading_balance_of_currency(
@@ -358,19 +403,15 @@ class TradingClient(ClientAuth):
         https://api.exchange.cryptomkt.com/#get-spot-trading-balance-2
 
         :param currency: The currency code to query the balance
-        :param callback: A callable called with a the queried balance
+        :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or the queried balance
         """
         params = args.DictBuilder().currency(currency).build()
 
         def intercept_result(err, response):
-            if err is not None:
+            if err:
                 callback(err, None)
                 return
-            result = from_dict(
-                data_class=Balance,
-                data=response
-            )
-            callback(None, result)
+            callback(None, from_dict(data_class=Balance, data=response))
         self._send_by_id(
             'spot_balance', callback=intercept_result, params=params)
 
@@ -382,19 +423,15 @@ class TradingClient(ClientAuth):
 
         https://api.exchange.cryptomkt.com/#get-spot-fees
 
-        :param callback: A callable called with a list of commissions
+        :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or a list of commissions
         """
         def intercept_result(err, response):
-            if err is not None:
+            if err:
                 callback(err, None)
                 return
-            result = []
-            for commission in response:
-                result.append(from_dict(
-                    data_class=Commission,
-                    data=commission
-                ))
-            callback(None, result)
+            commissions = [from_dict(data_class=Commission, data=commission)
+                           for commission in response]
+            callback(None, commissions)
         self._send_by_id('spot_fees', callback=intercept_result)
 
     def get_spot_commision_of_symbol(
@@ -407,16 +444,13 @@ class TradingClient(ClientAuth):
         https://api.exchange.cryptomkt.com/#get-spot-fee
 
         :param symbol: The symbol of the commission rate
-        :param callback: A callable called with a the queried commission
+        :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or a the queried commission
         """
         def intercept_result(err, response):
-            if err is not None:
+            if err:
                 callback(err, None)
                 return
-            result = from_dict(
-                data_class=Commission,
-                data=response
-            )
+            result = from_dict(data_class=Commission, data=response)
             callback(None, result)
         params = args.DictBuilder().symbol(symbol).build()
         self._send_by_id('spot_fee', callback=intercept_result, params=params)

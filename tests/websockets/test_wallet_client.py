@@ -1,12 +1,12 @@
 import json
 import unittest
 
+from test_helpers import *
+
 from cryptomarket.websockets import WalletClient
 from tests.rest.test_helpers import good_balance, good_transaction
 
-from test_helpers import *
-
-with open('/home/ismael/cryptomarket/keys-v3.json') as fd:
+with open('/home/ismael/cryptomarket/keys.json') as fd:
     keys = json.load(fd)
 
 class TestWSWalletClient(unittest.TestCase):

@@ -1,8 +1,9 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
 class Price:
-    currency: str = None
-    price: str = None
-    timestamp: str = None
+    price: str
+    timestamp: str
+    currency: Optional[str] = None

@@ -1,10 +1,10 @@
 import time
 import unittest
 
+from test_helpers import *
+
 import cryptomarket.args as args
 from cryptomarket.websockets import MarketDataClient
-
-from test_helpers import *
 
 SECOND = 1
 MINUTE = 60
@@ -51,7 +51,7 @@ class TestWSClientPublicSubs(unittest.TestCase):
         self.ws.subscribe_to_candles(
             callback=callback,
             symbols=['ETHBTC'],
-            period=args.PERIOD._1_MINS,
+            period=args.Period._1_MINS,
             limit=19,
             result_callback=result_callback
         )
@@ -68,7 +68,7 @@ class TestWSClientPublicSubs(unittest.TestCase):
         self.ws.subscribe_to_mini_ticker(
             callback=callback,
             symbols=['ETHBTC'],
-            speed=args.TICKER_SPEED._3_SECONDS,
+            speed=args.TickerSpeed._3_SECONDS,
             result_callback=result_callback
         )
         time.sleep(20*SECOND)
@@ -84,7 +84,7 @@ class TestWSClientPublicSubs(unittest.TestCase):
         self.ws.subscribe_to_mini_ticker_in_batch(
             callback=callback,
             symbols=['ETHBTC'],
-            speed=args.TICKER_SPEED._3_SECONDS,
+            speed=args.TickerSpeed._3_SECONDS,
             result_callback=result_callback
         )
         time.sleep(20*SECOND)
@@ -99,7 +99,7 @@ class TestWSClientPublicSubs(unittest.TestCase):
                     Veredict.fail("not a good mini ticker")
         self.ws.subscribe_to_ticker(
             callback=callback,
-            speed=args.TICKER_SPEED._3_SECONDS,
+            speed=args.TickerSpeed._3_SECONDS,
             result_callback=result_callback
         )
         time.sleep(20*SECOND)
@@ -114,7 +114,7 @@ class TestWSClientPublicSubs(unittest.TestCase):
                     Veredict.fail("not a good mini ticker")
         self.ws.subscribe_to_ticker_in_batch(
             callback=callback,
-            speed=args.TICKER_SPEED._3_SECONDS,
+            speed=args.TickerSpeed._3_SECONDS,
             result_callback=result_callback
         )
         time.sleep(20*SECOND)
@@ -144,8 +144,8 @@ class TestWSClientPublicSubs(unittest.TestCase):
                     Veredict.fail("not a good mini ticker")
         self.ws.subscribe_to_partial_order_book(
             callback=callback,
-            depth=args.DEPTH._5,
-            speed=args.ORDERBOOK_SPEED._100_MILISECONDS,
+            depth=args.Depth._5,
+            speed=args.OrderbookSpeed._100_MILISECONDS,
             result_callback=result_callback
         )
         time.sleep(20*SECOND)
@@ -160,7 +160,7 @@ class TestWSClientPublicSubs(unittest.TestCase):
                     Veredict.fail("not a good mini ticker")
         self.ws.subscribe_to_top_of_book(
             callback=callback,
-            speed=args.ORDERBOOK_SPEED._100_MILISECONDS,
+            speed=args.OrderbookSpeed._100_MILISECONDS,
             result_callback=result_callback
         )
         time.sleep(20*SECOND)

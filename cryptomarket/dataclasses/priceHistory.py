@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List
 
 from cryptomarket.dataclasses.pricePoint import PricePoint
@@ -6,5 +6,5 @@ from cryptomarket.dataclasses.pricePoint import PricePoint
 
 @dataclass
 class PriceHistory:
-    currency: str = None
-    history: List[PricePoint] = field(default_factory=list)
+    currency: str
+    history: List[PricePoint]

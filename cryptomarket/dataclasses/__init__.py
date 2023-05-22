@@ -17,7 +17,6 @@ from .pricePoint import PricePoint
 from .publicTrade import PublicTrade
 from .report import Report
 from .subAccount import SubAccount
-from .subAccountBalance import SubAccountBalance
 from .symbol import Symbol
 from .ticker import Ticker
 from .trade import Trade
@@ -51,7 +50,6 @@ __all__ = [
     PublicTrade,
     Report,
     SubAccount,
-    SubAccountBalance,
     Symbol,
     Ticker,
     Trade,

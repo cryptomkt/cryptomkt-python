@@ -1,20 +1,23 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
 class Network:
-    network: str = None
-    protocol: str = None
-    default: bool = None
-    payin_enabled: bool = None
-    payout_enabled: bool = None
-    precision_payout: str = None
-    payout_fee: str = None
-    payout_is_payment_id: bool = None
-    payin_payment_id: bool = None
-    payin_confirmations: int = None
-    address_regrex: str = None
-    payment_id_regex: str = None
-    low_processing_time: str = None
-    high_processing_time: str = None
-    avg_processing_time: str = None
+    network: str
+    default: bool
+    payin_enabled: bool
+    payout_enabled: bool
+    precision_payout: str
+    payout_is_payment_id: bool
+    payin_payment_id: bool
+    payin_confirmations: int
+    protocol: Optional[str] = None
+    payout_fee: Optional[str] = None
+    address_regrex: Optional[str] = None
+    payment_id_regex: Optional[str] = None
+    low_processing_time: Optional[str] = None
+    high_processing_time: Optional[str] = None
+    avg_processing_time: Optional[str] = None
+    crypto_payment_id_name: Optional[str] = None
+    crypto_explorer: Optional[str] = None

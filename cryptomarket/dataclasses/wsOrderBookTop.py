@@ -3,13 +3,13 @@ from dataclasses import dataclass
 
 @dataclass
 class WSOrderBookTop:
-    t: int = None
+    t: int
     """Timestamp in milliseconds"""
-    a: str = None
+    a: str
     """Best ask"""
-    A: str = None
+    A: str
     """Best ask quantity"""
-    b: str = None
+    b: str 
     """Best bid"""
-    B: str = None
+    B: str
     """Best bid quantity"""

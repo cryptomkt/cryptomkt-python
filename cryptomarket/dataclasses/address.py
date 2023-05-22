@@ -1,9 +1,10 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
 class Address:
-    address: str = None
-    currency: str = None
-    payment_id: str = None
-    public_key: str = None
+    address: str
+    currency: str
+    payment_id: Optional[str] = None
+    public_key: Optional[str] = None

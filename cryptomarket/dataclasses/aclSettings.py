@@ -1,11 +1,12 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
 class ACLSettings:
-    sub_account_id: str = None
-    deposit_address_generation_enabled: bool = None
-    withdraw_enabled: bool = None
-    description: str = None
-    created_at: str = None
-    updated_at: str = None
+    sub_account_id: str
+    deposit_address_generation_enabled: bool
+    withdraw_enabled: bool
+    description: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None

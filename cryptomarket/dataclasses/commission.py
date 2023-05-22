@@ -1,8 +1,9 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
 class Commission:
-    symbol: str = None
-    take_rate: str = None
-    make_rate: str = None
+    take_rate: str
+    make_rate: str
+    symbol: Optional[str] = None

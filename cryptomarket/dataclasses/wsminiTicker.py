@@ -3,17 +3,17 @@ from dataclasses import dataclass
 
 @dataclass
 class WSMiniTicker:
-    t: int = None
+    t: int
     """Timestamp in milliseconds"""
-    o: str = None
+    o: str
     """Open price"""
-    c: str = None
+    c: str
     """Last price"""
-    h: str = None
+    h: str
     """High price"""
-    l: str = None
+    l: str
     """Low price"""
-    v: str = None
+    v: str
     """Base asset volume"""
-    q: str = None
+    q: str
     """Quote asset volume"""

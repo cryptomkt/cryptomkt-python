@@ -229,5 +229,8 @@ class Veredict:
 
     @classmethod
     def wait_done(cls):
-        while not cls.done:
+        tries = 5
+        current_try = 1
+        while not cls.done and current_try < tries:
             time.sleep(1)
+            current_try += 1

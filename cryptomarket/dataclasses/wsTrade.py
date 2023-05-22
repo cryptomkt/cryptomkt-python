@@ -3,13 +3,13 @@ from dataclasses import dataclass
 
 @dataclass
 class WSTrade:
-    t: int = None
+    t: int
     """Timestamp in milliseconds"""
-    i: int = None
+    i: int
     """Trade identifier"""
-    p: str = None
+    p: str
     """Price"""
-    q: str = None
+    q: str
     """Quantity"""
-    s: str = None
+    s: str
     """Side"""

@@ -1,9 +1,9 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
 class Balance:
-    currency: str = None
-    available: str = None
-    reserved: str = None
-    reserved_margin: str = None
+    available: str
+    reserved: str
+    currency: Optional[str] = None

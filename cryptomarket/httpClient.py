@@ -1,4 +1,4 @@
-# coding=utf-8
+import json
 
 import requests
 
@@ -39,7 +39,10 @@ class HttpClient:
         return self._handle_response(response)
 
     def post(self, endpoint, params=None):
-        response = self.session.post(api_url + endpoint, data=params)
+        response = self.session.post(
+            api_url + endpoint, 
+            data=json.dumps(params), 
+            headers={'Content-Type': 'application/json'})
         return self._handle_response(response)
 
     def put(self, endpoint, params=None):

@@ -1,13 +1,13 @@
 import json
 import unittest
 
+from test_helpers import *
+
 import cryptomarket.args as args
 from cryptomarket.client import Client
 from cryptomarket.exceptions import CryptomarketSDKException
 
-from test_helpers import *
-
-with open('/home/ismael/cryptomarket/keys-v3.json') as fd:
+with open('/home/ismael/cryptomarket/keys.json') as fd:
     keys = json.load(fd)
 
 
@@ -21,76 +21,55 @@ class AuthCallsTestCase(unittest.TestCase):
 
 class GetWalletBalances(AuthCallsTestCase):
     def test_successfull_call(self):
-        try:
-            result = self.client.get_wallet_balances()
-            if len(result) == 0:
-                self.fail("no balances")
-            if not good_list(good_balance, result):
-                self.fail("not good balances")
-        except CryptomarketSDKException as e:
-            self.fail(e)
+        result = self.client.get_wallet_balances()
+        if len(result) == 0:
+            self.fail("no balances")
+        if not good_list(good_balance, result):
+            self.fail("not good balances")
 
 
 class GetWalletBalanceOfCurrency(AuthCallsTestCase):
     def test_successfull_call(self):
-        try:
-            result = self.client.get_wallet_balance_of_currency("CRO")
-            if not good_balance(result):
-                self.fail("not a good balance")
-        except CryptomarketSDKException as e:
-            self.fail(e)
+        result = self.client.get_wallet_balance_of_currency("CRO")
+        if not good_balance(result):
+            self.fail("not a good balance")
 
 
 class GetDepositCryptoAddresses(AuthCallsTestCase):
     def test_successfull_call(self):
-        try:
-            result = self.client.get_deposit_crypto_addresses()
-            if not good_list(good_address, result):
-                self.fail("not a good address")
-        except CryptomarketSDKException as e:
-            self.fail(e)
+        result = self.client.get_deposit_crypto_addresses()
+        if not good_list(good_address, result):
+            self.fail("not a good address")
 
 
 class GetDepositCryptoAddressOfCurrency(AuthCallsTestCase):
     def test_successfull_call(self):
-        try:
-            result = self.client.get_deposit_crypto_address_of_currency('EOS')
-            if not good_address(result):
-                self.fail("not a good address")
-        except CryptomarketSDKException as e:
-            self.fail(e)
+        result = self.client.get_deposit_crypto_address_of_currency('EOS')
+        if not good_address(result):
+            self.fail("not a good address")
 
 
 class CreateDepositCryptoAddress(AuthCallsTestCase):
     def test_successfull_call(self):
-        try:
-            result = self.client.create_deposit_crypto_address('EOS')
-            if not good_address(result):
-                self.fail("not a good address")
-        except CryptomarketSDKException as e:
-            self.fail(e)
+        result = self.client.create_deposit_crypto_address('EOS')
+        if not good_address(result):
+            self.fail("not a good address")
 
 
 class Last10DepositCryptoAddress(AuthCallsTestCase):
     def test_successfull_call(self):
-        try:
-            result = self.client.last_10_deposit_crypto_address('EOS')
-            if len(result) == 0:
-                self.fail("not enough addresses")
-            if not good_list(good_address, result):
-                self.fail("not a good address")
-        except CryptomarketSDKException as e:
-            self.fail(e)
+        result = self.client.last_10_deposit_crypto_address('EOS')
+        if len(result) == 0:
+            self.fail("not enough addresses")
+        if not good_list(good_address, result):
+            self.fail("not a good address")
 
 
 class Last10WithdrawalCryptoAddress(AuthCallsTestCase):
     def test_successfull_call(self):
-        try:
-            result = self.client.last_10_withdrawal_crypto_address('EOS')
-            if not good_list(good_address, result):
-                self.fail("not a good address")
-        except CryptomarketSDKException as e:
-            self.fail(e)
+        result = self.client.last_10_withdrawal_crypto_address('EOS')
+        if not good_list(good_address, result):
+            self.fail("not a good address")
 
 
 class WithdrawCrypto(AuthCallsTestCase):
@@ -141,69 +120,57 @@ class WithdrawCryptoCommit(AuthCallsTestCase):
 
 class WithdrawCryptoRollback(AuthCallsTestCase):
     def test_successfull_call(self):
-        try:
-            adaAddress = self.client.get_deposit_crypto_address_of_currency(
-                "ADA")
-            transaction_id = self.client.withdraw_crypto(
-                currency='ADA',
-                amount='0.1',
-                address=adaAddress.address,
-                auto_commit=False
-            )
-            if transaction_id == "":
-                self.fail("no transaction id")
-            success = self.client.withdraw_crypto_rollback(transaction_id)
-            if not success:
-                self.fail("not a successful rollback")
-        except CryptomarketSDKException as e:
-            self.fail(e)
+        adaAddress = self.client.get_deposit_crypto_address_of_currency(
+            "ADA")
+        transaction_id = self.client.withdraw_crypto(
+            currency='ADA',
+            amount='0.1',
+            address=adaAddress.address,
+            auto_commit=False
+        )
+        if transaction_id == "":
+            self.fail("no transaction id")
+        success = self.client.withdraw_crypto_rollback(transaction_id)
+        if not success:
+            self.fail("not a successful rollback")
 
 
 class TestGetEstimateWithdrawalFee(AuthCallsTestCase):
     def test_successfull_call(self):
-        try:
-            fee = self.client.get_estimate_withdrawal_fee(
-                currency="XLM", amount="199")
-            if fee == "":
-                self.fail("no fee")
-        except CryptomarketSDKException as e:
-            self.fail(e)
+        fee = self.client.get_estimate_withdrawal_fee(
+            currency="XLM", amount="199")
+        if fee == "":
+            self.fail("no fee")
 
 
 class CryptoAddressBelongsToCurrentAccount(AuthCallsTestCase):
     def test_successfull_call(self):
-        try:
-            address = self.client.get_deposit_crypto_address_of_currency("ADA")
-            response = self.client.check_if_crypto_address_belong_to_current_account(
-                address.address
-            )
-            if response == False:
-                self.fail('should belong')
-        except CryptomarketSDKException as e:
-            self.fail(e)
+        address = self.client.get_deposit_crypto_address_of_currency("ADA")
+        response = self.client.check_if_crypto_address_belong_to_current_account(
+            address.address
+        )
+        if response == False:
+            self.fail('should belong')
 
 
 class TransferBetweenWalletAndExchange(AuthCallsTestCase):
     def test_successful_call(self):
-        try:
-            transaction_id = self.client.transfer_between_wallet_and_exchange(
-                currency="ADA",
-                amount="0.1",
-                source=args.ACCOUNT.SPOT,
-                destination=args.ACCOUNT.WALLET
-            )
-            if transaction_id == "":
-                self.fail('no transaction id')
-            transaction_id = self.client.transfer_between_wallet_and_exchange(
-                currency="ADA",
-                amount="0.1",
-                source=args.ACCOUNT.WALLET,
-                destination=args.ACCOUNT.SPOT
-            )
-            if transaction_id == "":
-                self.fail('no transaction id')
-        except CryptomarketSDKException as e:
-            self.fail(e)
+        transaction_id = self.client.transfer_between_wallet_and_exchange(
+            currency="ADA",
+            amount="0.1",
+            source=args.Account.SPOT,
+            destination=args.Account.WALLET
+        )
+        if transaction_id == "":
+            self.fail('no transaction id')
+        transaction_id = self.client.transfer_between_wallet_and_exchange(
+            currency="ADA",
+            amount="0.1",
+            source=args.Account.WALLET,
+            destination=args.Account.SPOT
+        )
+        if transaction_id == "":
+            self.fail('no transaction id')
 
 
 class TransferMoneyToAnotherUser(AuthCallsTestCase):
@@ -224,12 +191,9 @@ class TransferMoneyToAnotherUser(AuthCallsTestCase):
 
 class GetTransactionsHistory(AuthCallsTestCase):
     def test_successfull_call(self):
-        try:
-            result = self.client.get_transaction_history(currencies=['EOS'])
-            if not good_list(good_transaction, result):
-                self.fail("no good transaction")
-        except CryptomarketSDKException as e:
-            self.fail(e)
+        result = self.client.get_transaction_history(currencies=['EOS'])
+        if not good_list(good_transaction, result):
+            self.fail("no good transaction")
 
 
 class GetTransaction(AuthCallsTestCase):
@@ -240,15 +204,12 @@ class GetTransaction(AuthCallsTestCase):
 
 class OffchainAvailable(AuthCallsTestCase):
     def test_successfull_call(self):
-        try:
-            eosAddress = self.client.get_deposit_crypto_address_of_currency(
-                "EOS")
-            self.client.check_if_offchain_is_available(
-                currency="EOS",
-                address=eosAddress.address
-            )
-        except CryptomarketSDKException as e:
-            self.fail(e)
+        eosAddress = self.client.get_deposit_crypto_address_of_currency(
+            "EOS")
+        self.client.check_if_offchain_is_available(
+            currency="EOS",
+            address=eosAddress.address
+        )
 
 
 if __name__ == '__main__':

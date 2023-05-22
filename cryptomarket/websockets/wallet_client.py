@@ -1,16 +1,18 @@
-from typing import Callable, List, Literal, Optional, Union
+from typing import Callable, List, Optional, Union
 
 from dacite import from_dict
+from typing_extensions import Literal
 
 import cryptomarket.args as args
 from cryptomarket.dataclasses.balance import Balance
 from cryptomarket.dataclasses.transaction import Transaction
 from cryptomarket.exceptions import CryptomarketAPIException
-from cryptomarket.websockets.client_auth import ClientAuth
-from cryptomarket.websockets.subscriptionMethodData import SubscriptionMethodData
+from cryptomarket.websockets.client_auth import ClientAuthenticable
+from cryptomarket.websockets.subscriptionMethodData import \
+    SubscriptionMethodData
 
 
-class WalletClient(ClientAuth):
+class WalletClient(ClientAuthenticable):
     """AccountClient connects via websocket to cryptomarket to get account information of the user. uses SHA256 as auth method and authenticates automatically.
 
     :param api_key: the user api key
@@ -62,14 +64,10 @@ class WalletClient(ClientAuth):
         https://api.exchange.cryptomkt.com/#subscribe-to-transactions
 
         :param callback: callable that recieves a transaction.
-        :param result_callback: A callable that recieves the result of the subscription. True if successful
+        :param result_callback: A callable of two arguments, takes either a CryptomarketAPIException, or the result of the subscription. True if successful
         """
         def intercept_feed(feed, feed_type):
-            result = from_dict(
-                data_class=Transaction,
-                data=feed
-            )
-            callback(result)
+            callback(from_dict(data_class=Transaction, data=feed))
         self._send_subscription(
             'subscribe_transactions', callback=intercept_feed, result_callback=result_callback)
 
@@ -82,7 +80,7 @@ class WalletClient(ClientAuth):
 
         https://api.exchange.cryptomkt.com/#subscribe-to-transactions
 
-        :param callback: A callable that recieves the result of the unsubscription. True if successful
+        :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or the result of the unsubscription. True if successful
         """
         self._send_unsubscription(
             'unsubscribe_transactions', callback=callback)
@@ -100,22 +98,16 @@ class WalletClient(ClientAuth):
         https://api.exchange.cryptomkt.com/#subscribe-to-wallet-balance
 
         :param callback: callable that recieves a list of balances.
-        :param result_callback: A callable that recieves the result of the subscription. True if successful
+        :param result_callback: A callable of two arguments, takes either a CryptomarketAPIException, or the result of the subscription. True if successful
         """
         def intercept_feed(feed, feed_type):
             if isinstance(feed, list):
-                result = []
-                for balance in feed:
-                    result.append(from_dict(
-                        data_class=Balance,
-                        data=balance
-                    ))
+                callback([from_dict(data_class=Balance, data=balance)
+                          for balance in feed],
+                         feed_type)
             else:
-                result = [from_dict(
-                    data_class=Balance,
-                    data=feed
-                )]
-            callback(result, feed_type)
+                callback([from_dict(data_class=Balance, data=feed)],
+                         feed_type)
 
         self._send_subscription(
             'subscribe_wallet_balances',
@@ -132,7 +124,7 @@ class WalletClient(ClientAuth):
 
         https://api.exchange.cryptomkt.com/#subscribe-to-wallet-balance
 
-        :param callback: A callable that recieves the result of the unsubscription. True if successful
+        :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or the result of the unsubscription. True if successful
         """
         self._send_unsubscription(
             'subscribe_wallet_balances', callback=callback)
@@ -146,19 +138,15 @@ class WalletClient(ClientAuth):
 
         https://api.exchange.cryptomkt.com/#request-wallet-balance
 
-        :param callback: A callable that recieves a list of balances
+        :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or a list of balances
         """
         def intercept_result(err, response):
-            if err is not None:
+            if err:
                 callback(err, None)
                 return
-            result = []
-            for balance in response:
-                result.append(from_dict(
-                    data_class=Balance,
-                    data=balance
-                ))
-            callback(None, result)
+            balances = [from_dict(data_class=Balance, data=balance)
+                        for balance in response]
+            callback(None, balances)
         self._send_by_id('wallet_balances', callback=intercept_result)
 
     def get_wallet_balance_of_currency(
@@ -172,19 +160,15 @@ class WalletClient(ClientAuth):
         https://api.exchange.cryptomkt.com/#request-wallet-balance
 
         :param currency: The currency code to query the balance
-        :param callback: A callable that recieves the queried balance
+        :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or the queried balance
         """
         params = args.DictBuilder().currency(currency).build()
 
         def intercept_result(err, response):
-            if err is not None:
+            if err:
                 callback(err, None)
                 return
-            result = from_dict(
-                data_class=Balance,
-                data=response
-            )
-            callback(None, result)
+            callback(None, from_dict(data_class=Balance, data=response))
         self._send_by_id(
             'wallet_balance',
             callback=intercept_result,
@@ -195,17 +179,17 @@ class WalletClient(ClientAuth):
         self,
         callback: Callable[[Union[CryptomarketAPIException, None], Union[List[Transaction], None]], None],
         transaction_ids: Optional[List[str]] = None,
-        type: Optional[Union[args.TRANSACTION_TYPE, Literal[
+        type: Optional[Union[args.TransactionType, Literal[
             'DEPOSIT', 'WITHDRAW', 'TRANSFER', 'SWAP'
         ]]] = None,
-        subtype: Optional[Union[args.TRANSACTION_SUBTYPE, Literal[
+        subtype: Optional[Union[args.TransactionSubType, Literal[
             'UNCLASSIFIED', 'BLOCKCHAIN', 'AIRDROP', 'AFFILIATE', 'STAKING', 'BUY_CRYPTO', 'OFFCHAIN', 'FIAT', 'SUB_ACCOUNT', 'WALLET_TO_SPOT', 'SPOT_TO_WALLET', 'WALLET_TO_DERIVATIVES', 'DERIVATIVES_TO_WALLET', 'CHAIN_SWITCH_FROM', 'CHAIN_SWITCH_TO', 'INSTANT_EXCHANGE'
         ]]] = None,
-        statuses: List[Union[args.TRANSACTION_STATUS, Literal[
+        statuses: List[Union[args.TransactionStatus, Literal[
             'CREATED', 'PENDING', 'FAILED', 'SUCCESS', 'ROLLED_BACK'
         ]]] = None,
         currencies: Optional[List[str]] = None,
-        sort_by: Optional[Union[args.SORT_BY,
+        sort_by: Optional[Union[args.SortBy,
                                 Literal['created_at', 'id']]] = None,
         sort: Optional[Literal['ASC', 'DESC']] = None,
         id_from: Optional[int] = None,
@@ -227,7 +211,7 @@ class WalletClient(ClientAuth):
 
         https://api.exchange.cryptomkt.com/#get-transactions
 
-        :param callback: A callable that recieves a list of transactions
+        :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or a list of transactions
         :param transaction_ids: Optional. List of transaction identifiers to query
         :param type: Optional. valid types are: 'DEPOSIT', 'WITHDRAW', 'TRANSFER' and 'SWAP'
         :param subtype: Optional. valid subtypes are: 'UNCLASSIFIED', 'BLOCKCHAIN', 'AIRDROP', 'AFFILIATE', 'STAKING', 'BUY_CRYPTO', 'OFFCHAIN', 'FIAT', 'SUB_ACCOUNT', 'WALLET_TO_SPOT', 'SPOT_TO_WALLET', 'WALLET_TO_DERIVATIVES', 'DERIVATIVES_TO_WALLET', 'CHAIN_SWITCH_FROM', 'CHAIN_SWITCH_TO' and 'INSTANT_EXCHANGE'
@@ -249,13 +233,9 @@ class WalletClient(ClientAuth):
             if err is not None:
                 callback(err, None)
                 return
-            result = []
-            for transaction in response:
-                result.append(from_dict(
-                    data_class=Transaction,
-                    data=transaction
-                ))
-            callback(None, result)
+            transactions = [from_dict(data_class=Transaction, data=transaction)
+                            for transaction in response]
+            callback(None, transactions)
         self._send_by_id(
             'get_transactions',
             callback=intercept_response,

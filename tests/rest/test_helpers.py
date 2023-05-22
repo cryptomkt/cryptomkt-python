@@ -1,5 +1,6 @@
 from dataclasses import asdict
 from typing import Any, Callable, Dict, List
+
 from cryptomarket.dataclasses import (Address, Balance, Candle, Commission,
                                       Currency, MetaTransaction,
                                       NativeTransaction, Network, Order,
@@ -56,7 +57,7 @@ def good_currency(currency: Currency) -> bool:
         return False
     for network in currency.networks:
         if not good_network(network):
-            print("***bad net***")
+            print("***bad network***")
             return False
     return True
 

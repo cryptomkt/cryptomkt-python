@@ -1,29 +1,45 @@
 from dataclasses import dataclass
+from enum import Enum
+from typing import Optional
+
+from cryptomarket.args import ContingencyType, OrderType, Side, TimeInForce
+from cryptomarket.dataclasses.order import OrderStatus
+
+
+class ReportType(str, Enum):
+    STATUS = 'status'
+    NEW = 'new'
+    SUSPENDED = 'suspended'
+    CANCELED = 'canceled'
+    REJECTED = 'rejected'
+    EXPIRED = 'expired'
+    REPLACED = 'replaced'
+    TRADE = 'trade'
 
 
 @dataclass
 class Report:
-    id: int = None
-    client_order_id: str = None
-    symbol: str = None
-    side: str = None
-    status: str = None
-    type: str = None
-    time_in_force: str = None
-    quantity: str = None
-    price: str = None
-    cum_quantity: str = None
-    post_only: bool = None
-    created_at: str = None
-    updated_at: str = None
-    stop_price: str = None
-    expire_time: str = None
-    original_client_order_id: str = None
-    trade_id: str = None
-    trade_quantity: str = None
-    trade_price: str = None
-    trade_fee: str = None
-    trade_taker: bool = None
-    report_type: str = None
-    order_list_id: str = None
-    contingency_type: str = None
+    id: int
+    client_order_id: str
+    symbol: str
+    side: Side
+    status: OrderStatus
+    type: OrderType
+    time_in_force: TimeInForce
+    quantity: str
+    cum_quantity: str
+    post_only: bool
+    created_at: str
+    updated_at: str
+    report_type: ReportType
+    price: Optional[str] = None
+    stop_price: Optional[str] = None
+    expire_time: Optional[str] = None
+    original_client_order_id: Optional[str] = None
+    trade_id: Optional[str] = None
+    trade_quantity: Optional[str] = None
+    trade_price: Optional[str] = None
+    trade_fee: Optional[str] = None
+    trade_taker: Optional[bool] = None
+    order_list_id: Optional[str] = None
+    contingency_type: Optional[ContingencyType] = None

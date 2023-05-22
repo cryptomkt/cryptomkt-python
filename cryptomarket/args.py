@@ -1,15 +1,11 @@
 from dataclasses import asdict, dataclass
-from email.policy import strict
 from enum import Enum
-import json
-from typing import List, Literal
-from cryptomarket.dataclasses.aclSettings import ACLSettings
-from cryptomarket.dataclasses.order import Order
+from typing import Any, Dict, List, Optional
 
 from cryptomarket.exceptions import ArgumentFormatException
 
 
-class CHECKER(str, Enum):
+class Checker(str, Enum):
     @classmethod
     def check_value(cls, value):
         if value not in cls._value2member_map_:
@@ -17,12 +13,12 @@ class CHECKER(str, Enum):
                                           item.value for item in cls])
 
 
-class TRANSFER_TYPE(CHECKER):
+class TransferType(Checker):
     TO_SUB_ACCOUNT = 'to_sub_account'
     FROM_SUB_ACCOUNT = 'from_sub_account'
 
 
-class CONTINGENCY_TYPE(CHECKER):
+class ContingencyType(Checker):
     ALL_OR_NONE = "allOrNone"
     AON = "allOrNone"
     ONE_CANCEL_OTHER = "oneCancelOther"
@@ -33,12 +29,12 @@ class CONTINGENCY_TYPE(CHECKER):
     OTOCO = "oneTriggerOneCancelOther"
 
 
-class SORT(CHECKER):
+class Sort(Checker):
     ASCENDING = 'ASC'
     DESCENDING = 'DESC'
 
 
-class PERIOD(CHECKER):
+class Period(Checker):
     _1_MINS = 'M1'
     _3_MINS = 'M3'
     _5_MINS = 'M5'
@@ -51,12 +47,12 @@ class PERIOD(CHECKER):
     _1_MONTHS = '1M'
 
 
-class SIDE(CHECKER):
+class Side(Checker):
     BUY = 'buy'
     SELL = 'sell'
 
 
-class ORDER_TYPE(CHECKER):
+class OrderType(Checker):
     LIMIT = 'limit'
     MARKET = 'market'
     STOP_LIMIT = 'stopLimit'
@@ -65,7 +61,7 @@ class ORDER_TYPE(CHECKER):
     TAKE_PROFIT_MARKET = 'takeProfitMarket'
 
 
-class TIME_IN_FORCE(CHECKER):
+class TimeInForce(Checker):
     GTC = 'GTC'  # Good till canceled
     IOC = 'IOC'  # Immediate or cancell
     FOK = 'FOK'  # Fill or kill
@@ -73,41 +69,41 @@ class TIME_IN_FORCE(CHECKER):
     GTD = 'GDT'  # Good till date
 
 
-class IDENTIFY_BY(CHECKER):
-    USERNAME = 'username',
+class IdentifyBy(Checker):
+    USERNAME = 'username'
     EMAIL = 'email'
 
 
-class OFFCHAIN(CHECKER):
+class Offchain(Checker):
     NEVER = 'never'
     OPTIONALLY = 'optionally'
     REQUIRED = 'required'
 
 
-class ACCOUNT(CHECKER):
-    SPOT = 'spot',
+class Account(Checker):
+    SPOT = 'spot'
     WALLET = 'wallet'
 
 
-class TICKER_SPEED(CHECKER):
+class TickerSpeed(Checker):
     _1_SECOND = '1s'
     _3_SECONDS = '3s'
 
 
-class ORDERBOOK_SPEED(CHECKER):
+class OrderbookSpeed(Checker):
     _100_MILISECONDS = '100ms'
     _500_MILISECONDS = '500ms'
     _1000_MILISECONDS = '1000ms'
 
 
-class TRANSACTION_TYPE(CHECKER):
+class TransactionType(Checker):
     DEPOSIT = 'DEPOSIT'
     WITHDRAW = 'WITHDRAW'
     TRANSFER = 'TRANSFER'
     SAWAP = 'SAWAP'
 
 
-class TRANSACTION_SUBTYPE(CHECKER):
+class TransactionSubType(Checker):
     UNCLASSIFIED = 'UNCLASSIFIED'
     BLOCKCHAIN = 'BLOCKCHAIN'
     AIRDROP = 'AIRDROP'
@@ -126,7 +122,7 @@ class TRANSACTION_SUBTYPE(CHECKER):
     INSTANT_EXCHANGE = 'INSTANT_EXCHANGE'
 
 
-class TRANSACTION_STATUS(CHECKER):
+class TransactionStatus(Checker):
     CREATED = 'CREATED'
     PENDING = 'PENDING'
     FAILED = 'FAILED'
@@ -134,33 +130,52 @@ class TRANSACTION_STATUS(CHECKER):
     ROLLED_BACK = 'ROLLED_BACK'
 
 
-class SORT_BY(CHECKER):
-    TIMESTAMP = "timestamp",
+class SortBy(Checker):
+    TIMESTAMP = "timestamp"
     CREATED_AT = 'created_at'
     ID = 'id'
 
 
-class DEPTH(CHECKER):
-    _5 = 'D5',
-    _10 = 'D10',
-    _20 = 'D20',
+class Depth(Checker):
+    _5 = 'D5'
+    _10 = 'D10'
+    _20 = 'D20'
+
+
+class SubscriptionMode(Checker):
+    UPDATES = "updates"
+    BATCHES = "batches"
 
 
 @dataclass
 class OrderRequest:
     symbol: str
-    side: SIDE
+    side: Side
     quantity: str
-    client_order_id: str = None
-    type: ORDER_TYPE = None
-    time_in_force: TIME_IN_FORCE = None
-    price: str = None
-    expire_time: str = None
-    stop_price: str = None
-    strict_validate: bool = None
-    post_only: bool = None
-    take_rate: str = None
-    make_rate: str = None
+    client_order_id: Optional[str] = None
+    type: Optional[OrderType] = None
+    time_in_force: Optional[TimeInForce] = None
+    price: Optional[str] = None
+    expire_time: Optional[str] = None
+    stop_price: Optional[str] = None
+    strict_validate: Optional[bool] = None
+    post_only: Optional[bool] = None
+    take_rate: Optional[str] = None
+    make_rate: Optional[str] = None
+
+
+@dataclass
+class ACLSettings:
+    sub_account_id: str = None
+    deposit_address_generation_enabled: bool = None
+    withdraw_enabled: bool = None
+    description: str = None
+    created_at: str = None
+    updated_at: str = None
+
+
+def clean_nones(a_dict: Dict[Any, Optional[Any]]) -> Dict[Any, Any]:
+    return {k: v for k, v in a_dict.items() if v is not None}
 
 
 class DictBuilder:
@@ -181,7 +196,7 @@ class DictBuilder:
             self.the_dict[key] = query
         return self
 
-    def add_coma_separated_list_checking(self, checker: CHECKER, key, val: List[str]):
+    def add_coma_separated_list_checking(self, checker: Checker, key, val: List[str]):
         if val is not None:
             for element in val:
                 checker.check_value(element)
@@ -196,7 +211,7 @@ class DictBuilder:
             self.the_dict[key] = val
         return self
 
-    def add_cheking(self, checker: CHECKER, key, val):
+    def add_cheking(self, checker: Checker, key, val):
         if val is not None:
             checker.check_value(val)
             self.the_dict[key] = val
@@ -221,10 +236,10 @@ class DictBuilder:
         return self.add("symbol", val)
 
     def period(self, val: str):
-        return self.add_cheking(PERIOD, 'period', val)
+        return self.add_cheking(Period, 'period', val)
 
     def sort(self, val: str):
-        return self.add_cheking(SORT, 'sort', val)
+        return self.add_cheking(Sort, 'sort', val)
 
     def since(self, val: str):
         return self.add("from", val)
@@ -248,10 +263,10 @@ class DictBuilder:
         return self.add("volume", val)
 
     def side(self, val: str):
-        return self.add_cheking(SIDE, 'side', val)
+        return self.add_cheking(Side, 'side', val)
 
     def order_type(self, val: str):
-        return self.add_cheking(ORDER_TYPE, 'type', val)
+        return self.add_cheking(OrderType, 'type', val)
 
     def quantity(self, val: str):
         return self.add("quantity", val)
@@ -263,7 +278,7 @@ class DictBuilder:
         return self.add("stop_price", val)
 
     def time_in_force(self, val: str):
-        return self.add_cheking(TIME_IN_FORCE, 'time_in_force', val)
+        return self.add_cheking(TimeInForce, 'time_in_force', val)
 
     def expire_time(self, val: str):
         return self.add("expire_time", val)
@@ -311,13 +326,13 @@ class DictBuilder:
         return self.add("to_currency", val)
 
     def source(self, val: str):
-        return self.add_cheking(ACCOUNT, "source", val)
+        return self.add_cheking(Account, "source", val)
 
     def destination(self, val: str):
-        return self.add_cheking(ACCOUNT, "destination", val)
+        return self.add_cheking(Account, "destination", val)
 
     def identify_by(self, val: str):
-        return self.add_cheking(IDENTIFY_BY, 'by', val)
+        return self.add_cheking(IdentifyBy, 'by', val)
 
     def identifier(self, val: str):
         return self.add("identifier", val)
@@ -344,7 +359,7 @@ class DictBuilder:
         return self.add("order_id", val)
 
     def use_offchain(self, val: str):
-        return self.add_cheking(OFFCHAIN, 'use_offchain', val)
+        return self.add_cheking(Offchain, 'use_offchain', val)
 
     def public_comment(self, val: str):
         return self.add("public_comment", val)
@@ -353,19 +368,19 @@ class DictBuilder:
         return self.add('symbols', val)
 
     def transaction_type(self, val: List[str]):
-        return self.add_cheking(TRANSACTION_TYPE, 'type', val)
+        return self.add_cheking(TransactionType, 'type', val)
 
     def transaction_types(self, val: List[str]):
-        return self.add_coma_separated_list_checking(TRANSACTION_TYPE, 'types', val)
+        return self.add_coma_separated_list_checking(TransactionType, 'types', val)
 
     def transaction_subtype(self, val: str):
-        return self.add_cheking(TRANSACTION_SUBTYPE, 'subtype', val)
+        return self.add_cheking(TransactionSubType, 'subtype', val)
 
     def transaction_subtypes(self, val: str):
-        return self.add_coma_separated_list_checking(TRANSACTION_SUBTYPE, 'subtypes', val)
+        return self.add_coma_separated_list_checking(TransactionSubType, 'subtypes', val)
 
     def transaction_statuses(self, val: str):
-        return self.add_coma_separated_list_checking(TRANSACTION_STATUS, 'statuses', val)
+        return self.add_coma_separated_list_checking(TransactionStatus, 'statuses', val)
 
     def id_from(self, val: str):
         return self.add('id_from', val)
@@ -378,7 +393,7 @@ class DictBuilder:
 
     # TODO: choose one, sort_by or order_by, and make it constant throughout the sdk.
     def sort_by(self, val: str):
-        return self.add_cheking(SORT_BY, 'order_by', val)
+        return self.add_cheking(SortBy, 'order_by', val)
 
     def base_currency(self, val: str):
         return self.add('base_currency', val)
@@ -396,16 +411,19 @@ class DictBuilder:
         return self.add('order_list_id', val)
 
     def contingency_type(self, val: str):
-        return self.add_cheking(CONTINGENCY_TYPE, 'contingency_type', val)
+        return self.add_cheking(ContingencyType, 'contingency_type', val)
 
     def orders(self, val: List[OrderRequest]):
-        return self.add('orders', json.dumps([asdict(order) for order in val]))
+        return self.add('orders', [clean_nones(asdict(order)) for order in val])
 
     def sub_account_ids(self, val: List[str]):
         return self.add_coma_separated_list('sub_account_ids', val)
 
     def sub_account_id(self, val: str):
         return self.add('sub_account_id', val)
+
+    def subscription_mode(self, val: str):
+        return self.add_cheking(SubscriptionMode, 'mode', val)
 
     def type(self, val: str):
         return self.add('type', val)

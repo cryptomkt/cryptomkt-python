@@ -1,7 +1,7 @@
+from base64 import b64encode
 from hashlib import sha256
 from hmac import HMAC
 from time import time
-from base64 import b64encode
 from urllib.parse import urlsplit
 
 from requests.auth import AuthBase

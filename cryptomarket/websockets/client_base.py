@@ -1,11 +1,13 @@
 import time
+from datetime import datetime, timedelta
+from typing import Dict, Optional
 
-from cryptomarket.exceptions import CryptomarketAPIException
+from cryptomarket.exceptions import (CryptomarketAPIException,
+                                     CryptomarketSDKException)
 from cryptomarket.websockets.callback_cache import CallbackCache
 from cryptomarket.websockets.manager import WebsocketManager
-from typing import Dict
-
-from cryptomarket.websockets.subscriptionMethodData import SubscriptionMethodData
+from cryptomarket.websockets.subscriptionMethodData import \
+    SubscriptionMethodData
 
 
 class ClientBase:
@@ -35,14 +37,24 @@ class ClientBase:
         self._callback_cache = CallbackCache()
         self._subscription_methods_data = subscription_methods_data
 
-    def connect(self):
+    def connect(self, timeout=30) -> Optional[CryptomarketSDKException]:
         """connnects via websocket to the exchange.
 
         If the websocket requires authentication, it also authenticates and then resolves.
+
+        :param timeout: Seconds the the client will have to connect and then authenticate (if is an authenticated client).
         """
         self._ws_manager.connect()
-        while not self._ws_manager.connected:
+
+        timeout_time = datetime.now()+timedelta(seconds=timeout)
+
+        def connecting():
+            return not self._ws_manager.connected and datetime.now() < timeout_time
+        while connecting():
             time.sleep(1)
+        if not self._ws_manager.connected:
+            self.close()
+            return CryptomarketSDKException("connection timeout")
 
     def close(self):
         """close the websocket connection with the exchange
@@ -55,7 +67,7 @@ class ClientBase:
         """
         self.on_connect()
 
-    # sends #
+    # SENDS #
 
     def _send_subscription(self, method, callback, params=None, result_callback=None):
         key = self._build_key(method)
@@ -69,18 +81,18 @@ class ClientBase:
 
     def _send_by_id(self, method: str, callback: callable = None, params=None):
         payload = {'method': method, 'params': params}
-        if callback is not None:
+        if callback:
             id = self._callback_cache.store_callback(callback)
             payload['id'] = id
         self._ws_manager.send(payload)
 
-    # handles #
+    # HANDLES #
 
     def _handle(self, message):
-        if 'method' in message:
-            self._handle_notification(message)
-        elif 'id' in message:
+        if 'id' in message:
             self._handle_response(message)
+        elif 'method' in message:
+            self._handle_notification(message)
 
     def _handle_notification(self, message):
         method = message['method']
@@ -90,7 +102,7 @@ class ClientBase:
         key = self._build_key(method)
         method_type = 'update'
         if key != 'subscription':
-          method_type = self._subscription_methods_data[method].method_type
+            method_type = self._subscription_methods_data[method].method_type
         callback = self._callback_cache.get_subscription_callback(key)
         callback(params, method_type)
 

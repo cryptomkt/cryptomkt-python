@@ -3,31 +3,31 @@ from dataclasses import dataclass
 
 @dataclass
 class WSTicker:
-    t: int = None
+    t: int
     """Timestamp in milliseconds"""
-    a: str = None
+    a: str
     """Best ask"""
-    A: str = None
+    A: str
     """Best ask quantity"""
-    b: str = None
+    b: str
     """Best bid"""
-    B: str = None
+    B: str
     """Best bid quantity"""
-    c: str = None
+    c: str
     """Last price"""
-    o: str = None
+    o: str
     """Open price"""
-    h: str = None
+    h: str
     """High price"""
-    l: str = None
+    l: str
     """Low price"""
-    v: str = None
+    v: str
     """Base asset volume"""
-    q: str = None
+    q: str
     """Quote asset volume"""
-    p: str = None
+    p: str
     """Price change"""
-    P: str = None
+    P: str
     """Price change percent"""
-    L: int = None
+    L: int
     """Last trade identifier"""

@@ -2,10 +2,10 @@ from dataclasses import dataclass
 
 @dataclass
 class Candle:
-    timestamp: str = None
-    open: str = None
-    close: str = None
-    min: str = None
-    max: str = None
-    volume: str = None
-    volume_quote: str = None
+    timestamp: str
+    open: str
+    close: str
+    min: str
+    max: str
+    volume: str
+    volume_quote: str
