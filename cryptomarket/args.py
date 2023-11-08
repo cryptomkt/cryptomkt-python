@@ -52,6 +52,15 @@ class Side(Checker):
     SELL = 'sell'
 
 
+class OrderStatus(Checker):
+    NEW = 'new'
+    SUSPENDED = 'suspended'
+    PARTIALLY_FILLED = 'partiallyFilled'
+    FILLED = 'filled'
+    CANCELED = 'canceled'
+    EXPIRED = 'expired'
+
+
 class OrderType(Checker):
     LIMIT = 'limit'
     MARKET = 'market'

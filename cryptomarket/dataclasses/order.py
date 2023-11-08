@@ -2,17 +2,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional
 
-from cryptomarket.args import ContingencyType, OrderType, Side, TimeInForce
+from cryptomarket.args import ContingencyType, OrderStatus, OrderType, Side, TimeInForce
 from cryptomarket.dataclasses.tradeOfOrder import TradeOfOrder
-
-
-class OrderStatus(str, Enum):
-    NEW = 'new'
-    SUSPENDED = 'suspended'
-    PARTIALLY_FILLED = 'partiallyFilled'
-    FILLED = 'filled'
-    CANCELED = 'canceled'
-    EXPIRED = 'expired'
 
 
 @dataclass

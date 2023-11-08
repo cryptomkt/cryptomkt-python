@@ -114,7 +114,8 @@ class ClientBase:
 
         if 'error' in response:
             callback(CryptomarketAPIException.from_dict(response), None)
-        elif 'result' in response:
+            return
+        if 'result' in response:
             result = response['result']
             if type(result) == dict and 'data' in result:
                 callback(None, result['data'])

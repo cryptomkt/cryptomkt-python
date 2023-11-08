@@ -1,6 +1,7 @@
+from enum import Enum
 from typing import Callable, List, Optional, Union
 
-from dacite import from_dict
+from dacite import Config, from_dict
 from typing_extensions import Literal
 
 import cryptomarket.args as args
@@ -67,7 +68,8 @@ class WalletClient(ClientAuthenticable):
         :param result_callback: A callable of two arguments, takes either a CryptomarketAPIException, or the result of the subscription. True if successful
         """
         def intercept_feed(feed, feed_type):
-            callback(from_dict(data_class=Transaction, data=feed))
+            callback(from_dict(data_class=Transaction,
+                     data=feed, config=Config(cast=[Enum])))
         self._send_subscription(
             'subscribe_transactions', callback=intercept_feed, result_callback=result_callback)
 
@@ -233,7 +235,7 @@ class WalletClient(ClientAuthenticable):
             if err is not None:
                 callback(err, None)
                 return
-            transactions = [from_dict(data_class=Transaction, data=transaction)
+            transactions = [from_dict(data_class=Transaction, data=transaction, config=Config(cast=[Enum]))
                             for transaction in response]
             callback(None, transactions)
         self._send_by_id(

@@ -1,6 +1,7 @@
+from enum import Enum
 from typing import Callable, List, Optional, Union
 
-from dacite import from_dict
+from dacite import Config, DaciteError, from_dict
 from typing_extensions import Literal
 
 import cryptomarket.args as args
@@ -220,7 +221,8 @@ class TradingClient(ClientAuthenticable):
                 if err:
                     callback(err, None)
                     return
-                callback(None, from_dict(data_class=Report, data=response))
+                callback(None, from_dict(data_class=Report,
+                         data=response, config=Config(cast=[Enum])))
         else:
             intercept_response = None
         self._send_by_id(
@@ -285,7 +287,7 @@ class TradingClient(ClientAuthenticable):
                 if err:
                     callback(err, None)
                     return
-                reports = [from_dict(data_class=Report, data=report)
+                reports = [from_dict(data_class=Report, data=report, config=Config(cast=[Enum]))
                            for report in response]
                 callback(None, reports)
         else:
@@ -313,7 +315,8 @@ class TradingClient(ClientAuthenticable):
                 if err:
                     callback(err, None)
                     return
-                callback(None, from_dict(data_class=Report, data=response))
+                callback(None, from_dict(data_class=Report,
+                         data=response, config=Config(cast=[Enum])))
         else:
             intercept_result = None
         self._send_by_id('spot_cancel_order',
@@ -347,7 +350,8 @@ class TradingClient(ClientAuthenticable):
                 if err:
                     callback(err, None)
                     return
-                callback(None, from_dict(data_class=Report, data=response))
+                callback(None, from_dict(data_class=Report,
+                         data=response, config=Config(cast=[Enum])))
         else:
             intercept_result = None
         self._send_by_id('spot_replace_order',
@@ -369,7 +373,7 @@ class TradingClient(ClientAuthenticable):
                 if err:
                     callback(err, None)
                     return
-                reports = [from_dict(data_class=Report, data=report)
+                reports = [from_dict(data_class=Report, data=report, config=Config(cast=[Enum]))
                            for report in response]
                 callback(None, reports)
         else:

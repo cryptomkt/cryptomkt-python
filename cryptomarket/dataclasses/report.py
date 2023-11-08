@@ -27,7 +27,7 @@ class Report:
     type: OrderType
     time_in_force: TimeInForce
     quantity: str
-    cum_quantity: str
+    quantity_cumulative: str
     post_only: bool
     created_at: str
     updated_at: str
