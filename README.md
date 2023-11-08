@@ -37,13 +37,13 @@ currencies = client.get_currencies()
 order_book = client.get_order_book_of_symbol('EOSETH')
 
 # get your wallet balances
-account_balance = client.get_wallet_balances()
+wallet_balance = client.get_wallet_balances()
 
 # get your spot trading balances
 trading_balance = client.get_spot_trading_balances()
 
 # move balance from wallet account to trading account
-result = client.transfer_between_wallet_and_exchange('ETH', '3.2', source=Account.WALLET, destination=Account.SPOT)
+transfer = client.transfer_between_wallet_and_exchange('ETH', '3.2', source=Account.WALLET, destination=Account.SPOT)
 
 # get your active spot orders
 orders = client.get_all_active_spot_orders('EOSETH')
@@ -66,8 +66,6 @@ There are no unsubscriptions methods for the `MarketDataClient`. To stop recievi
 # instance a client
 client = MarketDataClient()
 client.connect()
-# close the client
-client.close()
 
 # subscribe to public trades
 def trades_callback(trades_by_symbol: Dict[str, List[WSTrade]], notification_type):
@@ -88,9 +86,15 @@ def ticker_callback(tikers_of_symbol: Dict[str, WSTicker]):
         print(ticker)
 client.subscribe_to_ticker(
     callback=ticker_callback,
-    speed=args.TICKER_SPEED._3_SECONDS,
+    speed=TickerSpeed._3_SECONDS,
     result_callback=lambda err, result: print(f'err:{err}, result:{result}')
 )
+
+# run for some time
+time.sleep(10)
+
+# close the client
+client.close()
 ```
 
 ### TradingClient
@@ -113,7 +117,7 @@ client.unsubscribe_to_reports()
 client_order_id = str(int(time.time()*1000))
 
 # create an order
-create_spot_order(
+client.create_spot_order(
   client_order_id=client_order_id,
   symbol='EOSETH',
   side='sell',
