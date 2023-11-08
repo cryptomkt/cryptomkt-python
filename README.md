@@ -14,7 +14,7 @@ pip install cryptomarket
 
 # Documentation
 
-This sdk makes use of the [api version 2](https://api.exchange.cryptomkt.com/v2) of cryptomarket
+This sdk makes use of the [api version 3](https://api.exchange.cryptomkt.com) of cryptomarket
 
 # Quick Start
 
@@ -22,6 +22,7 @@ This sdk makes use of the [api version 2](https://api.exchange.cryptomkt.com/v2)
 
 ```python
 from cryptomarket.client import Client
+from cryptomarket.args import Account, Side, OrderType
 from cryptomarket.exceptions import CryptomarketSDKException
 
 # instance a client
@@ -33,27 +34,27 @@ client = Client(api_key, api_secret)
 currencies = client.get_currencies()
 
 # get order books
-order_book = client.get_order_book('EOSETH')
+order_book = client.get_order_book_of_symbol('EOSETH')
 
-# get your account balances
-account_balance = client.get_account_balance()
+# get your wallet balances
+account_balance = client.get_wallet_balances()
 
-# get your trading balances
-trading_balance = client.get_trading_balance()
+# get your spot trading balances
+trading_balance = client.get_spot_trading_balances()
 
-# move balance from account bank to account trading
-result = client.transfer_money_from_bank_balance_to_trading_balance('ETH', '3.2')
+# move balance from wallet account to trading account
+result = client.transfer_between_wallet_and_exchange('ETH', '3.2', source=Account.WALLET, destination=Account.SPOT)
 
-# get your active orders
-orders = client.get_active_orders('EOSETH')
+# get your active spot orders
+orders = client.get_all_active_spot_orders('EOSETH')
 
-# create a new order
-order = client.create_order('EOSETH', 'buy', '10', order_type=args.ORDER_TYPE.MARKET)
+# create a new spot order
+order = client.create_spot_order('EOSETH', Side.BUY, '10', type=OrderType.MARKET)
 ```
 
 ## Websocket Clients
 
-there are three websocket clients, `MarketDataClient`, the `SpotTradingClient` and the `WalletManagementClient`. The `MarketDataClient` is public, while the others require authentication to be used.
+there are three websocket clients, `MarketDataClient`, the `TradingClient` and the `WalletClient`. The `MarketDataClient` is public, while the others require authentication to be used.
 
 Some subscription callbacks take a second argument, indicating the type of notification, either 'snapshsot' or 'update'.
 
@@ -67,14 +68,15 @@ client = MarketDataClient()
 client.connect()
 # close the client
 client.close()
+
 # subscribe to public trades
-def callback(trades_by_symbol: Dict[str, List[WSTrade]], notification_type):
+def trades_callback(trades_by_symbol: Dict[str, List[WSTrade]], notification_type):
     for symbol in trades_by_symbol:
         trade_list = trades_by_symbol[symbol]
         for trade in trade_list:
             print(trade)
 client.subscribe_to_trades(
-  callback=callback,
+  callback=trades_callback,
   symbols=['ETHBTC'],
   limit=5,
 )
@@ -91,7 +93,7 @@ client.subscribe_to_ticker(
 )
 ```
 
-### SpotTradingClient
+### TradingClient
 
 ```python
 # instance a client with a 15 seconds window
@@ -124,14 +126,15 @@ client.cancel_spot_order(client_order_id)
 
 ```
 
-### WalletManagementClient
+### WalletClient
 
 ```python
 # instance a client
 client = WalletClient(api_key, api_secret)
 client.connect()
+
 # close the client
-defer client.close()
+client.close()
 
 # subscribe to wallet transactions
 def callback(transaction):
