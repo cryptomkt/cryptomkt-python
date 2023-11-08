@@ -1141,7 +1141,7 @@ class Client(object):
         :returns: A transaction of the account
         """
         response = self._get(endpoint=f'wallet/transactions/{id}')
-        return from_dict(data_class=Transaction, data=response)
+        return from_dict(data_class=Transaction, data=response, config=Config(cast=[Enum]))
 
     def check_if_offchain_is_available(
         self,
