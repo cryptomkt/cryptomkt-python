@@ -24,8 +24,6 @@ class AuthCallsTestCase(unittest.TestCase):
 class GetTradingBalance(AuthCallsTestCase):
     def test_successfull_call(self):
         trading_balances = self.client.get_spot_trading_balances()
-        print("**balances**")
-        print(trading_balances)
         if len(trading_balances) == 0:
             self.fail("no balances")
         if not good_list(good_balance, trading_balances):
@@ -91,7 +89,6 @@ class OrderFlow(AuthCallsTestCase):
             quantity='0.01',
             client_order_id=client_order_id,
             price='1000')
-        print(order)
         if not good_order(order):
             self.fail("not good order")
         # get
@@ -225,7 +222,6 @@ class OrderList(AuthCallsTestCase):
                 time_in_force=args.TimeInForce.FOK,
                 quantity="0.1",
                 price="10000")])
-        print(orders)
         if not good_list(good_order, orders):
             self.fail("not valid orders: " + orders)
         self.client.cancel_all_orders()
