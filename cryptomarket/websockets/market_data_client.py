@@ -35,7 +35,7 @@ class MarketDataClient(ClientBase):
     def _handle(self, message):
         if 'ch' in message:
             self._handle_channel_feed(message)
-        if 'method' in message:
+        elif 'method' in message:
             self._handle_notification(message)
         elif 'id' in message:
             self._handle_response(message)
