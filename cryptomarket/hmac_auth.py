@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 from requests.auth import AuthBase
 
 
-class HS256(AuthBase):
+class HmacAuth(AuthBase):
     def __init__(self, api_key: str, secret_key: str, window: int = None):
         self.api_key = api_key
         self.secret_key = secret_key

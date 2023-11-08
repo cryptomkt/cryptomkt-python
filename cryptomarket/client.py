@@ -11,7 +11,7 @@ from cryptomarket.dataclasses import (Address, AmountLock, Balance, Candle,
                                       Ticker, Trade, Transaction)
 from cryptomarket.dataclasses.aclSettings import ACLSettings
 from cryptomarket.dataclasses.publicTrade import PublicTrade
-from cryptomarket.httpClient import HttpClient
+from cryptomarket.http_client import HttpClient
 
 
 class Client(object):
@@ -580,22 +580,19 @@ class Client(object):
     ) -> List[Order]:
         """creates a list of spot orders
 
-        Types or contingency:
-
+        Types or Contingency:
         - ContingencyType.ALL_OR_NONE (ContingencyType.AON)
         - ContingencyType.ONE_CANCEL_OTHER (ContingencyType.OCO)
         - ContingencyType.ONE_TRIGGER_OTHER (ContingencyType.OTO)
         - ContingencyType.ONE_TRIGGER_ONE_CANCEL_OTHER (ContingencyType.OTOCO)
 
         Restriction in the number of orders:
-
         - An AON list must have 2 or 3 orders
         - An OCO list must have 2 or 3 orders, and only one can be a limit order
         - An OTO list must have 2 or 3 orders
         - An OTOCO must have 3 or 4 orders, and for the secondary only one can be a limit order
 
         Symbol restrictions:
-
         - For an AON order list, the symbol code of orders must be unique for each order in the list.
         - For an OCO order list, there are no symbol code restrictions.
         - For an OTO order list, there are no symbol code restrictions.

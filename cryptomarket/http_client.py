@@ -3,14 +3,14 @@ import json
 import requests
 
 from cryptomarket.exceptions import CryptomarketAPIException
-from cryptomarket.hmac import HS256
+from cryptomarket.hmac_auth import HmacAuth
 
 api_url = 'https://api.exchange.cryptomkt.com/api/3/'
 
 
 class HttpClient:
 
-    def __init__(self, api_key, secret_key, window: int = None):
+    def __init__(self, api_key: str, secret_key: str, window: int = None):
         self.api_key = api_key
         self.secret_key = secret_key
         self.window = window
@@ -31,7 +31,7 @@ class HttpClient:
 
     def authorize(self):
         assert self.session_is_open == True
-        self.session.auth = HS256(
+        self.session.auth = HmacAuth(
             self.api_key, self.secret_key, window=self.window)
 
     def get(self, endpoint, params=None):
@@ -40,8 +40,8 @@ class HttpClient:
 
     def post(self, endpoint, params=None):
         response = self.session.post(
-            api_url + endpoint, 
-            data=json.dumps(params), 
+            api_url + endpoint,
+            data=json.dumps(params),
             headers={'Content-Type': 'application/json'})
         return self._handle_response(response)
 

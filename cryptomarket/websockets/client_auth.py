@@ -4,7 +4,7 @@ from typing import Dict, Optional
 
 from cryptomarket.exceptions import (CryptomarketAPIException,
                                      CryptomarketSDKException)
-from cryptomarket.hmac import HS256
+from cryptomarket.hmac_auth import HmacAuth
 from cryptomarket.websockets.client_base import ClientBase
 
 
@@ -77,7 +77,7 @@ class ClientAuthenticable(ClientBase):
         msg = str(timestamp)
         if self.window:
             msg += str(self.window)
-        signature = HS256.get_signature(msg, self.api_secret)
+        signature = HmacAuth.get_signature(msg, self.api_secret)
         params = {
             'type': 'HS256',
             'api_key': self.api_key,
