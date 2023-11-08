@@ -239,32 +239,36 @@ class TradingClient(ClientAuthenticable):
     ):
         """creates a list of spot orders
 
-        Types or contingency:
-
-        - CONTINGENCY.ALL_OR_NONE (CONTINGENCY.AON)
-        - CONTINGENCY.ONE_CANCEL_OTHER (CONTINGENCY.OCO)
-        - CONTINGENCY.ONE_TRIGGER_ONE_CANCEL_OTHER (CONTINGENCY.OTOCO)
+        Types or Contingency:
+        - Contingency.ALL_OR_NONE (Contingency.AON)
+        - Contingency.ONE_CANCEL_OTHER (Contingency.OCO)
+        - Contingency.ONE_TRIGGER_ONE_CANCEL_OTHER (Contingency.OTOCO)
 
         Restriction in the number of orders:
-
         - An AON list must have 2 or 3 orders
-        - An OCO list must have 2 or 3 orders
-        - An OTOCO must have 3 or 4 orders
+        - An OCO list must have 2 or 3 orders, and only one can be a limit order
+        - An OTO list must have 2 or 3 orders
+        - An OTOCO must have 3 or 4 orders, and for the secondary only one can be a limit order
 
         Symbol restrictions:
-
         - For an AON order list, the symbol code of orders must be unique for each order in the list.
         - For an OCO order list, there are no symbol code restrictions.
         - For an OTOCO order list, the symbol code of orders must be the same for all orders in the list (placing orders in different order books is not supported).
 
-        ORDER_TYPE restrictions:
-        - For an AON order list, orders must be ORDER_TYPE.LIMIT or ORDER_TYPE.Market
-        - For an OCO order list, orders must be ORDER_TYPE.LIMIT, ORDER_TYPE.STOP_LIMIT, ORDER_TYPE.STOP_MARKET, ORDER_TYPE.TAKE_PROFIT_LIMIT or ORDER_TYPE.TAKE_PROFIT_MARKET.
+        OrderType restrictions:
+        - For an AON order list, orders must be OrderType.LIMIT or OrderType.Market
+        - For an OCO order list, orders must be OrderType.LIMIT, OrderType.STOP_LIMIT, OrderType.STOP_MARKET, OrderType.TAKE_PROFIT_LIMIT or OrderType.TAKE_PROFIT_MARKET.
         - An OCO order list cannot include more than one limit order (the same
         applies to secondary orders in an OTOCO order list).
-        - For an OTOCO order list, the first order must be ORDER_TYPE.LIMIT, ORDER_TYPE.MARKET, ORDER_TYPE.STOP_LIMIT, ORDER_TYPE.STOP_MARKET, ORDER_TYPE.TAKE_PROFIT_LIMIT or ORDER_TYPE.TAKE_PROFIT_MARKET.
+        - For an OTOCO order list, the first order must be OrderType.LIMIT, OrderType.MARKET, OrderType.STOP_LIMIT, OrderType.STOP_MARKET, OrderType.TAKE_PROFIT_LIMIT or OrderType.TAKE_PROFIT_MARKET.
         - For an OTOCO order list, the secondary orders have the same restrictions as an OCO order
-        - Default is ORDER_TYPE.Limit
+        - Default is OrderType.Limit
+
+        TimeInForce restrictions:
+        - For an AON order list, required and must be FOK
+        - For an OCO order list is optional, orders can be GTC, IOC (except limit orders), FOK (except limit orders), DAY or GTD
+        - For an OTOCO order list, the first order can be GTC, IOC, FOK, DAY, GTD
+        - For an OTOCO order list is optional, the secondary orders can be orders must be GTC, IOC (except limit orders), FOK (except limit orders), DAY or GTD
 
         https://api.exchange.cryptomkt.com/#create-new-spot-order-list-2
 
