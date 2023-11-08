@@ -1,6 +1,7 @@
 import json
 import time
 import unittest
+from cryptomarket.dataclasses.order import OrderStatus
 
 from test_helpers import *
 
@@ -23,6 +24,8 @@ class AuthCallsTestCase(unittest.TestCase):
 class GetTradingBalance(AuthCallsTestCase):
     def test_successfull_call(self):
         trading_balances = self.client.get_spot_trading_balances()
+        print("**balances**")
+        print(trading_balances)
         if len(trading_balances) == 0:
             self.fail("no balances")
         if not good_list(good_balance, trading_balances):
@@ -88,6 +91,7 @@ class OrderFlow(AuthCallsTestCase):
             quantity='0.01',
             client_order_id=client_order_id,
             price='1000')
+        print(order)
         if not good_order(order):
             self.fail("not good order")
         # get
@@ -151,6 +155,23 @@ class CancelOrderByClientId(AuthCallsTestCase):
             order = self.client.get_active_spot_order(client_order_id)
 
 
+
+class CancelOrderByClientId(AuthCallsTestCase):
+    def test_successfull_call(self):
+        order = self.client.create_spot_order(
+            symbol='ADAUSDT',
+            side=args.Side.BUY,
+            quantity='5',
+            type=args.OrderType.LIMIT,
+            price='0.1'
+        )
+        assert(order.status == OrderStatus.NEW)
+        time.sleep(5)
+        canceled_order = self.client.cancel_spot_order(order.client_order_id)
+        assert(canceled_order.status == OrderStatus.CANCELED)
+
+
+
 class GetAllTradingCommissions(AuthCallsTestCase):
     def test_successfull_call(self):
         result = self.client.get_all_trading_commissions()
@@ -204,6 +225,7 @@ class OrderList(AuthCallsTestCase):
                 time_in_force=args.TimeInForce.FOK,
                 quantity="0.1",
                 price="10000")])
+        print(orders)
         if not good_list(good_order, orders):
             self.fail("not valid orders: " + orders)
         self.client.cancel_all_orders()

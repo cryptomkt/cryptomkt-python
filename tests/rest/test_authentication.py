@@ -10,7 +10,7 @@ with open('/home/ismael/cryptomarket/keys.json') as fd:
 
 class AuthenticationTestCase(unittest.TestCase):
     def setUp(self):
-        self.client = Client(keys['apiKey'], keys['apiSecret'])
+        self.client = Client(keys['apiKey'], keys['apiSecret'], 60_000)
 
     def tearDown(self):
         self.client.close()

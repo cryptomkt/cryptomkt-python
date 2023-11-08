@@ -18,11 +18,11 @@ def pprint(a_json_obj):
 
 class Key_printer:
     def __init__(self):
-        self.keys = {}
+        self.keys = []
 
     def add_keys(self, a_dict):
         for key in a_dict:
-            self.keys[key] = 1
+            self.keys.append(key)
 
     def print_keys(self):
         print('')
