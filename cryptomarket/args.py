@@ -99,6 +99,11 @@ class TickerSpeed(Checker):
     _3_SECONDS = '3s'
 
 
+class PriceRateSpeed(Checker):
+    _1_SECOND = '1s'
+    _3_SECONDS = '3s'
+
+
 class OrderbookSpeed(Checker):
     _100_MILISECONDS = '100ms'
     _500_MILISECONDS = '500ms'
@@ -376,6 +381,9 @@ class DictBuilder:
     def symbols_as_list(self, val: List[str]):
         return self.add('symbols', val)
 
+    def currencies_as_list(self, val: List[str]):
+        return self.add('currencies', val)
+
     def transaction_type(self, val: List[str]):
         return self.add_cheking(TransactionType, 'type', val)
 
@@ -433,6 +441,9 @@ class DictBuilder:
 
     def subscription_mode(self, val: str):
         return self.add_cheking(SubscriptionMode, 'mode', val)
+
+    def target_currency(self, val: str):
+        return self.add('target_currency', val)
 
     def type(self, val: str):
         return self.add('type', val)

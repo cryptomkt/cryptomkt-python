@@ -6,6 +6,7 @@ from cryptomarket.dataclasses import (Balance, OrderBookLevel, Report,
                                       WSCandle, WSMiniTicker, WSOrderBook,
                                       WSOrderBookTop, WSPublicTrade, WSTicker,
                                       WSTrade)
+from cryptomarket.dataclasses.wsPriceRate import WSPriceRate
 from tests.rest.test_helpers import good_list
 
 
@@ -120,6 +121,16 @@ def good_orderbook_top(orderbook_top: WSOrderBookTop) -> bool:
             "b",
             "A",
             "B",
+        ]
+    )
+
+
+def good_price_rate(price_rate: WSPriceRate) -> bool:
+    return good_dict(
+        asdict(price_rate),
+        [
+            "t",
+            "r",
         ]
     )
 

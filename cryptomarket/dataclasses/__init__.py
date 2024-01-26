@@ -23,13 +23,13 @@ from .trade import Trade
 from .tradeOfOrder import TradeOfOrder
 from .transaction import Transaction
 from .wsCandle import WSCandle
-from .wsminiTicker import WSMiniTicker
+from .wsMiniTicker import WSMiniTicker
 from .wsOrderBook import WSOrderBook
 from .wsOrderBookTop import WSOrderBookTop
 from .wsPublicTrade import WSPublicTrade
 from .wsTicker import WSTicker
 from .wsTrade import WSTrade
-
+from .wsPriceRate import WSPriceRate
 __all__ = [
     ACLSettings,
     Address,
@@ -62,5 +62,6 @@ __all__ = [
     WSPublicTrade,
     WSTicker,
     WSTrade,
+    WSPriceRate,
     SubAccount
 ]

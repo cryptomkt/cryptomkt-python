@@ -1,5 +1,6 @@
 import time
 import unittest
+from cryptomarket.dataclasses.wsPriceRate import WSPriceRate
 
 from test_helpers import *
 
@@ -161,6 +162,23 @@ class TestWSClientPublicSubs(unittest.TestCase):
         self.ws.subscribe_to_top_of_book(
             callback=callback,
             speed=args.OrderbookSpeed._100_MILISECONDS,
+            result_callback=result_callback
+        )
+        time.sleep(20*SECOND)
+        if Veredict.failed:
+            self.fail(Veredict.message)
+
+    def test_subscribe_to_price_rates(self):
+        def callback(price_rates: Dict[str, WSPriceRate]):
+            for currency in price_rates:
+                price_rate = price_rates[currency]
+                if not good_price_rate(price_rate):
+                    Veredict.fail("not a good mini ticker")
+        self.ws.subscribe_to_price_rates(
+            callback=callback,
+            speed=args.PriceRateSpeed._1_SECOND,
+            target_currency="BTC",
+            currencies=["EOS", "ETH"],
             result_callback=result_callback
         )
         time.sleep(20*SECOND)

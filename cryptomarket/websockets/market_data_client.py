@@ -5,9 +5,10 @@ from typing_extensions import Literal
 
 import cryptomarket.args as args
 from cryptomarket.dataclasses.wsCandle import WSCandle
-from cryptomarket.dataclasses.wsminiTicker import WSMiniTicker
+from cryptomarket.dataclasses.wsMiniTicker import WSMiniTicker
 from cryptomarket.dataclasses.wsOrderBook import WSOrderBook
 from cryptomarket.dataclasses.wsOrderBookTop import WSOrderBookTop
+from cryptomarket.dataclasses.wsPriceRate import WSPriceRate
 from cryptomarket.dataclasses.wsTicker import WSTicker
 from cryptomarket.dataclasses.wsTrade import WSTrade
 from cryptomarket.exceptions import CryptomarketAPIException
@@ -481,6 +482,41 @@ class MarketDataClient(ClientBase):
                       for key in feed})
         self._send_channeled_subscription(
             channel=f'orderbook/top/{speed}/batch',
+            callback=intercept_feed,
+            params=params,
+            result_callback=result_callback
+        )
+
+    def subscribe_to_price_rates(
+        self,
+        callback: Callable[[Dict[str, WSPriceRate]], None],
+        speed: Union[args.PriceRateSpeed, Literal['1s', '3s']],
+        target_currency: Optional[str],
+        currencies: Optional[List[str]] = None,
+        result_callback: Optional[Callable[[
+            Union[CryptomarketAPIException, None], Union[List[str], None]], None]] = None,
+    ):
+        """subscribe to a feed of price rates
+
+        subscription is for all currencies or specified currencies (bases), against a target currency (quote). indexed by currency id (bases)
+
+        https://api.exchange.cryptomkt.com/#subscribe-to-price-rates
+
+        :param callback: callable that recieves a dict of mini tickers, indexed by symbol.
+        :param speed: The speed of the feed. '1s' or '3s'
+        :param target_currency: quote currency for the price rates
+        :param currencies: Optional. A list of currencies ids (as bases) to subscribe to. If not provided it subscribes to all currencies
+        :param result_callback: A callable of two arguments, takes either a CryptomarketAPIException, or the list of correctly subscribed currencies
+        """
+        if currencies is None:
+            currencies = ['*']
+        params = args.DictBuilder().currencies_as_list(currencies).speed(speed).target_currency(target_currency).build()
+
+        def intercept_feed(feed, feed_type):
+            callback({key: from_dict(data_class=WSPriceRate, data=feed[key])
+                      for key in feed})
+        self._send_channeled_subscription(
+            channel=f'price/rate/{speed}',
             callback=intercept_feed,
             params=params,
             result_callback=result_callback
