@@ -7,6 +7,7 @@ from cryptomarket.dataclasses import (Address, Balance, Candle, Commission,
                                       OrderBook, OrderBookLevel, Price,
                                       PriceHistory, PricePoint, PublicTrade,
                                       Symbol, Ticker, Transaction)
+from cryptomarket.dataclasses.fee import Fee
 
 
 # defined checks if a key is present in a dict, and if its value is str, checks if its defined.
@@ -100,6 +101,18 @@ def good_symbol(symbol: Symbol) -> bool:
             "fee_currency",
             # "margin_trading",
             # "max_initial_leverage",
+        ]
+    )
+
+
+def good_fee(fee: Fee) -> bool:
+    return good_dict(
+        asdict(fee),
+        [
+            "fee",
+            "network_fee",
+            "amount",
+            "currency",
         ]
     )
 

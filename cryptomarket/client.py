@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
@@ -8,7 +9,7 @@ import cryptomarket.args as args
 from cryptomarket.dataclasses import (Address, AmountLock, Balance, Candle,
                                       Commission, Currency, Order, OrderBook,
                                       Price, PriceHistory, SubAccount, Symbol,
-                                      Ticker, Trade, Transaction)
+                                      Ticker, Trade, Transaction, Fee)
 from cryptomarket.dataclasses.aclSettings import ACLSettings
 from cryptomarket.dataclasses.publicTrade import PublicTrade
 from cryptomarket.http_client import HttpClient
@@ -52,7 +53,7 @@ class Client(object):
 
     # PUBLIC METHOD CALLS
 
-    def get_currencies(self, currencies: List[str] = None) -> Dict[str, Currency]:
+    def get_currencies(self, currencies: List[str] = None, preferred_network: Optional[str] = None) -> Dict[str, Currency]:
         """Get a dict of all currencies or specified currencies
 
         Requires no API key Access Rights
@@ -60,10 +61,12 @@ class Client(object):
         https://api.exchange.cryptomkt.com/#currencies
 
         :param currencies: Optional. A list of currencies ids
+        :param preferred_network: Optional. Code of the default network for currencies
 
         :returns: A dict of available currencies. indexed by currency id
         """
-        params = args.DictBuilder().currencies(currencies).build()
+        params = args.DictBuilder().currencies(
+            currencies).preferred_network(preferred_network).build()
         response = self._get(endpoint='public/currency', params=params)
         return {key: from_dict(data_class=Currency, data=response[key])
                 for key in response}
@@ -980,6 +983,20 @@ class Client(object):
         """
         params = args.DictBuilder().amount(amount).currency(currency).build()
         return self._get(endpoint='wallet/crypto/fee/estimate', params=params)['fee']
+
+    def get_estimate_withdrawal_fees(self, fee_requests: List[args.FeeRequest]) -> List[Fee]:
+        """Get a list of estimates of withdrawal fees
+
+        Requires the "Payment information" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#estimate-withdraw-fee
+
+        :returns: A list of expected withdrawal fees
+        """
+        params = [asdict(fee_request) for fee_request in fee_requests]
+        result = self._post(
+            endpoint='wallet/crypto/fees/estimate', params=params)
+        return [Fee.from_dict(fee_data) for fee_data in result]
 
     def check_if_crypto_address_belong_to_current_account(self, address: str) -> bool:
         """Check if an address is from this account

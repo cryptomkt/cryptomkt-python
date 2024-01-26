@@ -134,6 +134,15 @@ class WithdrawCryptoRollback(AuthCallsTestCase):
         if not success:
             self.fail("not a successful rollback")
 
+class TestGetEstimateWithdrawalFees(AuthCallsTestCase):
+    def test_successfull_call(self):
+        fees = self.client.get_estimate_withdrawal_fees([
+            args.FeeRequest("EOS", "123"),
+            args.FeeRequest("ETH", "22"),
+        ])
+        if not good_list(good_fee, fees):
+            self.fail("not a good fee")
+
 
 class TestGetEstimateWithdrawalFee(AuthCallsTestCase):
     def test_successfull_call(self):

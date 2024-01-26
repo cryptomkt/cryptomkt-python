@@ -179,6 +179,13 @@ class OrderRequest:
 
 
 @dataclass
+class FeeRequest:
+    currency: str
+    amount: str
+    network_code: Optional[str] = None
+
+
+@dataclass
 class ACLSettings:
     sub_account_id: str = None
     deposit_address_generation_enabled: bool = None
@@ -444,6 +451,9 @@ class DictBuilder:
 
     def target_currency(self, val: str):
         return self.add('target_currency', val)
+
+    def preferred_network(self, val: str):
+        return self.add('preferred_network', val)
 
     def type(self, val: str):
         return self.add('type', val)

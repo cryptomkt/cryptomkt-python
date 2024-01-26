@@ -30,6 +30,7 @@ from .wsPublicTrade import WSPublicTrade
 from .wsTicker import WSTicker
 from .wsTrade import WSTrade
 from .wsPriceRate import WSPriceRate
+from .fee import Fee
 __all__ = [
     ACLSettings,
     Address,
@@ -63,5 +64,6 @@ __all__ = [
     WSTicker,
     WSTrade,
     WSPriceRate,
-    SubAccount
+    SubAccount, 
+    Fee,
 ]
