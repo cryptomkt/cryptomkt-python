@@ -9,15 +9,15 @@ if sys.argv[-1] == 'publish':
     os.system('twine upload dist/*')
     sys.exit()
 
-with open("README.md", "r") as fh:
+with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-with open("requirements.txt", "r") as requeriments:
+with open("requirements.txt", "r", encoding="utf-8") as requeriments:
     REQUIREMENTS = requeriments.readlines()
 
 setuptools.setup(
     name="cryptomarket",
-    version="1.0.6",
+    version="3.0.0",
     packages=['cryptomarket', 'cryptomarket.websockets'],
     include_package_data=True,
     description="Cryptomarket API client library",
@@ -27,16 +27,18 @@ setuptools.setup(
     url="https://github.com/cryptomkt/cryptomkt-python",
     install_requires=REQUIREMENTS,
     author="CryptoMarket",
-    python_requires='>=3.6',
-    classifiers=(
+    python_requires='>=3.8',
+    classifiers=[
         "Intended Audience :: Developers",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3 :: Only",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Topic :: Software Development :: Libraries :: Python Modules",
-    ),
+    ],
 )
