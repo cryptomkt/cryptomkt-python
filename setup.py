@@ -28,7 +28,7 @@ setuptools.setup(
     install_requires=REQUIREMENTS,
     author="CryptoMarket",
     python_requires='>=3.8',
-    classifiers=(
+    classifiers=[
         "Intended Audience :: Developers",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
@@ -36,9 +36,9 @@ setuptools.setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
-        "Programming Language :: Python :: 3:: Only",
+        "Programming Language :: Python :: 3 :: Only",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Topic :: Software Development :: Libraries :: Python Modules",
-    ),
+    ],
 )
