@@ -2,6 +2,7 @@ import json
 import time
 import unittest
 from typing import Union
+from cryptomarket import args
 
 from test_helpers import *
 
@@ -166,6 +167,53 @@ class TestWSTradingClient(unittest.TestCase):
         except Exception as e:
             print(e)
             self.fail(str(e))
+        Veredict.wait_done()
+        if Veredict.failed:
+            self.fail(Veredict.message)
+
+    def test_create_spot_order_list(self):
+        first_order_id = str(int(time.time()))
+        second_order_id = first_order_id + "2"
+        side = args.Side.SELL
+        quantity = "0.01"
+        price = "10000"
+        time_in_force = args.TimeInForce.FOK
+
+        def check_good_report(err, report):
+            if err:
+                Veredict.fail(f'{err}')
+                return
+            if not good_report(report):
+                Veredict.fail('not a good report')
+                return
+            Veredict.done = True
+        try:
+            self.ws.create_spot_order_list(
+                contingency_type=args.ContingencyType.ALL_OR_NONE,
+                order_list_id=first_order_id,
+                orders=[
+                    args.OrderRequest(
+                        'EOSETH',
+                        side=side,
+                        quantity=quantity,
+                        client_order_id=first_order_id,
+                        time_in_force=time_in_force,
+                        price=price
+                    ),
+                    args.OrderRequest(
+                        'EOSBTC',
+                        side=side,
+                        quantity=quantity,
+                        client_order_id=second_order_id,
+                        time_in_force=time_in_force,
+                        price=price
+                    ),
+                ],
+                callback=check_good_report)
+        except Exception as e:
+            print(e)
+            self.fail(str(e))
+        time.sleep(10)
         Veredict.wait_done()
         if Veredict.failed:
             self.fail(Veredict.message)

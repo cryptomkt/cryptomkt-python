@@ -71,7 +71,7 @@ class ClientBase:
 
     def _send_subscription(self, method, callback, params=None, result_callback=None):
         key = self._build_key(method)
-        self._callback_cache.store_subscription_callback(key, callback)
+        self._callback_cache.save_subscription_callback(key, callback)
         self._send_by_id(method, result_callback, params)
 
     def _send_unsubscription(self, method, callback=None, params=None):
@@ -79,10 +79,10 @@ class ClientBase:
         self._callback_cache.delete_subscription_callback(key)
         self._send_by_id(method, callback, params)
 
-    def _send_by_id(self, method: str, callback: callable = None, params=None):
+    def _send_by_id(self, method: str, callback: callable = None, params=None, call_count: int = 1):
         payload = {'method': method, 'params': params}
         if callback:
-            id = self._callback_cache.store_callback(callback)
+            id = self._callback_cache.save_callback(callback, call_count)
             payload['id'] = id
         self._ws_manager.send(payload)
 
@@ -108,10 +108,9 @@ class ClientBase:
 
     def _handle_response(self, response):
         id = response['id']
-        callback = self._callback_cache.pop_callback(id)
+        callback = self._callback_cache.get_callback(id)
         if callback is None:
             return
-
         if 'error' in response:
             callback(CryptomarketAPIException.from_dict(response), None)
             return

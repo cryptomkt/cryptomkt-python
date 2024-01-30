@@ -31,7 +31,7 @@ class Report:
     post_only: bool
     created_at: str
     updated_at: str
-    report_type: ReportType
+    report_type: Optional[ReportType] = None
     price: Optional[str] = None
     stop_price: Optional[str] = None
     expire_time: Optional[str] = None

@@ -63,11 +63,11 @@ class MarketDataClient(ClientBase):
         result_callback=None
     ):
         key = channel
-        self._callback_cache.store_subscription_callback(key, callback)
+        self._callback_cache.save_subscription_callback(key, callback)
 
         def intercept_result(err, result):
             result_callback(err, result['subscriptions'])
-        ID = self._callback_cache.store_callback(intercept_result)
+        ID = self._callback_cache.save_callback(intercept_result)
         payload = {
             'method': 'subscribe',
             'ch': channel,

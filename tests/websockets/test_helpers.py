@@ -198,7 +198,7 @@ def good_report(report: Report):
             'time_in_force',
             'quantity',
             'price',
-            'cum_quantity',
+            'quantity_cumulative',
             'post_only',
             'created_at',
             'updated_at',
