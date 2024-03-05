@@ -16,8 +16,8 @@ methodUpdateOrderbook = "updateOrderbook"
 
 class OrderbookCache:
     def __init__(self):
-        self.orderbooks = dict()
-        self.ob_states = dict()
+        self.orderbooks = {}
+        self.ob_states = {}
     
     def update(self, method: str, key:str, new_data: dict):
         if method == methodSnapshotOrderbook:

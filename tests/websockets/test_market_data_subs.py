@@ -1,11 +1,14 @@
 import time
+from typing import Dict, List
 import unittest
-from cryptomarket.dataclasses.wsPriceRate import WSPriceRate
-
-from test_helpers import *
 
 import cryptomarket.args as args
+from cryptomarket.dataclasses import (WSCandle, WSMiniTicker, WSOrderBook,
+                                      WSOrderBookTop, WSTicker, WSTrade)
+from cryptomarket.dataclasses.wsPriceRate import WSPriceRate
 from cryptomarket.websockets import MarketDataClient
+from tests.rest.test_helpers import good_list
+from tests.websockets.test_helpers import Veredict, good_candle_list, good_mini_ticker, good_orderbook_top, good_price_rate, good_wsorder_book, good_wsticker, good_wstrade
 
 SECOND = 1
 MINUTE = 60
@@ -51,6 +54,24 @@ class TestWSClientPublicSubs(unittest.TestCase):
                     Veredict.fail("not a good candle list")
         self.ws.subscribe_to_candles(
             callback=callback,
+            symbols=['ETHBTC'],
+            period=args.Period._1_MINS,
+            limit=19,
+            result_callback=result_callback
+        )
+        time.sleep(20*SECOND)
+        if Veredict.failed:
+            self.fail(Veredict.message)
+
+    def test_subscribe_to_converted_candles(self):
+        def callback(candles_of_symbol: Dict[str, List[WSCandle]], notification_type: str):
+            for symbol in candles_of_symbol:
+                candles = candles_of_symbol[symbol]
+                if not good_candle_list(candles):
+                    Veredict.fail("not a good candle list")
+        self.ws.subscribe_to_converted_candles(
+            callback=callback,
+            target_currency='ETH',
             symbols=['ETHBTC'],
             period=args.Period._1_MINS,
             limit=19,

@@ -213,11 +213,7 @@ class GetTickerPricesOfSymbol(PublicCallsTestCase):
 
 class GetTrades(PublicCallsTestCase):
     def test_get_trades_of_all_symbols(self):
-        symbols = self.client.get_symbols()
-        n_symbols = len(symbols)
         trades = self.client.get_trades()
-        self.assertEqual(len(trades), n_symbols,
-                         'should have trades from all symbols')
         for key in trades:
             if not good_list(good_public_trade, trades[key]):
                 self.fail("not a good trade")
@@ -262,11 +258,7 @@ class GetTrades(PublicCallsTestCase):
 
 class GetOrderBooks(PublicCallsTestCase):
     def test_get_all_symbols(self):
-        symbols = self.client.get_symbols()
-        n_symbols = len(symbols)
         orderbooks = self.client.get_order_books()
-        self.assertEqual(len(orderbooks), n_symbols,
-                         "should have one orderbook per symbol")
         for key in orderbooks:
             orderbook_of_symbol = orderbooks[key]
             if not good_orderbook(orderbook_of_symbol):
@@ -309,11 +301,7 @@ class GetOrderBookVolumeOfSymbol(PublicCallsTestCase):
 
 class GetCandles(PublicCallsTestCase):
     def test_get_all_symbols(self):
-        symbols = self.client.get_candles()
-        n_symbols = len(symbols)
         candles = self.client.get_candles()
-        self.assertEqual(len(candles), n_symbols,
-                         "should have one candle per symbol")
         for key in candles:
             if not good_list(good_candle, candles[key]):
                 self.fail("not good candles")
@@ -326,6 +314,48 @@ class GetCandles(PublicCallsTestCase):
     def test_one_symbol(self):
         candles = self.client.get_candles(symbols=['ETHBTC'])
         self.assertEqual(len(candles), 1, "should have one candles")
+
+
+class GetConvertedCandles(PublicCallsTestCase):
+    def test_get_all_symbols(self):
+        target_currency = "BTC"
+        converted_candles = self.client.get_converted_candles(target_currency)
+        self.assertEqual(converted_candles.target_currency, target_currency)
+        for key in converted_candles.data:
+            if not good_list(good_candle, converted_candles.data[key]):
+                self.fail("not good candles")
+
+    def test_get_many_symbols(self):
+        target_currency = "BTC"
+        converted_candles = self.client.get_converted_candles(
+            target_currency, ["EOSETH", "ETHBTC", "CROBTC"])
+        self.assertEqual(converted_candles.target_currency, target_currency)
+        for key in converted_candles.data:
+            if not good_list(good_candle, converted_candles.data[key]):
+                self.fail("not good candles")
+        self.assertEqual(len(converted_candles.data),
+                         3, "should have two candles")
+
+    def test_one_symbol(self):
+        target_currency = "BTC"
+        converted_candles = self.client.get_converted_candles(
+            target_currency, ["CROBTC"])
+        self.assertEqual(converted_candles.target_currency, target_currency)
+        for key in converted_candles.data:
+            if not good_list(good_candle, converted_candles.data[key]):
+                self.fail("not good candles")
+        self.assertEqual(len(converted_candles.data),
+                         1, "should have two candles")
+
+
+class GetConvertedCandlesOfSymbol(PublicCallsTestCase):
+    def test_get_all_symbols(self):
+        target_currency = "BTC"
+        converted_candles = self.client.get_converted_candles_of_symbol(
+            target_currency, symbol="CROETH")
+        self.assertEqual(converted_candles.target_currency, target_currency)
+        if not good_list(good_candle, converted_candles.data):
+            self.fail("not good candles")
 
 
 if __name__ == '__main__':

@@ -201,10 +201,10 @@ def clean_nones(a_dict: Dict[Any, Optional[Any]]) -> Dict[Any, Any]:
 
 class DictBuilder:
     def __init__(self):
-        self.the_dict = dict()
+        self.the_dict = {}
 
     def build(self):
-        orderedDict = dict()
+        orderedDict = {}
         for parameter in sorted(self.the_dict):
             orderedDict[parameter] = self.the_dict[parameter]
         return orderedDict

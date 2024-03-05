@@ -11,6 +11,8 @@ from cryptomarket.dataclasses import (Address, AmountLock, Balance, Candle,
                                       Price, PriceHistory, SubAccount, Symbol,
                                       Ticker, Trade, Transaction, Fee)
 from cryptomarket.dataclasses.aclSettings import ACLSettings
+from cryptomarket.dataclasses.convertedCandles import ConvertedCandles
+from cryptomarket.dataclasses.convertedCandlesOfSymbol import ConvertedCandlesOfSymbol
 from cryptomarket.dataclasses.publicTrade import PublicTrade
 from cryptomarket.http_client import HttpClient
 
@@ -30,7 +32,6 @@ class Client(object):
         self.get_trades_by_symbol = self.get_trades_of_symbol
         # aliases of orders
         self.create_new_order = self.create_spot_order
-        self.create_spot_order = self.create_spot_order
         self.create_new_spot_order = self.create_spot_order
 
     def close(self):
@@ -457,6 +458,92 @@ class Client(object):
             endpoint=f"public/candles/{symbol}", params=params)
         return [from_dict(data_class=Candle, data=candle_data)
                 for candle_data in response]
+
+    def get_converted_candles(
+        self,
+        target_currency: str,
+        symbols: Optional[List[str]] = None,
+        period: Optional[Union[
+            args.Period, Literal[
+                'M1', 'M3', 'M15', 'M30', 'H1', 'H4', 'D1', 'D7', '1M'
+            ]
+        ]] = None,
+        sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
+        since: str = None,
+        till: str = None,
+        limit: int = None
+    ) -> ConvertedCandles:
+        """Gets candles regarding the last price converted to the target currency for all symbols or for the specified symbols
+
+        Candles are used for OHLC representation
+
+        The result contains candles with non-zero volume only (no trades = no candles).
+
+        Conversion from the symbol quote currency to the target currency is the mean of "best" bid price and "best" ask price in the order book. If there is no "best" bid of ask price, the last price is returned.
+
+        Requires no API key Access Rights.
+
+        https://api.exchange.cryptomkt.com/#candles
+
+        :param target_currency: Target currency for conversion
+        :param symbols: Optional. A list of symbol ids. If empty then gets for all symbols
+        :param period: Optional. A valid tick interval. 'M1' (one minute), 'M3', 'M5', 'M15', 'M30', 'H1' (one hour), 'H4', 'D1' (one day), 'D7', '1M' (one month). Default is 'M30'
+        :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'
+        :param from: Optional. Initial value of the queried interval. As DateTime
+        :param till: Optional. Last value of the queried interval. As DateTime
+        :param limit: Optional. Prices per currency pair. Defaul is 100. Min is 1. Max is 1000
+
+        :returns: A list of candles of a symbol
+        """
+        params = args.DictBuilder().target_currency(target_currency).symbols(symbols).period(period).sort(sort).since(
+            since).till(till).limit(limit).build()
+        response = self._get(
+            endpoint="public/converted/candles", params=params)
+        return from_dict(ConvertedCandles, response)
+
+    def get_converted_candles_of_symbol(
+        self,
+        target_currency: str,
+        symbol: str,
+        period: Optional[Union[
+            args.Period, Literal[
+                'M1', 'M3', 'M15', 'M30', 'H1', 'H4', 'D1', 'D7', '1M'
+            ]
+        ]] = None,
+        sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
+        since: str = None,
+        till: str = None,
+        limit: int = None,
+        offset: int = None
+    ) -> ConvertedCandlesOfSymbol:
+        """Gets candles regarding the last price converted to the target currency for the specified symbols
+
+        Candles are used for OHLC representation
+
+        The result contains candles with non-zero volume only (no trades = no candles).
+
+        Conversion from the symbol quote currency to the target currency is the mean of "best" bid price and "best" ask price in the order book. If there is no "best" bid of ask price, the last price is returned.
+
+        Requires no API key Access Rights.
+
+        https://api.exchange.cryptomkt.com/#candles
+
+        :param target_currency: Target currency for conversion
+        :param symbol: A symbol id
+        :param period: Optional. A valid tick interval. 'M1' (one minute), 'M3', 'M5', 'M15', 'M30', 'H1' (one hour), 'H4', 'D1' (one day), 'D7', '1M' (one month). Default is 'M30'
+        :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'
+        :param from: Optional. Initial value of the queried interval. As DateTime
+        :param till: Optional. Last value of the queried interval. As DateTime
+        :param limit: Optional. Prices per currency pair. Defaul is 100. Min is 1. Max is 1000
+        :param offset: Optional. Default is 0. Min is 0. Max is 100000
+
+        :returns: A list of candles of a symbol
+        """
+        params = args.DictBuilder().target_currency(target_currency).period(period).sort(sort).since(
+            since).till(till).limit(limit).offset(offset).build()
+        response = self._get(
+            endpoint=f"public/converted/candles/{symbol}", params=params)
+        return from_dict(ConvertedCandlesOfSymbol, response)
 
     #################
     # AUTHENTICATED #
