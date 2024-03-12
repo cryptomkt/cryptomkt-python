@@ -1467,6 +1467,7 @@ class Client(object):
     # spot trading
     get_spot_trading_balance_by_currency = get_spot_trading_balance_of_currency
     get_spot_trading_balance = get_spot_trading_balance_of_currency
+    get_trading_commissions = get_all_trading_commissions
     get_trading_commission_by_symbol = get_trading_commission
     get_trading_commission_of_symbol = get_trading_commission
 
