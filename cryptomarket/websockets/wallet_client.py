@@ -243,3 +243,10 @@ class WalletClient(ClientAuthenticable):
             callback=intercept_response,
             params=params
         )
+
+    ###########
+    # ALIASES #
+    ###########
+
+    get_wallet_balance_by_currency = get_wallet_balance_of_currency
+    get_wallet_balance = get_wallet_balance_of_currency

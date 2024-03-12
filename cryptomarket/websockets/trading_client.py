@@ -463,3 +463,12 @@ class TradingClient(ClientAuthenticable):
             callback(None, result)
         params = args.DictBuilder().symbol(symbol).build()
         self._send_by_id('spot_fee', callback=intercept_result, params=params)
+
+    ###########
+    # ALIASES #
+    ###########
+
+    get_spot_trading_balance = get_spot_trading_balance_of_currency
+    get_spot_trading_balance_by_currency = get_spot_trading_balance_of_currency
+    get_spot_commision = get_spot_commision_of_symbol
+    get_spot_commision_by_symbol = get_spot_commision_of_symbol

@@ -35,6 +35,8 @@ class Client(object):
         self.create_new_spot_order = self.create_spot_order
 
     def close(self):
+        """Closes the underlying http connection
+        """
         self.httpClient.close_session()
 
     def _get(self, endpoint: str, params=None):
@@ -450,7 +452,7 @@ class Client(object):
         :param limit: Optional. Prices per currency pair. Defaul is 100. Min is 1. Max is 1000
         :param offset: Optional. Default is 0. Min is 0. Max is 100000
 
-        :returns: A list of candles of a symbol
+        :returns: A class with the target_currency and data with a dict with a list of candles for each symbol of the query. indexed by symbol
         """
         params = args.DictBuilder().period(period).sort(sort).since(
             since).till(till).limit(limit).offset(offset).build()
@@ -493,7 +495,7 @@ class Client(object):
         :param till: Optional. Last value of the queried interval. As DateTime
         :param limit: Optional. Prices per currency pair. Defaul is 100. Min is 1. Max is 1000
 
-        :returns: A list of candles of a symbol
+        :returns: A class with the target_currency and data with a list of candles for the symbol of the query.
         """
         params = args.DictBuilder().target_currency(target_currency).symbols(symbols).period(period).sort(sort).since(
             since).till(till).limit(limit).build()
@@ -1444,3 +1446,32 @@ class Client(object):
         response = self._get(
             endpoint=f'sub-account/crypto/address/{sub_account_id}/{currency}')
         return from_dict(data_class=Address, data=response["result"]["address"])
+
+    ###########
+    # ALIASES #
+    ###########
+
+    # market data
+    get_ticker_by_symbol = get_ticker
+    get_ticker_of_symbol = get_ticker
+    get_ticker_last_price = get_ticker_last_price_of_symbol
+    get_ticker_last_price_by_symbol = get_ticker_last_price_of_symbol
+    get_trades_by_symbol = get_trades_of_symbol
+    get_order_book_by_symbol = get_order_book_of_symbol
+    get_order_book = get_order_book_of_symbol
+    get_order_book_volume_by_symbol = get_order_book_volume_of_symbol
+    get_order_book_volume = get_order_book_volume_of_symbol
+    get_candles_by_symbol = get_order_book_volume_of_symbol
+    get_converted_candles_by_symbol = get_converted_candles_of_symbol
+
+    # spot trading
+    get_spot_trading_balance_by_currency = get_spot_trading_balance_of_currency
+    get_spot_trading_balance = get_spot_trading_balance_of_currency
+    get_trading_commission_by_symbol = get_trading_commission
+    get_trading_commission_of_symbol = get_trading_commission
+
+    # wallet management
+    get_wallet_balance = get_wallet_balance_of_currency
+    get_wallet_balance_by_currency = get_wallet_balance_of_currency
+    get_deposit_crypto_address = get_deposit_crypto_address_of_currency
+    get_deposit_crypto_address_by_currency = get_deposit_crypto_address_of_currency
