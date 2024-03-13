@@ -4,7 +4,7 @@ from cryptomarket.websockets.reusable_callback import ReusableCallback
 
 class CallbackCache:
     def __init__(self):
-        self.callbacks: Dict[str, ReusableCallback] = dict()
+        self.callbacks: Dict[str, ReusableCallback] = {}
         self._id = 1
 
     def next_id(self):

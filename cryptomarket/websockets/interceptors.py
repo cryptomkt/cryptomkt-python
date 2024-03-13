@@ -9,9 +9,6 @@ def intercept_report(callback):
 
 
 def intercept_report_(err, response, callback):
-    print('interceptor')
-    print('err:', err)
-    print('response:', response)
     if err:
         callback(err, None)
         return
