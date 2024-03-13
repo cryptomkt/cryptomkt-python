@@ -102,7 +102,7 @@ class MarketDataClient(ClientBase):
         params = args.DictBuilder().symbols_as_list(symbols).limit(limit).build()
 
         def intercept_feed(feed, feed_type):
-            result = dict()
+            result = {}
             for key in feed:
                 result[key] = [from_dict(data_class=WSTrade, data=data)
                                for data in feed[key]]
@@ -129,7 +129,7 @@ class MarketDataClient(ClientBase):
     ):
         """subscribe to a feed of candles
 
-        subscription is for the specified symbols
+        subscription is only for the specified symbols
 
         normal subscriptions have one update message per symbol
 
@@ -140,12 +140,12 @@ class MarketDataClient(ClientBase):
 
         :param callback: callable that recieves a dict of candles, indexed by symbol.
         :param symbols: A list of symbol ids to subscribe to
-        :param period: Optional. A valid tick interval. 'M1' (one minute), 'M3', 'M5', 'M15', 'M30', 'H1' (one hour), 'H4', 'D1' (one day), 'D7', '1M' (one month). Default is 'M30'
+        :param period: Optional. A valid tick interval. 'M1' (one minute), 'M3', 'M5', 'M15', 'M30', 'H1' (one hour), 'H4', 'D1' (one day), 'D7', '1M' (one month).
         :param limit: Number of historical entries returned in the first feed. Min is 0. Max is 1000. Default is 0
         :param result_callback: A callable of two arguments, takes either a CryptomarketAPIException, or the list of correctly subscribed symbols
         """
         def intercept_feed(feed, feed_type):
-            result = dict()
+            result = {}
             for key in feed:
                 result[key] = [
                     from_dict(data_class=WSCandle, data=data) for data in feed[key]]
@@ -153,6 +153,51 @@ class MarketDataClient(ClientBase):
         params = args.DictBuilder().symbols_as_list(symbols).limit(limit).build()
         self._send_channeled_subscription(
             channel=f'candles/{period}',
+            callback=intercept_feed,
+            params=params,
+            result_callback=result_callback,
+        )
+
+    def subscribe_to_converted_candles(
+        self,
+        callback: Callable[[Dict[str, List[WSCandle]], Literal['snapshot', 'update']], None],
+        target_currency: str,
+        symbols: List[str],
+        period: Union[args.Period,
+                      Literal['M1', 'M3', 'M15', 'M30', 'H1', 'H4', 'D1', 'D7', '1M']] = None,
+        limit: Optional[int] = None,
+        result_callback: Optional[Callable[[
+            Union[CryptomarketAPIException, None], Union[List[str], None]], None]] = None,
+    ):
+        """subscribes to a feed of candles regarding the last price converted to the target currency for the specified symbols
+
+        subscription is only for the specified symbols
+
+        normal subscriptions have one update message per symbol
+
+        Conversion from the symbol quote currency to the target currency is the mean of "best" bid price and "best" ask price in the order book. If there is no "best" bid or ask price, the last price is returned.
+
+        Requires no API key Access Rights
+
+        https://api.exchange.cryptomkt.com/#subscribe-to-converted-candles
+
+
+        :param callback: callable that recieves a dict of candles, indexed by symbol.
+        :param symbols: A list of symbol ids to subscribe to
+        :param period: A valid tick interval. 'M1' (one minute), 'M3', 'M5', 'M15', 'M30', 'H1' (one hour), 'H4', 'D1' (one day), 'D7', '1M' (one month).
+        :param limit: Limit of returned entries. Min is 0. Max is 1000. Default is 0
+        :param result_callback: A callable of two arguments, takes either a CryptomarketAPIException, or the list of correctly subscribed symbols
+        """
+        def intercept_feed(feed, feed_type):
+            result = {}
+            for key in feed:
+                result[key] = [
+                    from_dict(data_class=WSCandle, data=data) for data in feed[key]]
+            callback(result, feed_type)
+        params = args.DictBuilder().target_currency(
+            target_currency).symbols_as_list(symbols).limit(limit).build()
+        self._send_channeled_subscription(
+            channel=f'converted/candles/{period}',
             callback=intercept_feed,
             params=params,
             result_callback=result_callback,
@@ -510,13 +555,52 @@ class MarketDataClient(ClientBase):
         """
         if currencies is None:
             currencies = ['*']
-        params = args.DictBuilder().currencies_as_list(currencies).speed(speed).target_currency(target_currency).build()
+        params = args.DictBuilder().currencies_as_list(currencies).speed(
+            speed).target_currency(target_currency).build()
 
         def intercept_feed(feed, feed_type):
             callback({key: from_dict(data_class=WSPriceRate, data=feed[key])
                       for key in feed})
         self._send_channeled_subscription(
             channel=f'price/rate/{speed}',
+            callback=intercept_feed,
+            params=params,
+            result_callback=result_callback
+        )
+
+    def subscribe_to_price_rates_in_batches(
+        self,
+        callback: Callable[[Dict[str, WSPriceRate]], None],
+        speed: Union[args.PriceRateSpeed, Literal['1s', '3s']],
+        target_currency: Optional[str],
+        currencies: Optional[List[str]] = None,
+        result_callback: Optional[Callable[[
+            Union[CryptomarketAPIException, None], Union[List[str], None]], None]] = None,
+    ):
+        """subscribe to a feed of price rates
+
+        subscription is for all currencies or specified currencies (bases), against a target currency (quote). indexed by currency id (bases)
+
+        batch subscriptions have a joined update for all symbols
+
+        https://api.exchange.cryptomkt.com/#subscribe-to-price-rates
+
+        :param callback: callable that recieves a dict of mini tickers, indexed by symbol.
+        :param speed: The speed of the feed. '1s' or '3s'
+        :param target_currency: quote currency for the price rates
+        :param currencies: Optional. A list of currencies ids (as bases) to subscribe to. If not provided it subscribes to all currencies
+        :param result_callback: A callable of two arguments, takes either a CryptomarketAPIException, or the list of correctly subscribed currencies
+        """
+        if currencies is None:
+            currencies = ['*']
+        params = args.DictBuilder().currencies_as_list(currencies).speed(
+            speed).target_currency(target_currency).build()
+
+        def intercept_feed(feed, feed_type):
+            callback({key: from_dict(data_class=WSPriceRate, data=feed[key])
+                      for key in feed})
+        self._send_channeled_subscription(
+            channel=f'price/rate/{speed}/batch',
             callback=intercept_feed,
             params=params,
             result_callback=result_callback
