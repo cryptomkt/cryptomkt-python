@@ -3,6 +3,7 @@ from typing import Optional
 
 from cryptomarket.args import (TransactionStatus, TransactionSubType,
                                TransactionType)
+from cryptomarket.dataclasses.CommitRisk import CommitRisk
 from cryptomarket.dataclasses.metaTransaction import MetaTransaction
 from cryptomarket.dataclasses.nativeTransaction import NativeTransaction
 
@@ -15,5 +16,7 @@ class Transaction:
     subtype: TransactionSubType
     created_at: str
     updated_at: str
+    last_activity_at: str
     native: Optional[NativeTransaction] = None
     meta: Optional[MetaTransaction] = None
+    commit_risk: Optional[CommitRisk] = None

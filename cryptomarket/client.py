@@ -7,12 +7,14 @@ from typing_extensions import Literal
 
 import cryptomarket.args as args
 from cryptomarket.dataclasses import (Address, AmountLock, Balance, Candle,
-                                      Commission, Currency, Order, OrderBook,
-                                      Price, PriceHistory, SubAccount, Symbol,
-                                      Ticker, Trade, Transaction, Fee)
+                                      Commission, Currency, Fee, Order,
+                                      OrderBook, Price, PriceHistory,
+                                      SubAccount, Symbol, Ticker, Trade,
+                                      Transaction)
 from cryptomarket.dataclasses.aclSettings import ACLSettings
 from cryptomarket.dataclasses.convertedCandles import ConvertedCandles
-from cryptomarket.dataclasses.convertedCandlesOfSymbol import ConvertedCandlesOfSymbol
+from cryptomarket.dataclasses.convertedCandlesOfSymbol import \
+    ConvertedCandlesOfSymbol
 from cryptomarket.dataclasses.publicTrade import PublicTrade
 from cryptomarket.http_client import HttpClient
 
@@ -23,7 +25,7 @@ class Client(object):
     :param api_secret: The API secret
     :param window: Maximum difference between the creation of the request and the moment of request processing in milliseconds. Max is 60_000. Defaul is 10_000"""
 
-    def __init__(self, api_key: Optional[str] = None, secret_key: Optional[str] = None, window: Optional[int] = None):
+    def __init__(self, api_key: str = "", secret_key: str = "", window: Optional[int] = None):
         self.httpClient = HttpClient(api_key, secret_key, window)
         if not api_key is None and not secret_key is None:
             self.httpClient.authorize()
@@ -56,7 +58,7 @@ class Client(object):
 
     # PUBLIC METHOD CALLS
 
-    def get_currencies(self, currencies: List[str] = None, preferred_network: Optional[str] = None) -> Dict[str, Currency]:
+    def get_currencies(self, currencies: Optional[List[str]] = None, preferred_network: Optional[str] = None) -> Dict[str, Currency]:
         """Get a dict of all currencies or specified currencies
 
         Requires no API key Access Rights
@@ -74,7 +76,7 @@ class Client(object):
         return {key: from_dict(data_class=Currency, data=response[key])
                 for key in response}
 
-    def get_currency(self, currency: str = None) -> Currency:
+    def get_currency(self, currency: Optional[str] = None) -> Currency:
         """Get the data of a currency
 
         Requires no API key Access Rights
@@ -88,7 +90,7 @@ class Client(object):
         response = self._get(endpoint=f'public/currency/{currency}')
         return from_dict(data_class=Currency, data=response)
 
-    def get_symbols(self, symbols: List[str] = None) -> Dict[str, Symbol]:
+    def get_symbols(self, symbols: Optional[List[str]] = None) -> Dict[str, Symbol]:
         """Get a dict of all symbols or for specified symbols
 
         A symbol is the combination of the base currency (first one) and quote currency (second one)
@@ -125,7 +127,7 @@ class Client(object):
         response = self._get(endpoint=f'public/symbol/{symbol}')
         return from_dict(data_class=Symbol, data=response, config=Config(cast=[Enum]))
 
-    def get_tickers(self, symbols: List[str] = None) -> Dict[str, Ticker]:
+    def get_tickers(self, symbols: Optional[List[str]] = None) -> Dict[str, Ticker]:
         """Get a dict of tickers for all symbols or for specified symbols
 
         Requires no API key Access Rights
@@ -155,7 +157,7 @@ class Client(object):
         response = self._get(endpoint=f'public/ticker/{symbol}')
         return from_dict(data_class=Ticker, data=response)
 
-    def get_prices(self, to: str, source: str = None) -> Dict[str, Price]:
+    def get_prices(self, to: str, source: Optional[str] = None) -> Dict[str, Price]:
         """Get a dict of quotation prices of currencies
 
         Requires no API key Access Rights
@@ -178,16 +180,16 @@ class Client(object):
     def get_prices_history(
         self,
         to: str,
-        source: str = None,
-        since: str = None,
-        until: str = None,
+        source: Optional[str] = None,
+        since: Optional[str] = None,
+        until: Optional[str] = None,
         period: Optional[Union[
             args.Period, Literal[
                 'M1', 'M3', 'M15', 'M30', 'H1', 'H4', 'D1', 'D7', '1M'
             ]
         ]] = None,
         sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
-        limit: int = None
+        limit: Optional[int] = None
     ) -> Dict[str, PriceHistory]:
         """Get quotation prices history
 
@@ -212,7 +214,7 @@ class Client(object):
         return {key: from_dict(data_class=PriceHistory, data=response[key])
                 for key in response}
 
-    def get_ticker_last_prices(self, symbols: List[str] = None) -> Dict[str, Price]:
+    def get_ticker_last_prices(self, symbols: Optional[List[str]] = None) -> Dict[str, Price]:
         """Get a dict of the ticker's last prices for all symbols or for the specified symbols
 
         Requires no API key Access Rights
@@ -245,13 +247,13 @@ class Client(object):
 
     def get_trades(
         self,
-        symbols: List[str] = None,
+        symbols: Optional[List[str]] = None,
         sort_by: Optional[Union[args.SortBy,
                                 Literal['id', 'timestamp']]] = None,
         sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
-        since: str = None,
-        till: str = None,
-        limit: int = None
+        since: Optional[str] = None,
+        till: Optional[str] = None,
+        limit: Optional[int] = None
     ) -> Dict[str, List[PublicTrade]]:
         """Get a dict of trades for all symbols or for specified symbols
 
@@ -283,10 +285,10 @@ class Client(object):
         sort_by: Optional[Union[args.SortBy,
                                 Literal['id', 'timestamp']]] = None,
         sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
-        since: str = None,
-        till: str = None,
-        limit: int = None,
-        offset: int = None
+        since: Optional[str] = None,
+        till: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None
     ) -> List[PublicTrade]:
         """Get trades of a symbol
 
@@ -315,8 +317,8 @@ class Client(object):
 
     def get_order_books(
         self,
-        symbols: List[str] = None,
-        depth: int = None
+        symbols: Optional[List[str]] = None,
+        depth: Optional[int] = None
     ) -> Dict[str, OrderBook]:
         """Get a dict of orderbooks for all symbols or for the specified symbols
 
@@ -338,7 +340,7 @@ class Client(object):
     def get_order_book_of_symbol(
         self,
         symbol: str,
-        depth: int = None
+        depth: Optional[int] = None
     ) -> OrderBook:
         """Get order book of a symbol
 
@@ -361,8 +363,8 @@ class Client(object):
     def get_order_book_volume_of_symbol(
         self,
         symbol: str,
-        volume: int = None
-    ) -> Dict[str, Any]:
+        volume: Optional[int] = None
+    ) -> OrderBook:
         """Get order book of a symbol with the desired volume for market depth search
 
         An Order Book is an electronic list of buy and sell orders for a specific symbol, structured by price level
@@ -383,16 +385,16 @@ class Client(object):
 
     def get_candles(
         self,
-        symbols: List[str] = None,
+        symbols: Optional[List[str]] = None,
         period: Optional[Union[
             args.Period, Literal[
                 'M1', 'M3', 'M15', 'M30', 'H1', 'H4', 'D1', 'D7', '1M'
             ]
         ]] = None,
         sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
-        since: str = None,
-        till: str = None,
-        limit: int = None
+        since: Optional[str] = None,
+        till: Optional[str] = None,
+        limit: Optional[int] = None
     ) -> Dict[str, List[Candle]]:
         """Get a dict of candles for all symbols or for specified symbols
 
@@ -429,10 +431,10 @@ class Client(object):
             ]
         ]] = None,
         sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
-        since: str = None,
-        till: str = None,
-        limit: int = None,
-        offset: int = None
+        since: Optional[str] = None,
+        till: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None
     ) -> List[Candle]:
         """Get candles of a symbol
 
@@ -471,9 +473,9 @@ class Client(object):
             ]
         ]] = None,
         sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
-        since: str = None,
-        till: str = None,
-        limit: int = None
+        since: Optional[str] = None,
+        till: Optional[str] = None,
+        limit: Optional[int] = None
     ) -> ConvertedCandles:
         """Gets candles regarding the last price converted to the target currency for all symbols or for the specified symbols
 
@@ -513,10 +515,10 @@ class Client(object):
             ]
         ]] = None,
         sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
-        since: str = None,
-        till: str = None,
-        limit: int = None,
-        offset: int = None
+        since: Optional[str] = None,
+        till: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None
     ) -> ConvertedCandlesOfSymbol:
         """Gets candles regarding the last price converted to the target currency for the specified symbols
 
@@ -583,7 +585,7 @@ class Client(object):
         response = self._get(endpoint=f'spot/balance/{currency}')
         return from_dict(data_class=Balance, data=response)
 
-    def get_all_active_spot_orders(self, symbol: str = None) -> List[Order]:
+    def get_all_active_spot_orders(self, symbol: Optional[str] = None) -> List[Order]:
         """Get the user's active spot orders
 
         Requires the "Place/cancel orders" API key Access Right
@@ -624,14 +626,14 @@ class Client(object):
         time_in_force: Optional[Union[args.TimeInForce, Literal[
             'GTC', 'IOC', 'FOK', 'Day', 'GTD'
         ]]] = None,
-        client_order_id: str = None,
-        price: str = None,
-        stop_price: str = None,
-        expire_time: str = None,
-        strict_validate: bool = None,
-        post_only: bool = None,
-        take_rate: str = None,
-        make_rate: str = None
+        client_order_id: Optional[str] = None,
+        price: Optional[str] = None,
+        stop_price: Optional[str] = None,
+        expire_time: Optional[str] = None,
+        strict_validate: Optional[bool] = None,
+        post_only: Optional[bool] = None,
+        take_rate: Optional[str] = None,
+        make_rate: Optional[str] = None
     ) -> Order:
         """Creates a new spot order
 
@@ -725,8 +727,8 @@ class Client(object):
         client_order_id: str,
         new_client_order_id: str,
         quantity: str,
-        price: str = None,
-        strict_validate: bool = None
+        price: Optional[str] = None,
+        strict_validate: Optional[bool] = None
     ) -> Order:
         """Replaces a spot order
 
@@ -750,7 +752,7 @@ class Client(object):
             endpoint=f'spot/order/{client_order_id}', params=params)
         return from_dict(data_class=Order, data=response, config=Config(cast=[Enum]))
 
-    def cancel_all_orders(self, symbol: str = None) -> List[Order]:
+    def cancel_all_orders(self, symbol: Optional[str] = None) -> List[Order]:
         """Cancel all active spot orders, or all active orders for a specified symbol
 
         Requires the "Place/cancel orders" API key Access Right
@@ -765,7 +767,7 @@ class Client(object):
         return [from_dict(data_class=Order, data=data, config=Config(cast=[Enum]))
                 for data in response]
 
-    def cancel_spot_order(self, client_order_id: str) -> Dict[str, Any]:
+    def cancel_spot_order(self, client_order_id: str) -> Order:
         """Cancel the order with the client order id
 
         Requires the "Place/cancel orders" API key Access Right
@@ -812,13 +814,14 @@ class Client(object):
 
     def get_spot_orders_history(
         self,
-        symbols: List[str] = None,
-        sort_by: Union[args.SortBy, Literal['id', 'timestamp']] = None,
-        sort: Union[args.Sort, Literal['ASC', 'DESC']] = None,
-        since: str = None,
-        till: str = None,
-        limit: int = None,
-        offset: int = None
+        symbols: Optional[List[str]] = None,
+        sort_by: Optional[Union[args.SortBy,
+                                Literal['id', 'timestamp']]] = None,
+        sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
+        since: Optional[str] = None,
+        till: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None
     ) -> List[Order]:
         """Get all the spot orders
 
@@ -848,14 +851,15 @@ class Client(object):
 
     def get_spot_trades_history(
         self,
-        order_id: str = None,
-        symbol: str = None,
-        sort_by: Union[args.SortBy, Literal['id', 'timestamp']] = None,
-        sort: Union[args.Sort, Literal['ASC', 'DESC']] = None,
-        since: str = None,
-        till: str = None,
-        limit: int = None,
-        offset: int = None
+        order_id: Optional[str] = None,
+        symbol: Optional[str] = None,
+        sort_by: Optional[Union[args.SortBy,
+                                Literal['id', 'timestamp']]] = None,
+        sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
+        since: Optional[str] = None,
+        till: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None
     ) -> List[Trade]:
         """Get the user's spot trading history
 
@@ -896,7 +900,7 @@ class Client(object):
         response = self._get(endpoint='wallet/balance')
         return [from_dict(data_class=Balance, data=data) for data in response]
 
-    def get_wallet_balance_of_currency(self, currency: str = None) -> Balance:
+    def get_wallet_balance_of_currency(self, currency: Optional[str] = None) -> Balance:
         """Get the user's wallet balance of a currency
 
         Requires the "Payment information" API key Access Right
@@ -995,11 +999,12 @@ class Client(object):
         currency: str,
         amount: str,
         address: str,
-        payment_id: str = None,
-        include_fee: bool = None,
-        auto_commit: bool = None,
-        use_offchain: Literal['never', 'optionaly', 'required'] = None,
-        public_comment: str = None
+        payment_id: Optional[str] = None,
+        include_fee: Optional[bool] = None,
+        auto_commit: Optional[bool] = None,
+        use_offchain: Optional[Literal['never',
+                                       'optionaly', 'required']] = None,
+        public_comment: Optional[str] = None
     ) -> str:
         """Please take note that changing security settings affects withdrawals:
 
@@ -1179,26 +1184,20 @@ class Client(object):
 
     def get_transaction_history(
         self,
-        ids: List[str] = None,
-        currencies: List[str] = None,
-        types: Optional[List[Union[args.TransactionType, Literal[
-            'DEPOSIT', 'WITHDRAW', 'TRANSFER', 'SWAP'
-        ]]]] = None,
-        subtypes: Optional[List[Union[args.TransactionSubType, Literal[
-            'UNCLASSIFIED', 'BLOCKCHAIN', 'AIRDROP', 'AFFILIATE', 'STAKING', 'BUY_CRYPTO', 'OFFCHAIN', 'FIAT', 'SUB_ACCOUNT', 'WALLET_TO_SPOT', 'SPOT_TO_WALLET', 'WALLET_TO_DERIVATIVES', 'DERIVATIVES_TO_WALLET', 'CHAIN_SWITCH_FROM', 'CHAIN_SWITCH_TO', 'INSTANT_EXCHANGE'
-        ]]]] = None,
-        statuses: List[Union[args.TransactionStatus, Literal[
-            'CREATED', 'PENDING', 'FAILED', 'SUCCESS', 'ROLLED_BACK'
-        ]]] = None,
-        sort_by: Optional[Union[args.SortBy,
-                                Literal['created_at', 'id']]] = None,
+        ids: Optional[List[str]] = None,
+        currencies: Optional[List[str]] = None,
+        types: Optional[List[args.TransactionType]] = None,
+        subtypes: Optional[List[args.TransactionSubType]] = None,
+        statuses: Optional[List[args.TransactionStatus]] = None,
+        order_by: Optional[Union[args.OrderBy, Literal[
+            'created_at', 'updated_at', 'last_updated_at']]] = None,
         sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
-        id_from: int = None,
-        id_till: int = None,
-        since: str = None,
-        till: str = None,
-        limit: int = None,
-        offset: int = None
+        id_from: Optional[int] = None,
+        id_till: Optional[int] = None,
+        since: Optional[str] = None,
+        till: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None
     ) -> List[Transaction]:
         """Get the transaction history of the account
 
@@ -1218,7 +1217,7 @@ class Client(object):
         :param types: Optional. List of types to query. valid types are: 'DEPOSIT', 'WITHDRAW', 'TRANSFER' and 'SWAP'
         :param subtyes: Optional. List of subtypes to query. valid subtypes are: 'UNCLASSIFIED', 'BLOCKCHAIN', 'AIRDROP', 'AFFILIATE', 'STAKING', 'BUY_CRYPTO', 'OFFCHAIN', 'FIAT', 'SUB_ACCOUNT', 'WALLET_TO_SPOT', 'SPOT_TO_WALLET', 'WALLET_TO_DERIVATIVES', 'DERIVATIVES_TO_WALLET', 'CHAIN_SWITCH_FROM', 'CHAIN_SWITCH_TO' and 'INSTANT_EXCHANGE'
         :param statuses: Optional. List of statuses to query. valid subtypes are: 'CREATED', 'PENDING', 'FAILED', 'SUCCESS' and 'ROLLED_BACK'
-        :param sort_by: Optional. sorting parameter.'created_at' or 'id'. Default is 'created_at'
+        :param order_by: Optional. sorting parameter.'created_at', 'updated_at' or 'last_activity_at'. Default is 'created_at'
         :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'
         :param id_from: Optional. Interval initial value when ordering by id. Min is 0
         :param id_till: Optional. Interval end value when ordering by id. Min is 0
@@ -1230,7 +1229,7 @@ class Client(object):
         :returns: A list of transactions
         """
         params = args.DictBuilder().currencies(currencies).transaction_types(types).transaction_subtypes(subtypes).transaction_statuses(statuses).id_from(
-            id_from).id_till(id_till).tx_ids(ids).sort_by(sort_by).sort(sort).since(since).till(till).limit(limit).offset(offset).build()
+            id_from).id_till(id_till).tx_ids(ids).order_by(order_by).sort(sort).since(since).till(till).limit(limit).offset(offset).build()
         response = self._get(endpoint='wallet/transactions', params=params)
         return [from_dict(data_class=Transaction, data=data, config=Config(cast=[Enum]))
                 for data in response]
@@ -1253,7 +1252,7 @@ class Client(object):
         self,
         currency: str,
         address: str,
-        payment_id: str = None
+        payment_id: Optional[str] = None
     ) -> bool:
         """get the status of the offchain
 
@@ -1391,7 +1390,7 @@ class Client(object):
         return [from_dict(data_class=ACLSettings, data=data)
                 for data in response["result"]]
 
-    def change_ACL_settings(self, sub_account_ids: List[str], acl_settings: ACLSettings) -> List[ACLSettings]:
+    def change_ACL_settings(self, sub_account_ids: List[str], acl_settings: args.ACLSettings) -> List[ACLSettings]:
         """Change the ACL settings of sub-accounts
 
         Disables or enables withdrawals for a sub-account
@@ -1445,7 +1444,7 @@ class Client(object):
         """
         response = self._get(
             endpoint=f'sub-account/crypto/address/{sub_account_id}/{currency}')
-        return from_dict(data_class=Address, data=response["result"]["address"])
+        return response["result"]["address"]
 
     ###########
     # ALIASES #

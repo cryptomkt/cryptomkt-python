@@ -1,11 +1,12 @@
 import time
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from cryptomarket.exceptions import (CryptomarketAPIException,
                                      CryptomarketSDKException)
 from cryptomarket.hmac_auth import HmacAuth
 from cryptomarket.websockets.client_base import ClientBase
+from cryptomarket.websockets.subscriptionMethodData import SubscriptionMethodData
 
 
 class ClientAuthenticable(ClientBase):
@@ -14,8 +15,8 @@ class ClientAuthenticable(ClientBase):
         uri: str,
         api_key: str,
         api_secret: str,
-        window: int = None,
-        subscription_methods_data: Dict[str, str] = {},
+        window: Optional[int] = None,
+        subscription_methods_data: Dict[str, SubscriptionMethodData] = {},
         on_connect=None,
         on_error=None,
         on_close=None
@@ -31,7 +32,7 @@ class ClientAuthenticable(ClientBase):
         self.api_key = api_key
         self.api_secret = api_secret
         self.authed: bool = False
-        self._auth_error: Optional[CryptomarketAPIException] = None
+        self._auth_error: Optional[CryptomarketSDKException] = None
 
     def connect(self, timeout=30) -> Optional[CryptomarketSDKException]:
         timeout_time = datetime.now()+timedelta(seconds=timeout)
@@ -61,7 +62,7 @@ class ClientAuthenticable(ClientBase):
             self.close()
             return CryptomarketSDKException('authentication timeout')
 
-    def authenticate(self, callback: callable = None):
+    def authenticate(self, callback: Optional[Callable[[Any, Any], Any]] = None):
         """Authenticates the websocket
 
         https://api.exchange.cryptomkt.com/#socket-session-authentication

@@ -1,6 +1,6 @@
 import time
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from cryptomarket.exceptions import (CryptomarketAPIException,
                                      CryptomarketSDKException)
@@ -79,7 +79,7 @@ class ClientBase:
         self._callback_cache.delete_subscription_callback(key)
         self._send_by_id(method, callback, params)
 
-    def _send_by_id(self, method: str, callback: callable = None, params=None, call_count: int = 1):
+    def _send_by_id(self, method: str, callback: Optional[Callable[[Any, Any], Any]] = None, params=None, call_count: int = 1):
         payload = {'method': method, 'params': params}
         if callback:
             id = self._callback_cache.save_callback(callback, call_count)

@@ -1,6 +1,6 @@
 from dataclasses import asdict, dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional, Type, TypeVar, Union
 
 from cryptomarket.exceptions import ArgumentFormatException
 
@@ -11,6 +11,9 @@ class Checker(str, Enum):
         if value not in cls._value2member_map_:
             raise ArgumentFormatException(f'invalid {cls.__name__} argument.', [
                                           item.value for item in cls])
+
+
+CheckerSubType = TypeVar('CheckerSubType', bound='Checker')
 
 
 class TransferType(Checker):
@@ -146,8 +149,13 @@ class TransactionStatus(Checker):
 
 class SortBy(Checker):
     TIMESTAMP = "timestamp"
-    CREATED_AT = 'created_at'
     ID = 'id'
+
+
+class OrderBy(Checker):
+    CREATED_AT = 'created_at'
+    UPDATED_AT = 'updated_at'
+    LAST_ACTIVITY_UP = 'last_activity_up'
 
 
 class Depth(Checker):
@@ -187,12 +195,12 @@ class FeeRequest:
 
 @dataclass
 class ACLSettings:
-    sub_account_id: str = None
-    deposit_address_generation_enabled: bool = None
-    withdraw_enabled: bool = None
-    description: str = None
-    created_at: str = None
-    updated_at: str = None
+    sub_account_id: Optional[str] = None
+    deposit_address_generation_enabled: Optional[bool] = None
+    withdraw_enabled: Optional[bool] = None
+    description: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
 
 
 def clean_nones(a_dict: Dict[Any, Optional[Any]]) -> Dict[Any, Any]:
@@ -209,21 +217,27 @@ class DictBuilder:
             orderedDict[parameter] = self.the_dict[parameter]
         return orderedDict
 
-    def add_coma_separated_list(self, key, val: List[str]):
-        if val is not None:
-            query = ','.join(val)
-            if isinstance(val, str):
-                query = val
-            self.the_dict[key] = query
+    def add_coma_separated_list(self, key: str, val: Optional[Union[str, List[str]]]):
+        if val is None:
+            return self
+        elif isinstance(val, str):
+            self.the_dict[key] = val
+        else:
+            self.the_dict[key] = ','.join(val)
         return self
 
-    def add_coma_separated_list_checking(self, checker: Checker, key, val: List[str]):
-        if val is not None:
+    def add_coma_separated_list_checking(self, checker: Type[CheckerSubType], key: str, val: Optional[Union[str, List[CheckerSubType]]]):
+        if val is None:
+            return self
+        elif isinstance(val, str):
+            elements = val.split(",")
+            for element in elements:
+                checker.check_value(element)
+            self.the_dict[key] = val
+        else:
             for element in val:
                 checker.check_value(element)
             query = ','.join(val)
-            if isinstance(val, str):
-                query = val
             self.the_dict[key] = query
         return self
 
@@ -232,230 +246,232 @@ class DictBuilder:
             self.the_dict[key] = val
         return self
 
-    def add_cheking(self, checker: Checker, key, val):
+    def add_cheking(self, checker: Type[Checker], key, val):
         if val is not None:
             checker.check_value(val)
             self.the_dict[key] = val
         return self
 
-    def currencies(self, val: List[str]):
+    def currencies(self, val: Optional[Union[str, List[str]]]):
         return self.add_coma_separated_list("currencies", val)
 
-    def symbols(self, val: List[str]):
+    def symbols(self, val: Optional[Union[str, List[str]]]):
         return self.add_coma_separated_list("symbols", val)
 
-    def currency(self, val: str):
+    def currency(self, val: Optional[str]):
         return self.add("currency", val)
 
-    def from_(self, val: str):
+    def from_(self, val: Optional[str]):
         return self.add("from", val)
 
-    def to(self, val: str):
+    def to(self, val: Optional[str]):
         return self.add("to", val)
 
-    def symbol(self, val: str):
+    def symbol(self, val: Optional[str]):
         return self.add("symbol", val)
 
-    def period(self, val: str):
+    def period(self, val: Optional[str]):
         return self.add_cheking(Period, 'period', val)
 
-    def sort(self, val: str):
+    def sort(self, val: Optional[str]):
         return self.add_cheking(Sort, 'sort', val)
 
-    def since(self, val: str):
+    def since(self, val: Optional[str]):
         return self.add("from", val)
 
-    def until(self, val: str):
+    def until(self, val: Optional[str]):
         return self.add("until", val)
 
-    def till(self, val: str):
+    def till(self, val: Optional[str]):
         return self.add("till", val)
 
-    def limit(self, val: int):
+    def limit(self, val: Optional[int]):
         return self.add("limit", val)
 
-    def offset(self, val: int):
+    def offset(self, val: Optional[int]):
         return self.add("offset", val)
 
-    def by(self, val: str):
+    def by(self, val: Optional[str]):
         return self.add("by", val)
 
-    def volume(self, val: str):
+    def volume(self, val: Optional[int]):
         return self.add("volume", val)
 
-    def side(self, val: str):
+    def side(self, val: Optional[str]):
         return self.add_cheking(Side, 'side', val)
 
-    def order_type(self, val: str):
+    def order_type(self, val: Optional[str]):
         return self.add_cheking(OrderType, 'type', val)
 
-    def quantity(self, val: str):
+    def quantity(self, val: Optional[str]):
         return self.add("quantity", val)
 
-    def price(self, val: str):
+    def price(self, val: Optional[str]):
         return self.add("price", val)
 
-    def stop_price(self, val: str):
+    def stop_price(self, val: Optional[str]):
         return self.add("stop_price", val)
 
-    def time_in_force(self, val: str):
+    def time_in_force(self, val: Optional[str]):
         return self.add_cheking(TimeInForce, 'time_in_force', val)
 
-    def expire_time(self, val: str):
+    def expire_time(self, val: Optional[str]):
         return self.add("expire_time", val)
 
-    def strict_validate(self, val: bool):
+    def strict_validate(self, val: Optional[bool]):
         return self.add("strict_validate", val)
 
-    def post_only(self, val: bool):
+    def post_only(self, val: Optional[bool]):
         return self.add("post_only", val)
 
-    def client_order_id(self, val: str):
+    def client_order_id(self, val: Optional[str]):
         return self.add("client_order_id", val)
 
-    def new_client_order_id(self, val: str):
+    def new_client_order_id(self, val: Optional[str]):
         return self.add("new_client_order_id", val)
 
-    def wait(self, val: int):
+    def wait(self, val: Optional[int]):
         return self.add("wait", val)
 
-    def margin(self, val: str):
+    def margin(self, val: Optional[str]):
         return self.add("margin", val)
 
-    def address(self, val: str):
+    def address(self, val: Optional[str]):
         return self.add("address", val)
 
-    def amount(self, val: str):
+    def amount(self, val: Optional[str]):
         return self.add("amount", val)
 
-    def payment_id(self, val: str):
+    def payment_id(self, val: Optional[str]):
         return self.add("paymentId", val)
 
-    def include_fee(self, val: str):
+    def include_fee(self, val: Optional[bool]):
         return self.add("include_fee", val)
 
-    def auto_commit(self, val: str):
+    def auto_commit(self, val: Optional[bool]):
         return self.add("auto_commit", val)
 
-    def _from(self, val: str):
+    def _from(self, val: Optional[str]):
         return self.add("from", val)
 
-    def from_currency(self, val: str):
+    def from_currency(self, val: Optional[str]):
         return self.add("from_currency", val)
 
-    def to_currency(self, val: str):
+    def to_currency(self, val: Optional[str]):
         return self.add("to_currency", val)
 
-    def source(self, val: str):
+    def source(self, val: Optional[str]):
         return self.add_cheking(Account, "source", val)
 
-    def destination(self, val: str):
+    def destination(self, val: Optional[str]):
         return self.add_cheking(Account, "destination", val)
 
-    def identify_by(self, val: str):
+    def identify_by(self, val: Optional[str]):
         return self.add_cheking(IdentifyBy, 'by', val)
 
-    def identifier(self, val: str):
+    def identifier(self, val: Optional[str]):
         return self.add("identifier", val)
 
-    def show_senders(self, val: bool):
+    def show_senders(self, val: Optional[bool]):
         return self.add("show_senders", val)
 
-    def request_client_id(self, val: str):
+    def request_client_id(self, val: Optional[str]):
         return self.add("request_client_id", val)
 
-    def depth(self, val: str):
+    def depth(self, val: Optional[Union[int, str]]):
         return self.add("depth", val)
 
-    def speed(self, val: str):
+    def speed(self, val: Optional[str]):
         return self.add("speed", val)
 
-    def make_rate(self, val: str):
+    def make_rate(self, val: Optional[str]):
         return self.add("make_rate", val)
 
-    def take_rate(self, val: str):
+    def take_rate(self, val: Optional[str]):
         return self.add("take_rate", val)
 
-    def order_id(self, val: str):
+    def order_id(self, val: Optional[str]):
         return self.add("order_id", val)
 
-    def use_offchain(self, val: str):
+    def use_offchain(self, val: Optional[str]):
         return self.add_cheking(Offchain, 'use_offchain', val)
 
-    def public_comment(self, val: str):
+    def public_comment(self, val: Optional[str]):
         return self.add("public_comment", val)
 
-    def symbols_as_list(self, val: List[str]):
+    def symbols_as_list(self, val: Optional[Union[str, List[str]]]):
         return self.add('symbols', val)
 
-    def currencies_as_list(self, val: List[str]):
+    def currencies_as_list(self, val: Optional[Union[str, List[str]]]):
         return self.add('currencies', val)
 
-    def transaction_type(self, val: List[str]):
+    def transaction_type(self, val: Optional[Union[str, List[str]]]):
         return self.add_cheking(TransactionType, 'type', val)
 
-    def transaction_types(self, val: List[str]):
+    def transaction_types(self, val: Optional[Union[str, List[TransactionType]]]):
         return self.add_coma_separated_list_checking(TransactionType, 'types', val)
 
-    def transaction_subtype(self, val: str):
+    def transaction_subtype(self, val: Optional[str]):
         return self.add_cheking(TransactionSubType, 'subtype', val)
 
-    def transaction_subtypes(self, val: str):
+    def transaction_subtypes(self, val: Optional[Union[str, List[TransactionSubType]]]):
         return self.add_coma_separated_list_checking(TransactionSubType, 'subtypes', val)
 
-    def transaction_statuses(self, val: str):
+    def transaction_statuses(self, val: Optional[Union[str, List[TransactionStatus]]]):
         return self.add_coma_separated_list_checking(TransactionStatus, 'statuses', val)
 
-    def id_from(self, val: str):
+    def id_from(self, val: Optional[int]):
         return self.add('id_from', val)
 
-    def id_till(self, val: str):
+    def id_till(self, val: Optional[int]):
         return self.add('id_till', val)
 
-    def tx_ids(self, val: List[str]):
+    def tx_ids(self, val: Optional[Union[str, List[str]]]):
         return self.add_coma_separated_list('tx_ids', val)
 
-    # TODO: choose one, sort_by or order_by, and make it constant throughout the sdk.
-    def sort_by(self, val: str):
-        return self.add_cheking(SortBy, 'order_by', val)
+    def sort_by(self, val: Optional[str]):
+        return self.add_cheking(SortBy, 'sort_by', val)
 
-    def base_currency(self, val: str):
+    def order_by(self, val: Optional[str]):
+        return self.add_cheking(OrderBy, 'order_by', val)
+
+    def base_currency(self, val: Optional[str]):
         return self.add('base_currency', val)
 
-    def active_at(self, val: str):
+    def active_at(self, val: Optional[str]):
         return self.add('active_at', val)
 
-    def transaction_id(self, val: str):
+    def transaction_id(self, val: Optional[str]):
         return self.add('transaction_id', val)
 
-    def active(self, val: bool):
+    def active(self, val: Optional[bool]):
         return self.add('active', val)
 
-    def order_list_id(self, val: str):
+    def order_list_id(self, val: Optional[str]):
         return self.add('order_list_id', val)
 
-    def contingency_type(self, val: str):
+    def contingency_type(self, val: Optional[str]):
         return self.add_cheking(ContingencyType, 'contingency_type', val)
 
     def orders(self, val: List[OrderRequest]):
         return self.add('orders', [clean_nones(asdict(order)) for order in val])
 
-    def sub_account_ids(self, val: List[str]):
+    def sub_account_ids(self, val: Optional[Union[str, List[str]]]):
         return self.add_coma_separated_list('sub_account_ids', val)
 
-    def sub_account_id(self, val: str):
+    def sub_account_id(self, val: Optional[str]):
         return self.add('sub_account_id', val)
 
-    def subscription_mode(self, val: str):
+    def subscription_mode(self, val: Optional[str]):
         return self.add_cheking(SubscriptionMode, 'mode', val)
 
-    def target_currency(self, val: str):
+    def target_currency(self, val: Optional[str]):
         return self.add('target_currency', val)
 
-    def preferred_network(self, val: str):
+    def preferred_network(self, val: Optional[str]):
         return self.add('preferred_network', val)
 
-    def type(self, val: str):
+    def type(self, val: Optional[str]):
         return self.add('type', val)
 
     def acl_settings(self, val: ACLSettings):

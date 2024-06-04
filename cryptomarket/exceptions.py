@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 
 class CryptomarketSDKException(Exception):
@@ -46,7 +46,7 @@ class CryptomarketAPIException(CryptomarketSDKException):
 
 
 class ArgumentFormatException(CryptomarketSDKException):
-    def __init__(self, message, valid_options: List[str] = None):
+    def __init__(self, message, valid_options: Optional[List[str]] = None):
         self.message = message
         if valid_options is not None:
             self.message += ' Valid options are:'

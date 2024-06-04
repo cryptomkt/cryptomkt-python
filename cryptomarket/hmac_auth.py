@@ -2,13 +2,14 @@ from base64 import b64encode
 from hashlib import sha256
 from hmac import HMAC
 from time import time
+from typing import Optional
 from urllib.parse import urlsplit
 
 from requests.auth import AuthBase
 
 
 class HmacAuth(AuthBase):
-    def __init__(self, api_key: str, secret_key: str, window: int = None):
+    def __init__(self, api_key: str, secret_key: str, window: Optional[int] = None):
         self.api_key = api_key
         self.secret_key = secret_key
         self.window = window
