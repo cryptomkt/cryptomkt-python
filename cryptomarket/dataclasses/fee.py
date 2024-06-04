@@ -1,15 +1,12 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List
-
-from cryptomarket.dataclasses.orderBookLevel import OrderBookLevel
-
+from typing import Any, Dict, Optional
 
 @dataclass
 class Fee:
-    fee: str
-    network_fee: str
-    amount: str
-    currency: str
+    fee: Optional[str]
+    network_fee: Optional[str]
+    amount: Optional[str]
+    currency: Optional[str]
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]):
