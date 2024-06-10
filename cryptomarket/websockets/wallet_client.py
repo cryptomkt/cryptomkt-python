@@ -184,7 +184,7 @@ class WalletClient(ClientAuthenticable):
         statuses: Optional[List[args.TransactionStatus]] = None,
         currencies: Optional[List[str]] = None,
         order_by: Optional[Union[args.OrderBy, Literal[
-            'created_at', 'updated_at', 'last_updated_at']]] = None,
+            'created_at', 'updated_at', 'last_updated_at', 'id']]] = None,
         sort: Optional[Literal['ASC', 'DESC']] = None,
         id_from: Optional[int] = None,
         id_till: Optional[int] = None,
@@ -192,6 +192,7 @@ class WalletClient(ClientAuthenticable):
         till: Optional[str] = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
+        group_transactions: Optional[bool] = None
     ):
         """Get the transaction history of the account
 
@@ -211,17 +212,18 @@ class WalletClient(ClientAuthenticable):
         :param subtype: Optional. valid subtypes are: 'UNCLASSIFIED', 'BLOCKCHAIN', 'AIRDROP', 'AFFILIATE', 'STAKING', 'BUY_CRYPTO', 'OFFCHAIN', 'FIAT', 'SUB_ACCOUNT', 'WALLET_TO_SPOT', 'SPOT_TO_WALLET', 'WALLET_TO_DERIVATIVES', 'DERIVATIVES_TO_WALLET', 'CHAIN_SWITCH_FROM', 'CHAIN_SWITCH_TO' and 'INSTANT_EXCHANGE'
         :param statuses: Optional. List of statuses to query. valid subtypes are: 'CREATED', 'PENDING', 'FAILED', 'SUCCESS' and 'ROLLED_BACK'
         :param currencies: Optional. List of currencies to query. If not provided it queries all currencies
-        :param order_by: Optional. sorting parameter.'created_at', 'updated_at' or 'last_activity_at'. Default is 'created_at'
+        :param order_by: Optional. sorting parameter.'created_at', 'updated_at', 'last_activity_at' or 'id'. Default is 'created_at'
         :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'
         :param id_from: Optional. Interval initial value when ordering by id. Min is 0
         :param id_till: Optional. Interval end value when ordering by id. Min is 0
-        :param since: Optional. Interval initial value when ordering by 'created_at'. As Datetime
-        :param till: Optional. Interval end value when ordering by 'created_at'. As Datetime
+        :param since: Optional. Interval initial value (inclusive). The value type depends on order_by.
+        :param till: Optional. Interval end value (inclusive). The value type depends on order_by.
         :param limit: Optional. Transactions per query. Defaul is 100. Max is 1000
         :param offset: Optional. Default is 0. Max is 100000
+        :param group_transactions: Optional. Optional. Flag indicating whether the returned transactions will be parts of a single operation. Default is false.
         """
         params = args.DictBuilder().transaction_type(type).transaction_subtype(subtype).transaction_statuses(statuses).currencies(currencies).id_from(
-            id_from).id_till(id_till).tx_ids(transaction_ids).order_by(order_by).sort(sort).since(since).till(till).limit(limit).offset(offset).build()
+            id_from).id_till(id_till).tx_ids(transaction_ids).order_by(order_by).sort(sort).since(since).till(till).limit(limit).offset(offset).group_transactions(group_transactions).build()
 
         def intercept_response(err, response):
             if err is not None:

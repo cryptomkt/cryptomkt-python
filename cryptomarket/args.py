@@ -156,6 +156,7 @@ class OrderBy(Checker):
     CREATED_AT = 'created_at'
     UPDATED_AT = 'updated_at'
     LAST_ACTIVITY_UP = 'last_activity_up'
+    ID = 'id'
 
 
 class Depth(Checker):
@@ -260,6 +261,9 @@ class DictBuilder:
 
     def currency(self, val: Optional[str]):
         return self.add("currency", val)
+
+    def network_code(self, val: Optional[str]):
+        return self.add("network_code", val)
 
     def from_(self, val: Optional[str]):
         return self.add("from", val)
@@ -473,6 +477,9 @@ class DictBuilder:
 
     def type(self, val: Optional[str]):
         return self.add('type', val)
+
+    def group_transactions(self, val: Optional[bool]):
+        return self.add('group_transactions', val)
 
     def acl_settings(self, val: ACLSettings):
         self.add(

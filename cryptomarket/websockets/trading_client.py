@@ -364,7 +364,7 @@ class TradingClient(ClientAuthenticable):
             params=params)
 
     def cancel_spot_orders(self, callback: Optional[Callback[List[Report]]] = None):
-        """cancel all active spot orders and returns the ones that could not be canceled
+        """cancel all active spot orders and return the ones that could not be canceled
 
         https://api.exchange.cryptomkt.com/#cancel-spot-orders
 

@@ -76,7 +76,7 @@ class WithdrawCrypto(AuthCallsTestCase):
     def test_call_random_id(self):
         with self.assertRaises(CryptomarketSDKException):
             response = self.client.withdraw_crypto_commit(
-                id=37176135661  # random number
+                id="22222222222222"  # random number
             )
 
     def test_successfull_call(self):
@@ -134,6 +134,7 @@ class WithdrawCryptoRollback(AuthCallsTestCase):
         if not success:
             self.fail("not a successful rollback")
 
+
 class TestGetEstimateWithdrawalFees(AuthCallsTestCase):
     def test_successfull_call(self):
         fees = self.client.get_estimate_withdrawal_fees([
@@ -143,11 +144,38 @@ class TestGetEstimateWithdrawalFees(AuthCallsTestCase):
         if not good_list(good_fee, fees):
             self.fail("not a good fee")
 
+class TestGetBulkEstimateWithdrawalFees(AuthCallsTestCase):
+    def test_successfull_call(self):
+        fees = self.client.get_bulk_estimate_withdrawal_fees([
+            args.FeeRequest("EOS", "12345"),
+            args.FeeRequest("ETH", "22222"),
+        ])
+        if not good_list(good_fee, fees):
+            self.fail("not a good fee")
+
 
 class TestGetEstimateWithdrawalFee(AuthCallsTestCase):
     def test_successfull_call(self):
         fee = self.client.get_estimate_withdrawal_fee(
             currency="XLM", amount="199")
+        if fee == "":
+            self.fail("no fee")
+
+
+class TestGetBulkEstimateDepositFees(AuthCallsTestCase):
+    def test_successfull_call(self):
+        fees = self.client.get_bulk_estimate_deposit_fees([
+            args.FeeRequest("EOS", "12345"),
+            args.FeeRequest("ETH", "22222"),
+        ])
+        if not good_list(good_fee, fees):
+            self.fail("not a good fee")
+
+
+class TestGetEstimateDepositFee(AuthCallsTestCase):
+    def test_successfull_call(self):
+        fee = self.client.get_estimate_deposit_fee(
+            currency="XLM", amount="19999")
         if fee == "":
             self.fail("no fee")
 

@@ -11,9 +11,9 @@ api_url = 'https://api.exchange.cryptomkt.com/api/3/'
 
 class HttpClient:
 
-    def __init__(self, api_key: str, secret_key: str, window: Optional[int] = None):
+    def __init__(self, api_key: str, api_secret: str, window: Optional[int] = None):
         self.api_key = api_key
-        self.secret_key = secret_key
+        self.api_secret = api_secret
         self.window = window
         self.session_is_open = False
         session = requests.session()
@@ -25,10 +25,10 @@ class HttpClient:
         self.session.close()
         self.session_is_open = False
 
-    def authorize(self):
+    def reset_authorization(self):
         assert self.session_is_open == True
         self.session.auth = HmacAuth(
-            self.api_key, self.secret_key, window=self.window)
+            self.api_key, self.api_secret, window=self.window)
 
     def get(self, endpoint, params=None):
         response = self.session.get(api_url + endpoint, params=params)
@@ -55,7 +55,7 @@ class HttpClient:
 
     def _handle_response(self, response):
         """Internal helper for handling API responses from the CryptoMarket server.
-        Raises the appropriate exceptions when necessary; otherwise, returns the
+        Raises the appropriate exceptions when necessary; otherwise, return the
         response.
         """
         if not str(response.status_code).startswith('2'):

@@ -69,7 +69,7 @@ class ClientAuthenticable(ClientBase):
 
         :param callback: Optional. A callable to call with the result data. It takes two arguments, err and result. err is None for successful calls, result is None for calls with error: callback(err, result).
 
-        :returns: The transaction status as result argument for the callback.
+        :return: The transaction status as result argument for the callback.
 
         .. code-block:: python
         True

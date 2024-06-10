@@ -22,7 +22,7 @@ def defined(a_dict, key):
 
 # good_dict checks all of the values in the fields list to be present in the dict, and if they are
 # present, check the defined() condition to be true. if any of the fields fails to be defined(), then
-# this function returns false
+# this function return false
 
 
 def good_dict(a_dict: Dict[str, Any], fields: List[str]) -> bool:
