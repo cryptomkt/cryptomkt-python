@@ -1,11 +1,11 @@
 import time
 from datetime import datetime, timedelta
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Union
 
 from cryptomarket.exceptions import (CryptomarketAPIException,
                                      CryptomarketSDKException)
 from cryptomarket.hmac_auth import HmacAuth
-from cryptomarket.websockets.client_base import ClientBase
+from cryptomarket.websockets.client_base import ClientBase, OnErrorException
 from cryptomarket.websockets.subscriptionMethodData import SubscriptionMethodData
 
 
@@ -17,9 +17,9 @@ class ClientAuthenticable(ClientBase):
         api_secret: str,
         window: Optional[int] = None,
         subscription_methods_data: Dict[str, SubscriptionMethodData] = {},
-        on_connect=None,
-        on_error=None,
-        on_close=None
+        on_connect: Optional[Callable[[], None]] = None,
+        on_error: Optional[Callable[[OnErrorException], None]] = None,
+        on_close: Optional[Callable[[int, str], None]] = None,
     ):
         super(ClientAuthenticable, self).__init__(
             uri,

@@ -144,6 +144,7 @@ class TestGetEstimateWithdrawalFees(AuthCallsTestCase):
         if not good_list(good_fee, fees):
             self.fail("not a good fee")
 
+
 class TestGetBulkEstimateWithdrawalFees(AuthCallsTestCase):
     def test_successfull_call(self):
         fees = self.client.get_bulk_estimate_withdrawal_fees([
@@ -226,9 +227,26 @@ class TransferMoneyToAnotherUser(AuthCallsTestCase):
         #     self.fail(e)
 
 
+class GetTransactionsHistoryWithParams(AuthCallsTestCase):
+    def test_successfull_call(self):
+        result = self.client.get_transaction_history(
+            currencies=['EOS'],
+            order_by=args.OrderBy.CREATED_AT,
+            sort=args.Sort.ASCENDING,
+            limit=1000,
+            offset=0,
+            since="1614815872000")
+        if len(result) == 0:
+            self.fail("must have transactions")
+        if not good_list(good_transaction, result):
+            self.fail("no good transaction")
+
+
 class GetTransactionsHistory(AuthCallsTestCase):
     def test_successfull_call(self):
-        result = self.client.get_transaction_history(currencies=['EOS'])
+        result = self.client.get_transaction_history(
+            currencies=['EOS'],
+        )
         if not good_list(good_transaction, result):
             self.fail("no good transaction")
 

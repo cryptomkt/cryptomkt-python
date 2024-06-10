@@ -1,6 +1,7 @@
 import json
 import time
 import unittest
+from typing import Optional
 
 from test_helpers import *
 
@@ -15,7 +16,7 @@ with open('/home/ismael/cryptomarket/keys.json') as fd:
 
 
 def failOnError(caller: str):
-    def f(err: CryptomarketAPIException, result):
+    def f(err: Optional[CryptomarketAPIException], result):
         if err:
             Veredict.fail(caller + ": " + err.message)
     return f

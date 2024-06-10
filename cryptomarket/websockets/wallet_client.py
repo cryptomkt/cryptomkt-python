@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
 from dacite import Config, from_dict
 from typing_extensions import Literal
@@ -9,6 +9,7 @@ from cryptomarket.dataclasses.balance import Balance
 from cryptomarket.dataclasses.transaction import Transaction
 from cryptomarket.websockets.callback import Callback
 from cryptomarket.websockets.client_auth import ClientAuthenticable
+from cryptomarket.websockets.client_base import OnErrorException
 from cryptomarket.websockets.subscriptionMethodData import \
     SubscriptionMethodData
 
@@ -30,8 +31,8 @@ class WalletClient(ClientAuthenticable):
         api_secret: str,
         window: Optional[int] = None,
         on_connect: Optional[Callable[[], None]] = None,
-        on_error: Optional[Callable[[], None]] = None,
-        on_close: Optional[Callable[[], None]] = None,
+        on_error: Optional[Callable[[OnErrorException], None]] = None,
+        on_close: Optional[Callable[[int, str], None]] = None,
     ):
         super(WalletClient, self).__init__(
             "wss://api.exchange.cryptomkt.com/api/3/ws/wallet",
@@ -185,7 +186,7 @@ class WalletClient(ClientAuthenticable):
         currencies: Optional[List[str]] = None,
         order_by: Optional[Union[args.OrderBy, Literal[
             'created_at', 'updated_at', 'last_updated_at', 'id']]] = None,
-        sort: Optional[Literal['ASC', 'DESC']] = None,
+        sort: Optional[args.Sort] = None,
         id_from: Optional[int] = None,
         id_till: Optional[int] = None,
         since: Optional[str] = None,

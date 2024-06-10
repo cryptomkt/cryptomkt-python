@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Any, Callable, List, Optional, Union
 
 from dacite import Config, DaciteError, from_dict
+from dacite.data import Data
 from typing_extensions import Literal
 
 import cryptomarket.args as args
@@ -11,9 +12,10 @@ from cryptomarket.dataclasses.report import Report
 from cryptomarket.exceptions import CryptomarketAPIException
 from cryptomarket.websockets.callback import Callback
 from cryptomarket.websockets.client_auth import ClientAuthenticable
+from cryptomarket.websockets.client_base import OnErrorException
 from cryptomarket.websockets.subscriptionMethodData import \
     SubscriptionMethodData
-from dacite.data import Data
+
 _REPORTS = 'reports'
 _BALANCES = 'balances'
 
@@ -38,8 +40,8 @@ class TradingClient(ClientAuthenticable):
         api_secret: str,
         window: Optional[int] = None,
         on_connect: Optional[Callable[[], None]] = None,
-        on_error: Optional[Callable[[], None]] = None,
-        on_close: Optional[Callable[[], None]] = None,
+        on_error: Optional[Callable[[OnErrorException], None]] = None,
+        on_close: Optional[Callable[[int, str], None]] = None,
     ):
         super(TradingClient, self).__init__(
             "wss://api.exchange.cryptomkt.com/api/3/ws/trading",

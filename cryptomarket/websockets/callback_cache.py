@@ -8,7 +8,7 @@ from dacite.data import Data
 class CallbackCache:
     def __init__(self):
         self.reusable_callbacks: Dict[int, ReusableCallback[Any]] = {}
-        self.subscription_callbacks: Dict[int, Callback[Any]] = {}
+        self.subscription_callbacks: Dict[str, Callback[Any]] = {}
         self._id = 1
 
     def next_id(self):
@@ -31,10 +31,10 @@ class CallbackCache:
             del self.reusable_callbacks[id]
         return callback
 
-    def save_subscription_callback(self, key: int, callback: Callback[Any]):
+    def save_subscription_callback(self, key: str, callback: Callback[Any]):
         self.subscription_callbacks[key] = callback
 
-    def get_subscription_callback(self, key: int) -> Optional[Callback[Any]]:
+    def get_subscription_callback(self, key: str) -> Optional[Callback[Any]]:
         if key not in self.subscription_callbacks:
             return None
         return self.subscription_callbacks[key]
