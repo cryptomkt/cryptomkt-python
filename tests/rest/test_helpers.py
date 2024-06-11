@@ -343,6 +343,8 @@ def good_transaction(transaction: Transaction) -> bool:
             "subtype",
             "created_at",
             "updated_at",
+            "last_activity_at",
+            "commit_risk",
             # "native", # optional
             # "primetrust", # optional
             # "meta" # optional
