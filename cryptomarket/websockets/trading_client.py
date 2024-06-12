@@ -1,7 +1,8 @@
 from enum import Enum
-from typing import Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
 from dacite import Config, DaciteError, from_dict
+from dacite.data import Data
 from typing_extensions import Literal
 
 import cryptomarket.args as args
@@ -9,12 +10,17 @@ from cryptomarket.dataclasses.balance import Balance
 from cryptomarket.dataclasses.commission import Commission
 from cryptomarket.dataclasses.report import Report
 from cryptomarket.exceptions import CryptomarketAPIException
+from cryptomarket.websockets.callback import Callback
 from cryptomarket.websockets.client_auth import ClientAuthenticable
+from cryptomarket.websockets.client_base import OnErrorException
 from cryptomarket.websockets.subscriptionMethodData import \
     SubscriptionMethodData
 
 _REPORTS = 'reports'
 _BALANCES = 'balances'
+
+InterceptResponseCallback = Optional[Callable[[
+    Optional[CryptomarketAPIException], Optional[Data]], None]]
 
 
 class TradingClient(ClientAuthenticable):
@@ -32,10 +38,10 @@ class TradingClient(ClientAuthenticable):
         self,
         api_key: str,
         api_secret: str,
-        window: int = None,
+        window: Optional[int] = None,
         on_connect: Optional[Callable[[], None]] = None,
-        on_error: Optional[Callable[[], None]] = None,
-        on_close: Optional[Callable[[], None]] = None,
+        on_error: Optional[Callable[[OnErrorException], None]] = None,
+        on_close: Optional[Callable[[int, str], None]] = None,
     ):
         super(TradingClient, self).__init__(
             "wss://api.exchange.cryptomkt.com/api/3/ws/trading",
@@ -189,8 +195,7 @@ class TradingClient(ClientAuthenticable):
         post_only: Optional[bool] = None,
         take_rate: Optional[str] = None,
         make_rate: Optional[str] = None,
-        callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[Report, None]], None]] = None,
+        callback: Optional[Callback[Report]] = None,
     ):
         """Creates a new spot order
 
@@ -215,7 +220,7 @@ class TradingClient(ClientAuthenticable):
         """
         params = args.DictBuilder().symbol(symbol).side(side).quantity(quantity).order_type(type).time_in_force(time_in_force).client_order_id(
             client_order_id).price(price).stop_price(stop_price).expire_time(expire_time).post_only(post_only).take_rate(take_rate).make_rate(make_rate).build()
-
+        intercept_response_callback: InterceptResponseCallback = None
         if callback:
             def intercept_response(err, response):
                 if err:
@@ -223,11 +228,9 @@ class TradingClient(ClientAuthenticable):
                     return
                 callback(None, from_dict(data_class=Report,
                          data=response, config=Config(cast=[Enum])))
-        else:
-            intercept_response = None
         self._send_by_id(
             'spot_new_order',
-            callback=intercept_response,
+            callback=intercept_response_callback,
             params=params
         )
 
@@ -236,8 +239,7 @@ class TradingClient(ClientAuthenticable):
         contingency_type: Union[args.ContingencyType, Literal['allOrNone', 'oneCancelOther', 'oneTriggerOneCancelOther']],
         orders: List[args.OrderRequest],
         order_list_id: Optional[str] = None,
-        callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[Report, None]], None]] = None
+        callback: Optional[Callback[Report]] = None
     ):
         """creates a list of spot orders
 
@@ -283,6 +285,7 @@ class TradingClient(ClientAuthenticable):
         """
         params = args.DictBuilder().order_list_id(
             order_list_id).contingency_type(contingency_type).orders(orders).build()
+        intercept_response_callback: InterceptResponseCallback = None
         if callback:
             def intercept_response(err, response):
                 if err:
@@ -291,16 +294,17 @@ class TradingClient(ClientAuthenticable):
                 report = from_dict(data_class=Report,
                                    data=response, config=Config(cast=[Enum]))
                 callback(None, report)
-        else:
-            intercept_response = None
-        self._send_by_id('spot_new_order_list',
-                         callback=intercept_response, params=params, call_count=len(orders))
+            intercept_response_callback = intercept_response
+        self._send_by_id(
+            'spot_new_order_list',
+            callback=intercept_response_callback,
+            params=params,
+            call_count=len(orders))
 
     def cancel_spot_order(
         self,
         client_order_id: str,
-        callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[Report, None]], None]] = None
+        callback: Optional[Callback[Report]] = None
     ):
         """cancels a spot order
 
@@ -311,6 +315,7 @@ class TradingClient(ClientAuthenticable):
         """
         params = args.DictBuilder().client_order_id(client_order_id).build()
 
+        intercept_response_callback: InterceptResponseCallback = None
         if callback:
             def intercept_result(err, response):
                 if err:
@@ -318,10 +323,11 @@ class TradingClient(ClientAuthenticable):
                     return
                 callback(None, from_dict(data_class=Report,
                          data=response, config=Config(cast=[Enum])))
-        else:
-            intercept_result = None
-        self._send_by_id('spot_cancel_order',
-                         callback=intercept_result, params=params)
+            intercept_response_callback = intercept_result
+        self._send_by_id(
+            'spot_cancel_order',
+            callback=intercept_response_callback,
+            params=params)
 
     def replace_spot_order(
         self,
@@ -330,8 +336,7 @@ class TradingClient(ClientAuthenticable):
         quantiy: str,
         price: str,
         strict_validate: Optional[bool] = None,
-        callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[Report, None]], None]] = None,
+        callback: Optional[Callback[Report]] = None
     ):
         """changes the parameters of an existing order, quantity or price
 
@@ -346,6 +351,7 @@ class TradingClient(ClientAuthenticable):
         """
         params = args.DictBuilder().client_order_id(client_order_id).new_client_order_id(
             new_client_order_id).quantity(quantiy).price(price).strict_validate(strict_validate).build()
+        intercept_response_callback: InterceptResponseCallback = None
         if callback:
             def intercept_result(err, response):
                 if err:
@@ -353,22 +359,20 @@ class TradingClient(ClientAuthenticable):
                     return
                 callback(None, from_dict(data_class=Report,
                          data=response, config=Config(cast=[Enum])))
-        else:
-            intercept_result = None
-        self._send_by_id('spot_replace_order',
-                         callback=intercept_result, params=params)
+            intercept_response_callback = intercept_result
+        self._send_by_id(
+            'spot_replace_order',
+            callback=intercept_response_callback,
+            params=params)
 
-    def cancel_spot_orders(
-        self,
-        callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[List[Report], None]], None]] = None,
-    ):
-        """cancel all active spot orders and returns the ones that could not be canceled
+    def cancel_spot_orders(self, callback: Optional[Callback[List[Report]]] = None):
+        """cancel all active spot orders and return the ones that could not be canceled
 
         https://api.exchange.cryptomkt.com/#cancel-spot-orders
 
         :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or a list of reports of the canceled orders
         """
+        intercept_response_callback: InterceptResponseCallback = None
         if callback:
             def intercept_result(err, response):
                 if err:
@@ -377,14 +381,14 @@ class TradingClient(ClientAuthenticable):
                 reports = [from_dict(data_class=Report, data=report, config=Config(cast=[Enum]))
                            for report in response]
                 callback(None, reports)
-        else:
-            intercept_result = None
-        self._send_by_id('spot_cancel_orders', callback=intercept_result)
+            intercept_response_callback = intercept_result
+        self._send_by_id(
+            'spot_cancel_orders',
+            callback=intercept_response_callback)
 
     def get_spot_trading_balances(
         self,
-        callback: Callable[[
-            Union[CryptomarketAPIException, None], Union[List[Report], None]], None] = None,
+        callback: Callback[List[Balance]],
     ):
         """Get the user's spot trading balance for all currencies with balance
 
@@ -404,8 +408,7 @@ class TradingClient(ClientAuthenticable):
     def get_spot_trading_balance_of_currency(
         self,
         currency: str,
-        callback: Callable[[
-            Union[CryptomarketAPIException, None], Union[Balance, None]], None]
+        callback: Callback[Balance]
     ):
         """Get the user spot trading balance of a currency
 
@@ -424,10 +427,7 @@ class TradingClient(ClientAuthenticable):
         self._send_by_id(
             'spot_balance', callback=intercept_result, params=params)
 
-    def get_spot_commisions(
-        self,
-        callback: Callable[[Union[CryptomarketAPIException, None], Union[List[Commission], None]], None],
-    ):
+    def get_spot_commisions(self, callback: Callback[List[Commission]]):
         """Get the personal trading commission rates for all symbols
 
         https://api.exchange.cryptomkt.com/#get-spot-fees
@@ -443,11 +443,7 @@ class TradingClient(ClientAuthenticable):
             callback(None, commissions)
         self._send_by_id('spot_fees', callback=intercept_result)
 
-    def get_spot_commision_of_symbol(
-        self,
-        symbol: str,
-        callback: Callable[[Union[CryptomarketAPIException, None], Union[Commission, None]], None],
-    ):
+    def get_spot_commision_of_symbol(self, symbol: str, callback: Callback[Commission]):
         """Get the personal trading commission rate of a symbol
 
         https://api.exchange.cryptomkt.com/#get-spot-fee

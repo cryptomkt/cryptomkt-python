@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
 from dacite import Config, from_dict
 from typing_extensions import Literal
@@ -7,8 +7,9 @@ from typing_extensions import Literal
 import cryptomarket.args as args
 from cryptomarket.dataclasses.balance import Balance
 from cryptomarket.dataclasses.transaction import Transaction
-from cryptomarket.exceptions import CryptomarketAPIException
+from cryptomarket.websockets.callback import Callback
 from cryptomarket.websockets.client_auth import ClientAuthenticable
+from cryptomarket.websockets.client_base import OnErrorException
 from cryptomarket.websockets.subscriptionMethodData import \
     SubscriptionMethodData
 
@@ -28,10 +29,10 @@ class WalletClient(ClientAuthenticable):
         self,
         api_key: str,
         api_secret: str,
-        window: int = None,
+        window: Optional[int] = None,
         on_connect: Optional[Callable[[], None]] = None,
-        on_error: Optional[Callable[[], None]] = None,
-        on_close: Optional[Callable[[], None]] = None,
+        on_error: Optional[Callable[[OnErrorException], None]] = None,
+        on_close: Optional[Callable[[int, str], None]] = None,
     ):
         super(WalletClient, self).__init__(
             "wss://api.exchange.cryptomkt.com/api/3/ws/wallet",
@@ -57,8 +58,7 @@ class WalletClient(ClientAuthenticable):
     def subscribe_to_transactions(
         self,
         callback: Callable[[Transaction], None],
-        result_callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[bool, None]], None]] = None
+        result_callback: Optional[Callback[bool]] = None
     ):
         """A transaction notification occurs each time a transaction has been changed, such as creating a transaction, updating the pending state (e.g., the hash assigned) or completing a transaction
 
@@ -75,8 +75,7 @@ class WalletClient(ClientAuthenticable):
 
     def unsubscribe_to_transactions(
         self,
-        callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[bool, None]], None]] = None
+        callback: Optional[Callback[bool]] = None
     ):
         """stop recieving the feed of transactions changes
 
@@ -90,8 +89,7 @@ class WalletClient(ClientAuthenticable):
     def subscribe_to_wallet_balance(
         self,
         callback: Callable[[List[Balance], Literal['snapshot', 'update']], None],
-        result_callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[bool, None]], None]] = None,
+        result_callback: Optional[Callback[bool]] = None,
     ):
         """subscribe to a feed of the user's wallet balances
 
@@ -119,8 +117,7 @@ class WalletClient(ClientAuthenticable):
 
     def unsubscribe_to_wallet_balance(
         self,
-        callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[bool, None]], None]] = None,
+        callback: Optional[Callback[bool]] = None,
     ):
         """stop recieving the feed of balances changes
 
@@ -133,8 +130,7 @@ class WalletClient(ClientAuthenticable):
 
     def get_wallet_balances(
         self,
-        callback: Callable[[
-            Union[CryptomarketAPIException, None], Union[List[Balance], None]], None],
+        callback: Callback[List[Balance]],
     ):
         """Get the user's wallet balances for all currencies with balance
 
@@ -154,8 +150,7 @@ class WalletClient(ClientAuthenticable):
     def get_wallet_balance_of_currency(
         self,
         currency: str,
-        callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[Balance, None]], None]] = None,
+        callback: Callback[Balance],
     ):
         """Get the user's wallet balance of a currency
 
@@ -179,7 +174,7 @@ class WalletClient(ClientAuthenticable):
 
     def get_transactions(
         self,
-        callback: Callable[[Union[CryptomarketAPIException, None], Union[List[Transaction], None]], None],
+        callback: Callback[List[Transaction]],
         transaction_ids: Optional[List[str]] = None,
         type: Optional[Union[args.TransactionType, Literal[
             'DEPOSIT', 'WITHDRAW', 'TRANSFER', 'SWAP'
@@ -187,19 +182,18 @@ class WalletClient(ClientAuthenticable):
         subtype: Optional[Union[args.TransactionSubType, Literal[
             'UNCLASSIFIED', 'BLOCKCHAIN', 'AIRDROP', 'AFFILIATE', 'STAKING', 'BUY_CRYPTO', 'OFFCHAIN', 'FIAT', 'SUB_ACCOUNT', 'WALLET_TO_SPOT', 'SPOT_TO_WALLET', 'WALLET_TO_DERIVATIVES', 'DERIVATIVES_TO_WALLET', 'CHAIN_SWITCH_FROM', 'CHAIN_SWITCH_TO', 'INSTANT_EXCHANGE'
         ]]] = None,
-        statuses: List[Union[args.TransactionStatus, Literal[
-            'CREATED', 'PENDING', 'FAILED', 'SUCCESS', 'ROLLED_BACK'
-        ]]] = None,
+        statuses: Optional[List[args.TransactionStatus]] = None,
         currencies: Optional[List[str]] = None,
-        sort_by: Optional[Union[args.SortBy,
-                                Literal['created_at', 'id']]] = None,
-        sort: Optional[Literal['ASC', 'DESC']] = None,
+        order_by: Optional[Union[args.OrderBy, Literal[
+            'created_at', 'updated_at', 'last_updated_at', 'id']]] = None,
+        sort: Optional[args.Sort] = None,
         id_from: Optional[int] = None,
         id_till: Optional[int] = None,
         since: Optional[str] = None,
         till: Optional[str] = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
+        group_transactions: Optional[bool] = None
     ):
         """Get the transaction history of the account
 
@@ -219,17 +213,18 @@ class WalletClient(ClientAuthenticable):
         :param subtype: Optional. valid subtypes are: 'UNCLASSIFIED', 'BLOCKCHAIN', 'AIRDROP', 'AFFILIATE', 'STAKING', 'BUY_CRYPTO', 'OFFCHAIN', 'FIAT', 'SUB_ACCOUNT', 'WALLET_TO_SPOT', 'SPOT_TO_WALLET', 'WALLET_TO_DERIVATIVES', 'DERIVATIVES_TO_WALLET', 'CHAIN_SWITCH_FROM', 'CHAIN_SWITCH_TO' and 'INSTANT_EXCHANGE'
         :param statuses: Optional. List of statuses to query. valid subtypes are: 'CREATED', 'PENDING', 'FAILED', 'SUCCESS' and 'ROLLED_BACK'
         :param currencies: Optional. List of currencies to query. If not provided it queries all currencies
-        :param sort_by: Optional. sorting parameter.'created_at' or 'id'. Default is 'created_at'
+        :param order_by: Optional. sorting parameter.'created_at', 'updated_at', 'last_activity_at' or 'id'. Default is 'created_at'
         :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'
         :param id_from: Optional. Interval initial value when ordering by id. Min is 0
         :param id_till: Optional. Interval end value when ordering by id. Min is 0
-        :param since: Optional. Interval initial value when ordering by 'created_at'. As Datetime
-        :param till: Optional. Interval end value when ordering by 'created_at'. As Datetime
+        :param since: Optional. Interval initial value (inclusive). The value type depends on order_by.
+        :param till: Optional. Interval end value (inclusive). The value type depends on order_by.
         :param limit: Optional. Transactions per query. Defaul is 100. Max is 1000
         :param offset: Optional. Default is 0. Max is 100000
+        :param group_transactions: Optional. Optional. Flag indicating whether the returned transactions will be parts of a single operation. Default is false.
         """
         params = args.DictBuilder().transaction_type(type).transaction_subtype(subtype).transaction_statuses(statuses).currencies(currencies).id_from(
-            id_from).id_till(id_till).tx_ids(transaction_ids).sort_by(sort_by).sort(sort).since(since).till(till).limit(limit).offset(offset).build()
+            id_from).id_till(id_till).tx_ids(transaction_ids).order_by(order_by).sort(sort).since(since).till(till).limit(limit).offset(offset).group_transactions(group_transactions).build()
 
         def intercept_response(err, response):
             if err is not None:

@@ -1,6 +1,6 @@
 import time
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Any, Callable, Dict, Optional, Union
 
 from cryptomarket.exceptions import (CryptomarketAPIException,
                                      CryptomarketSDKException)
@@ -9,30 +9,32 @@ from cryptomarket.websockets.manager import WebsocketManager
 from cryptomarket.websockets.subscriptionMethodData import \
     SubscriptionMethodData
 
+OnErrorException = Union[Exception, KeyboardInterrupt, SystemExit]
+
 
 class ClientBase:
     def __init__(
         self,
         uri: str,
         subscription_methods_data: Dict[str, SubscriptionMethodData] = {},
-        on_connect=None,
-        on_error=None,
-        on_close=None
+        on_connect: Optional[Callable[[], None]] = None,
+        on_error: Optional[Callable[[OnErrorException], None]] = None,
+        on_close: Optional[Callable[[int, str], None]] = None,
     ):
         if on_connect is not None:
             self.on_connect = on_connect
         else:
-            self.on_connect = lambda: None
+            self.on_connect = None
 
         if on_error is not None:
             self.error = on_error
         else:
-            self._on_error = lambda err: None
+            self._on_error = None
 
         if on_close is not None:
             self.on_close = on_close
         else:
-            self.on_close = lambda: None
+            self.on_close = None
         self._ws_manager = WebsocketManager(self, uri)
         self._callback_cache = CallbackCache()
         self._subscription_methods_data = subscription_methods_data
@@ -65,7 +67,8 @@ class ClientBase:
         """
         internal use only
         """
-        self.on_connect()
+        if self.on_connect:
+            self.on_connect()
 
     # SENDS #
 
@@ -79,7 +82,7 @@ class ClientBase:
         self._callback_cache.delete_subscription_callback(key)
         self._send_by_id(method, callback, params)
 
-    def _send_by_id(self, method: str, callback: callable = None, params=None, call_count: int = 1):
+    def _send_by_id(self, method: str, callback: Optional[Callable[[Any, Any], Any]] = None, params=None, call_count: int = 1):
         payload = {'method': method, 'params': params}
         if callback:
             id = self._callback_cache.save_callback(callback, call_count)
@@ -104,7 +107,8 @@ class ClientBase:
         if key != 'subscription':
             method_type = self._subscription_methods_data[method].method_type
         callback = self._callback_cache.get_subscription_callback(key)
-        callback(params, method_type)
+        if callback:
+            callback(params, method_type)
 
     def _handle_response(self, response):
         id = response['id']

@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from dacite import from_dict
 from typing_extensions import Literal
@@ -12,6 +12,7 @@ from cryptomarket.dataclasses.wsPriceRate import WSPriceRate
 from cryptomarket.dataclasses.wsTicker import WSTicker
 from cryptomarket.dataclasses.wsTrade import WSTrade
 from cryptomarket.exceptions import CryptomarketAPIException
+from cryptomarket.websockets.callback import Callback
 from cryptomarket.websockets.client_base import ClientBase
 
 SNAPSHOT = 'snapshot'
@@ -53,27 +54,29 @@ class MarketDataClient(ClientBase):
             data_key = DATA
         data = message[data_key]
         callback = self._callback_cache.get_subscription_callback(key)
-        callback(data, data_key)
+        if callback:
+            callback(data, data_key)
 
     def _send_channeled_subscription(
         self,
         channel,
         callback,
         params=None,
-        result_callback=None
+        result_callback: Optional[Callable[[Any, Any], None]] = None
     ):
         key = channel
         self._callback_cache.save_subscription_callback(key, callback)
 
-        def intercept_result(err, result):
-            result_callback(err, result['subscriptions'])
-        ID = self._callback_cache.save_callback(intercept_result)
         payload = {
             'method': 'subscribe',
             'ch': channel,
             'params': params,
-            'id': ID
         }
+        if result_callback:
+            def intercept_result(err, result):
+                result_callback(err, result['subscriptions'])
+            ID = self._callback_cache.save_callback(intercept_result)
+            payload['id'] = ID
         self._ws_manager.send(payload)
 
     def subscribe_to_trades(
@@ -81,8 +84,7 @@ class MarketDataClient(ClientBase):
         callback: Callable[[Dict[str, List[WSTrade]], Literal['snapshot', 'update']], None],
         symbols: Optional[List[str]] = None,
         limit: Optional[int] = None,
-        result_callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[List[str], None]], None]] = None,
+        result_callback: Optional[Callback[List[str]]] = None,
     ):
         """Subscribe to a feed of trades
 
@@ -124,8 +126,7 @@ class MarketDataClient(ClientBase):
             ]
         ]] = None,
         limit: Optional[int] = None,
-        result_callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[List[str], None]], None]] = None,
+        result_callback: Optional[Callback[List[str]]] = None,
     ):
         """subscribe to a feed of candles
 
@@ -163,8 +164,9 @@ class MarketDataClient(ClientBase):
         callback: Callable[[Dict[str, List[WSCandle]], Literal['snapshot', 'update']], None],
         target_currency: str,
         symbols: List[str],
-        period: Union[args.Period,
-                      Literal['M1', 'M3', 'M15', 'M30', 'H1', 'H4', 'D1', 'D7', '1M']] = None,
+        period: Optional[Union[
+            args.Period,
+            Literal['M1', 'M3', 'M15', 'M30', 'H1', 'H4', 'D1', 'D7', '1M']]] = None,
         limit: Optional[int] = None,
         result_callback: Optional[Callable[[
             Union[CryptomarketAPIException, None], Union[List[str], None]], None]] = None,
@@ -208,8 +210,7 @@ class MarketDataClient(ClientBase):
         callback: Callable[[Dict[str, WSMiniTicker]], None],
         speed: Union[args.TickerSpeed, Literal['1s', '3s']],
         symbols: Optional[List[str]] = None,
-        result_callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[List[str], None]], None]] = None,
+        result_callback: Optional[Callback[List[str]]] = None,
     ):
         """subscribe to a feed of mini tickers
 
@@ -246,8 +247,7 @@ class MarketDataClient(ClientBase):
         callback: Callable[[Dict[str, WSMiniTicker]], None],
         speed: Union[args.TickerSpeed, Literal['1s', '3s']],
         symbols: Optional[List[str]] = None,
-        result_callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[List[str], None]], None]] = None,
+        result_callback: Optional[Callback[List[str]]] = None,
     ):
         """subscribe to a feed of mini tickers in batches
 
@@ -283,8 +283,7 @@ class MarketDataClient(ClientBase):
         callback: Callable[[Dict[str, WSTicker]], None],
         speed: Union[args.TickerSpeed, Literal['1s', '3s']],
         symbols: Optional[List[str]] = None,
-        result_callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[List[str], None]], None]] = None,
+        result_callback: Optional[Callback[List[str]]] = None,
     ):
         """subscribe to a feed of tickers
 
@@ -321,8 +320,7 @@ class MarketDataClient(ClientBase):
         callback: Callable[[Dict[str, WSTicker]], None],
         speed: Union[args.TickerSpeed, Literal['1s', '3s']],
         symbols: Optional[List[str]] = None,
-        result_callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[List[str], None]], None]] = None,
+        result_callback: Optional[Callback[List[str]]] = None,
     ):
         """subscribe to a feed of tickers in batches
 
@@ -357,8 +355,7 @@ class MarketDataClient(ClientBase):
         self,
         callback: Callable[[Dict[str, WSOrderBook], Literal['snapshot', 'update']], None],
         symbols: List[str],
-        result_callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[List[str], None]], None]] = None,
+        result_callback: Optional[Callback[List[str]]] = None,
     ):
         """subscribe to a feed of a full orderbook
 
@@ -392,8 +389,7 @@ class MarketDataClient(ClientBase):
         depth: Union[args.Depth, Literal['D5', 'D10', 'D20']],
         speed: Union[args.OrderbookSpeed, Literal['100ms', '500ms', '1000ms']],
         symbols: Optional[List[str]] = None,
-        result_callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[List[str], None]], None]] = None,
+        result_callback: Optional[Callback[List[str]]] = None,
     ):
         """subscribe to a feed of a partial orderbook
 
@@ -432,8 +428,7 @@ class MarketDataClient(ClientBase):
         depth: Union[args.Depth, Literal['D5', 'D10', 'D20']],
         speed: Union[args.OrderbookSpeed, Literal['100ms', '500ms', '1000ms']],
         symbols: Optional[List[str]] = None,
-        result_callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[List[str], None]], None]] = None,
+        result_callback: Optional[Callback[List[str]]] = None,
     ):
         """subscribe to a feed of a partial orderbook in batches
 
@@ -467,8 +462,7 @@ class MarketDataClient(ClientBase):
         callback: Callable[[Dict[str, WSOrderBookTop]], None],
         speed: Union[args.OrderbookSpeed, Literal['100ms', '500ms', '1000ms']],
         symbols: Optional[List[str]] = None,
-        result_callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[List[str], None]], None]] = None,
+        result_callback: Optional[Callback[List[str]]] = None,
     ):
         """subscribe to a feed of the top of the orderbook
 
@@ -502,8 +496,7 @@ class MarketDataClient(ClientBase):
         callback: Callable[[Dict[str, WSOrderBookTop]], None],
         speed: Union[args.OrderbookSpeed, Literal['100ms', '500ms', '1000ms']],
         symbols: Optional[List[str]] = None,
-        result_callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[List[str], None]], None]] = None,
+        result_callback: Optional[Callback[List[str]]] = None,
     ):
         """subscribe to a feed of the top of the orderbook in batches
 
@@ -538,8 +531,7 @@ class MarketDataClient(ClientBase):
         speed: Union[args.PriceRateSpeed, Literal['1s', '3s']],
         target_currency: Optional[str],
         currencies: Optional[List[str]] = None,
-        result_callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[List[str], None]], None]] = None,
+        result_callback: Optional[Callback[List[str]]] = None,
     ):
         """subscribe to a feed of price rates
 
@@ -574,8 +566,7 @@ class MarketDataClient(ClientBase):
         speed: Union[args.PriceRateSpeed, Literal['1s', '3s']],
         target_currency: Optional[str],
         currencies: Optional[List[str]] = None,
-        result_callback: Optional[Callable[[
-            Union[CryptomarketAPIException, None], Union[List[str], None]], None]] = None,
+        result_callback: Optional[Callback[List[str]]] = None,
     ):
         """subscribe to a feed of price rates
 

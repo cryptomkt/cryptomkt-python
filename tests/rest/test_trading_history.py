@@ -19,7 +19,7 @@ class AuthCallsTestCase(unittest.TestCase):
 
 class GetOrderHistory(AuthCallsTestCase):
     def test_successfull_call(self):
-        order_history = self.client.get_spot_orders_history('EOSETH')
+        order_history = self.client.get_spot_orders_history(['EOSETH'])
         # if len(order_history) == 0:
         #     self.fail("should have orders")
         if not good_list(good_order, order_history):

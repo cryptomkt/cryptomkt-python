@@ -76,7 +76,7 @@ class WithdrawCrypto(AuthCallsTestCase):
     def test_call_random_id(self):
         with self.assertRaises(CryptomarketSDKException):
             response = self.client.withdraw_crypto_commit(
-                id=37176135661  # random number
+                id="22222222222222"  # random number
             )
 
     def test_successfull_call(self):
@@ -134,11 +134,22 @@ class WithdrawCryptoRollback(AuthCallsTestCase):
         if not success:
             self.fail("not a successful rollback")
 
+
 class TestGetEstimateWithdrawalFees(AuthCallsTestCase):
     def test_successfull_call(self):
         fees = self.client.get_estimate_withdrawal_fees([
             args.FeeRequest("EOS", "123"),
             args.FeeRequest("ETH", "22"),
+        ])
+        if not good_list(good_fee, fees):
+            self.fail("not a good fee")
+
+
+class TestGetBulkEstimateWithdrawalFees(AuthCallsTestCase):
+    def test_successfull_call(self):
+        fees = self.client.get_bulk_estimate_withdrawal_fees([
+            args.FeeRequest("EOS", "12345"),
+            args.FeeRequest("ETH", "22222"),
         ])
         if not good_list(good_fee, fees):
             self.fail("not a good fee")
@@ -150,6 +161,24 @@ class TestGetEstimateWithdrawalFee(AuthCallsTestCase):
             currency="XLM", amount="199")
         if fee == "":
             self.fail("no fee")
+
+
+# class TestGetBulkEstimateDepositFees(AuthCallsTestCase):
+#     def test_successfull_call(self):
+#         fees = self.client.get_bulk_estimate_deposit_fees([
+#             args.FeeRequest("EOS", "12345"),
+#             args.FeeRequest("ETH", "22222"),
+#         ])
+#         if not good_list(good_fee, fees):
+#             self.fail("not a good fee")
+
+
+# class TestGetEstimateDepositFee(AuthCallsTestCase):
+#     def test_successfull_call(self):
+#         fee = self.client.get_estimate_deposit_fee(
+#             currency="XLM", amount="19999")
+#         if fee == "":
+#             self.fail("no fee")
 
 
 class CryptoAddressBelongsToCurrentAccount(AuthCallsTestCase):
@@ -198,9 +227,26 @@ class TransferMoneyToAnotherUser(AuthCallsTestCase):
         #     self.fail(e)
 
 
+class GetTransactionsHistoryWithParams(AuthCallsTestCase):
+    def test_successfull_call(self):
+        result = self.client.get_transaction_history(
+            currencies=['EOS'],
+            order_by=args.OrderBy.CREATED_AT,
+            sort=args.Sort.ASCENDING,
+            limit=1000,
+            offset=0,
+            since="1614815872000")
+        if len(result) == 0:
+            self.fail("must have transactions")
+        if not good_list(good_transaction, result):
+            self.fail("no good transaction")
+
+
 class GetTransactionsHistory(AuthCallsTestCase):
     def test_successfull_call(self):
-        result = self.client.get_transaction_history(currencies=['EOS'])
+        result = self.client.get_transaction_history(
+            currencies=['EOS'],
+        )
         if not good_list(good_transaction, result):
             self.fail("no good transaction")
 
