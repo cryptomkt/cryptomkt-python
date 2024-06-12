@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Mapping, Optional
 
 
 @dataclass
@@ -21,3 +21,9 @@ class Network:
     avg_processing_time: Optional[str] = None
     crypto_payment_id_name: Optional[str] = None
     crypto_explorer: Optional[str] = None
+    code: Optional[str] = None
+    is_ens_available: Optional[bool] = None
+    network_name: Optional[str] = None
+    contract_address: Optional[str] = None
+    is_multichain: Optional[bool] = None
+    asset_id: Optional[Mapping[str,str]] = None

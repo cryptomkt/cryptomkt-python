@@ -8,6 +8,7 @@ from cryptomarket.dataclasses import (Address, Balance, Candle, Commission,
                                       PriceHistory, PricePoint, PublicTrade,
                                       Symbol, Ticker, Transaction)
 from cryptomarket.dataclasses.fee import Fee
+from cryptomarket.dataclasses.trade import Trade
 
 
 # defined checks if a key is present in a dict, and if its value is str, checks if its defined.
@@ -22,7 +23,7 @@ def defined(a_dict, key):
 
 # good_dict checks all of the values in the fields list to be present in the dict, and if they are
 # present, check the defined() condition to be true. if any of the fields fails to be defined(), then
-# this function returns false
+# this function return false
 
 
 def good_dict(a_dict: Dict[str, Any], fields: List[str]) -> bool:
@@ -56,6 +57,8 @@ def good_currency(currency: Currency) -> bool:
     )
     if not good:
         return False
+    if currency.networks is None:
+        return True
     for network in currency.networks:
         if not good_network(network):
             print("***bad network***")
@@ -313,7 +316,7 @@ def good_order_list(orders: List[Order]) -> bool:
     return True
 
 
-def good_trade(trade: Dict[str, Any]) -> bool:
+def good_trade(trade: Trade) -> bool:
     return good_dict(
         asdict(trade),
         [
@@ -340,6 +343,8 @@ def good_transaction(transaction: Transaction) -> bool:
             "subtype",
             "created_at",
             "updated_at",
+            "last_activity_at",
+            "commit_risk",
             # "native", # optional
             # "primetrust", # optional
             # "meta" # optional

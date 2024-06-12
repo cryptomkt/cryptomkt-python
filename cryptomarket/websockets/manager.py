@@ -24,9 +24,9 @@ class WebsocketManager:
             self._log.error("websocket error: " + error)
             handler.on_error(error)
 
-        def on_close(ws):
+        def on_close(ws, code: int, message: str):
             self._log.debug('websocket connection closed')
-            handler.on_close()
+            handler.on_close(code, message)
 
         def on_open(ws):
             self._log.debug(f'websocket connection open at: {ws.url}')

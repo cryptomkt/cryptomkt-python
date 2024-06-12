@@ -1,7 +1,7 @@
 import json
 import time
 import unittest
-from typing import Union
+from typing import Optional, Union
 from cryptomarket import args
 
 from test_helpers import *
@@ -50,9 +50,12 @@ class TestWSTradingClient(unittest.TestCase):
                     return
             Veredict.done = True
 
-        def on_canceled_order(err, canceled_order: Union[Report, None]):
+        def on_canceled_order(err, canceled_order: Optional[Report]):
             if err:
                 Veredict.fail(f'{err}')
+                return
+            if canceled_order is None:
+                Veredict.fail(f'canceled_order is none')
                 return
             if not canceled_order.report_type == 'canceled':
                 Veredict.fail('order not canceled')
@@ -62,9 +65,12 @@ class TestWSTradingClient(unittest.TestCase):
                 return
             self.ws.get_active_spot_orders(on_active_orders)
 
-        def on_replaced_order(err, replaced_order: Union[Report, None]):
+        def on_replaced_order(err, replaced_order: Optional[Report]):
             if err:
                 Veredict.fail(f'{err}')
+                return
+            if replaced_order is None:
+                Veredict.fail(f'replaced order is none')
                 return
             if not good_report(replaced_order):
                 Veredict.fail("not a good report")
@@ -78,6 +84,9 @@ class TestWSTradingClient(unittest.TestCase):
         def on_created_order(err, created_order: Union[Report, None]):
             if err:
                 Veredict.fail(f'{err}')
+                return
+            if created_order is None:
+                Veredict.fail(f'created order is none')
                 return
             if not good_report(created_order):
                 Veredict.fail("not a good report")

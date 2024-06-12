@@ -253,7 +253,7 @@ class GetTrades(PublicCallsTestCase):
         trades = self.client.get_trades(since=iso_datetime)
 
     def test_since_id(self):
-        trades = self.client.get_trades(since=1005147907)
+        trades = self.client.get_trades(since="1005147907")
 
 
 class GetOrderBooks(PublicCallsTestCase):
@@ -293,7 +293,7 @@ class GetOrderBookVolumeOfSymbol(PublicCallsTestCase):
     def test_get_orderbook(self):
         orderbook = self.client.get_order_book_volume_of_symbol(
             symbol='ETHBTC',
-            volume='100'
+            volume=100
         )
         if not good_orderbook(orderbook):
             self.fail("not a good orderbook")

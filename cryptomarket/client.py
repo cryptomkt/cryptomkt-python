@@ -7,12 +7,14 @@ from typing_extensions import Literal
 
 import cryptomarket.args as args
 from cryptomarket.dataclasses import (Address, AmountLock, Balance, Candle,
-                                      Commission, Currency, Order, OrderBook,
-                                      Price, PriceHistory, SubAccount, Symbol,
-                                      Ticker, Trade, Transaction, Fee)
+                                      Commission, Currency, Fee, Order,
+                                      OrderBook, Price, PriceHistory,
+                                      SubAccount, Symbol, Ticker, Trade,
+                                      Transaction)
 from cryptomarket.dataclasses.aclSettings import ACLSettings
 from cryptomarket.dataclasses.convertedCandles import ConvertedCandles
-from cryptomarket.dataclasses.convertedCandlesOfSymbol import ConvertedCandlesOfSymbol
+from cryptomarket.dataclasses.convertedCandlesOfSymbol import \
+    ConvertedCandlesOfSymbol
 from cryptomarket.dataclasses.publicTrade import PublicTrade
 from cryptomarket.http_client import HttpClient
 
@@ -23,10 +25,10 @@ class Client(object):
     :param api_secret: The API secret
     :param window: Maximum difference between the creation of the request and the moment of request processing in milliseconds. Max is 60_000. Defaul is 10_000"""
 
-    def __init__(self, api_key: Optional[str] = None, secret_key: Optional[str] = None, window: Optional[int] = None):
+    def __init__(self, api_key: str = "", secret_key: str = "", window: Optional[int] = None):
         self.httpClient = HttpClient(api_key, secret_key, window)
         if not api_key is None and not secret_key is None:
-            self.httpClient.authorize()
+            self.httpClient.reset_authorization()
 
         # aliases of trades
         self.get_trades_by_symbol = self.get_trades_of_symbol
@@ -54,9 +56,29 @@ class Client(object):
     def _delete(self, endpoint: str, params=None):
         return self.httpClient.delete(endpoint, params)
 
+    def change_credentials(self, api_key: str, api_secret: str) -> None:
+        """
+        Changes the user credentials used for authentication in calls
+
+        :param apiKey:    the user public key used in new calls
+        :param apiSecret: the user secret key used in new calls
+        """
+        self.httpClient.api_key = api_key
+        self.httpClient.api_secret = api_secret
+        self.httpClient.reset_authorization()
+
+    def change_window(self, window: int) -> None:
+        """
+        Changes the window used in authenticated calls
+
+        :param window: acceptable time between request and server execution
+        """
+        self.httpClient.window = window
+        self.httpClient.reset_authorization()
+
     # PUBLIC METHOD CALLS
 
-    def get_currencies(self, currencies: List[str] = None, preferred_network: Optional[str] = None) -> Dict[str, Currency]:
+    def get_currencies(self, currencies: Optional[List[str]] = None, preferred_network: Optional[str] = None) -> Dict[str, Currency]:
         """Get a dict of all currencies or specified currencies
 
         Requires no API key Access Rights
@@ -66,7 +88,7 @@ class Client(object):
         :param currencies: Optional. A list of currencies ids
         :param preferred_network: Optional. Code of the default network for currencies
 
-        :returns: A dict of available currencies. indexed by currency id
+        :return: A dict of available currencies. indexed by currency id
         """
         params = args.DictBuilder().currencies(
             currencies).preferred_network(preferred_network).build()
@@ -74,7 +96,7 @@ class Client(object):
         return {key: from_dict(data_class=Currency, data=response[key])
                 for key in response}
 
-    def get_currency(self, currency: str = None) -> Currency:
+    def get_currency(self, currency: Optional[str] = None) -> Currency:
         """Get the data of a currency
 
         Requires no API key Access Rights
@@ -83,12 +105,12 @@ class Client(object):
 
         :param currency: A currency id
 
-        :returns: A currency
+        :return: A currency
         """
         response = self._get(endpoint=f'public/currency/{currency}')
         return from_dict(data_class=Currency, data=response)
 
-    def get_symbols(self, symbols: List[str] = None) -> Dict[str, Symbol]:
+    def get_symbols(self, symbols: Optional[List[str]] = None) -> Dict[str, Symbol]:
         """Get a dict of all symbols or for specified symbols
 
         A symbol is the combination of the base currency (first one) and quote currency (second one)
@@ -99,7 +121,7 @@ class Client(object):
 
         :param symbols: Optional. A list of symbol ids
 
-        :returns: A dict of symbols traded on the exchange, indexed by symbol id
+        :return: A dict of symbols traded on the exchange, indexed by symbol id
         """
         params = args.DictBuilder().symbols(symbols).build()
         response = self._get(endpoint='public/symbol/', params=params)
@@ -120,12 +142,12 @@ class Client(object):
 
         :param symbol: A symbol id
 
-        :returns: A symbol traded on the exchange
+        :return: A symbol traded on the exchange
         """
         response = self._get(endpoint=f'public/symbol/{symbol}')
         return from_dict(data_class=Symbol, data=response, config=Config(cast=[Enum]))
 
-    def get_tickers(self, symbols: List[str] = None) -> Dict[str, Ticker]:
+    def get_tickers(self, symbols: Optional[List[str]] = None) -> Dict[str, Ticker]:
         """Get a dict of tickers for all symbols or for specified symbols
 
         Requires no API key Access Rights
@@ -134,7 +156,7 @@ class Client(object):
 
         :param symbols: Optional. A list of symbol ids
 
-        :returns: A dict of symbols traded on the exchange, indexed by symbol id
+        :return: A dict of symbols traded on the exchange, indexed by symbol id
         """
         params = args.DictBuilder().symbols(symbols).build()
         response = self._get(endpoint='public/ticker/', params=params)
@@ -150,12 +172,12 @@ class Client(object):
 
         :param symbol: A symbol id
 
-        :returns: A symbol traded on the exchange
+        :return: A symbol traded on the exchange
         """
         response = self._get(endpoint=f'public/ticker/{symbol}')
         return from_dict(data_class=Ticker, data=response)
 
-    def get_prices(self, to: str, source: str = None) -> Dict[str, Price]:
+    def get_prices(self, to: str, source: Optional[str] = None) -> Dict[str, Price]:
         """Get a dict of quotation prices of currencies
 
         Requires no API key Access Rights
@@ -165,7 +187,7 @@ class Client(object):
         :param to: Target currency code
         :param source: Optional. Source currency rate
 
-        :returns: A dict of quotation prices of currencies, indexed by source currency code
+        :return: A dict of quotation prices of currencies, indexed by source currency code
         """
         params = args.DictBuilder().from_(source).to(to).build()
         response = self._get(
@@ -178,16 +200,16 @@ class Client(object):
     def get_prices_history(
         self,
         to: str,
-        source: str = None,
-        since: str = None,
-        until: str = None,
+        source: Optional[str] = None,
+        since: Optional[str] = None,
+        until: Optional[str] = None,
         period: Optional[Union[
             args.Period, Literal[
                 'M1', 'M3', 'M15', 'M30', 'H1', 'H4', 'D1', 'D7', '1M'
             ]
         ]] = None,
         sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
-        limit: int = None
+        limit: Optional[int] = None
     ) -> Dict[str, PriceHistory]:
         """Get quotation prices history
 
@@ -203,7 +225,7 @@ class Client(object):
         :param until: Optional. Last value of the queried interval
         :param limit: Optional. Prices per currency pair. Defaul is 1. Min is 1. Max is 1000
 
-        :returns: A dict of quotation prices of currencies, indexed by source currency code
+        :return: A dict of quotation prices of currencies, indexed by source currency code
         """
         params = args.DictBuilder().from_(source).to(to).since(since).until(
             until).period(period).sort(sort).limit(limit).build()
@@ -212,7 +234,7 @@ class Client(object):
         return {key: from_dict(data_class=PriceHistory, data=response[key])
                 for key in response}
 
-    def get_ticker_last_prices(self, symbols: List[str] = None) -> Dict[str, Price]:
+    def get_ticker_last_prices(self, symbols: Optional[List[str]] = None) -> Dict[str, Price]:
         """Get a dict of the ticker's last prices for all symbols or for the specified symbols
 
         Requires no API key Access Rights
@@ -221,7 +243,7 @@ class Client(object):
 
         :param symbols: Optional. A list of symbol ids
 
-        :returns: A dict of ticker prices of currencies, indexed by symbol
+        :return: A dict of ticker prices of currencies, indexed by symbol
         """
         params = args.DictBuilder().symbols(symbols).build()
         response = self._get(
@@ -238,20 +260,20 @@ class Client(object):
 
         :param symbol: A symbol id
 
-        :returns: The ticker's last price of a symbol
+        :return: The ticker's last price of a symbol
         """
         response = self._get(endpoint=f'public/price/ticker/{symbol}')
         return from_dict(data_class=Price, data=response)
 
     def get_trades(
         self,
-        symbols: List[str] = None,
+        symbols: Optional[List[str]] = None,
         sort_by: Optional[Union[args.SortBy,
                                 Literal['id', 'timestamp']]] = None,
         sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
-        since: str = None,
-        till: str = None,
-        limit: int = None
+        since: Optional[str] = None,
+        till: Optional[str] = None,
+        limit: Optional[int] = None
     ) -> Dict[str, List[PublicTrade]]:
         """Get a dict of trades for all symbols or for specified symbols
 
@@ -268,7 +290,7 @@ class Client(object):
         :param until: Optional. Last value of the queried interval
         :param limit: Optional. Prices per currency pair. Defaul is 10. Min is 1. Max is 1000
 
-        :returns: A dict with a list of trades for each symbol of the query. Indexed by symbol
+        :return: A dict with a list of trades for each symbol of the query. Indexed by symbol
         """
         params = args.DictBuilder().symbols(symbols).sort(sort).by(
             sort_by).since(since).till(till).limit(limit).build()
@@ -283,10 +305,10 @@ class Client(object):
         sort_by: Optional[Union[args.SortBy,
                                 Literal['id', 'timestamp']]] = None,
         sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
-        since: str = None,
-        till: str = None,
-        limit: int = None,
-        offset: int = None
+        since: Optional[str] = None,
+        till: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None
     ) -> List[PublicTrade]:
         """Get trades of a symbol
 
@@ -304,7 +326,7 @@ class Client(object):
         :param limit: Optional. Prices per currency pair. Defaul is 10. Min is 1. Max is 1000
         :param offset: Optional. Default is 0. Min is 0. Max is 100000
 
-        :returns: A list of trades of the symbol
+        :return: A list of trades of the symbol
         """
         params = args.DictBuilder().sort(sort).by(sort_by).since(
             since).till(till).limit(limit).offset(offset).build()
@@ -315,8 +337,8 @@ class Client(object):
 
     def get_order_books(
         self,
-        symbols: List[str] = None,
-        depth: int = None
+        symbols: Optional[List[str]] = None,
+        depth: Optional[int] = None
     ) -> Dict[str, OrderBook]:
         """Get a dict of orderbooks for all symbols or for the specified symbols
 
@@ -329,7 +351,7 @@ class Client(object):
         :param symbols: Optional. A list of symbol ids
         :param depth: Optional. Order Book depth. Default value is 100. Set to 0 to view the full Order Book
 
-        :returns: A dict with the order book for each queried symbol. indexed by symbol
+        :return: A dict with the order book for each queried symbol. indexed by symbol
         """
         params = args.DictBuilder().symbols(symbols).depth(depth).build()
         response = self._get(endpoint='public/orderbook', params=params)
@@ -338,7 +360,7 @@ class Client(object):
     def get_order_book_of_symbol(
         self,
         symbol: str,
-        depth: int = None
+        depth: Optional[int] = None
     ) -> OrderBook:
         """Get order book of a symbol
 
@@ -351,7 +373,7 @@ class Client(object):
         :param symbol: A symbol id
         :param depth: Optional. Order Book depth. Default value is 100. Set to 0 to view the full Order Book
 
-        :returns: The order book of the symbol
+        :return: The order book of the symbol
         """
         params = args.DictBuilder().depth(depth).build()
         response = self._get(
@@ -361,8 +383,8 @@ class Client(object):
     def get_order_book_volume_of_symbol(
         self,
         symbol: str,
-        volume: int = None
-    ) -> Dict[str, Any]:
+        volume: Optional[int] = None
+    ) -> OrderBook:
         """Get order book of a symbol with the desired volume for market depth search
 
         An Order Book is an electronic list of buy and sell orders for a specific symbol, structured by price level
@@ -374,7 +396,7 @@ class Client(object):
         :param symbol: A symbol id
         :param volume: Optional. Desired volume for market depth search
 
-        :returns: The order book of the symbol
+        :return: The order book of the symbol
         """
         params = args.DictBuilder().volume(volume).build()
         response = self._get(
@@ -383,16 +405,16 @@ class Client(object):
 
     def get_candles(
         self,
-        symbols: List[str] = None,
+        symbols: Optional[List[str]] = None,
         period: Optional[Union[
             args.Period, Literal[
                 'M1', 'M3', 'M15', 'M30', 'H1', 'H4', 'D1', 'D7', '1M'
             ]
         ]] = None,
         sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
-        since: str = None,
-        till: str = None,
-        limit: int = None
+        since: Optional[str] = None,
+        till: Optional[str] = None,
+        limit: Optional[int] = None
     ) -> Dict[str, List[Candle]]:
         """Get a dict of candles for all symbols or for specified symbols
 
@@ -411,7 +433,7 @@ class Client(object):
         :param till: Optional. Last value of the queried interval. As DateTime
         :param limit: Optional. Prices per currency pair. Defaul is 10. Min is 1. Max is 1000
 
-        :returns: A dict with a list of candles for each symbol of the query. indexed by symbol
+        :return: A dict with a list of candles for each symbol of the query. indexed by symbol
         """
         params = args.DictBuilder().symbols(symbols).period(period).sort(
             sort).since(since).till(till).limit(limit).build()
@@ -429,10 +451,10 @@ class Client(object):
             ]
         ]] = None,
         sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
-        since: str = None,
-        till: str = None,
-        limit: int = None,
-        offset: int = None
+        since: Optional[str] = None,
+        till: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None
     ) -> List[Candle]:
         """Get candles of a symbol
 
@@ -452,7 +474,7 @@ class Client(object):
         :param limit: Optional. Prices per currency pair. Defaul is 100. Min is 1. Max is 1000
         :param offset: Optional. Default is 0. Min is 0. Max is 100000
 
-        :returns: A class with the target_currency and data with a dict with a list of candles for each symbol of the query. indexed by symbol
+        :return: A class with the target_currency and data with a dict with a list of candles for each symbol of the query. indexed by symbol
         """
         params = args.DictBuilder().period(period).sort(sort).since(
             since).till(till).limit(limit).offset(offset).build()
@@ -471,9 +493,9 @@ class Client(object):
             ]
         ]] = None,
         sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
-        since: str = None,
-        till: str = None,
-        limit: int = None
+        since: Optional[str] = None,
+        till: Optional[str] = None,
+        limit: Optional[int] = None
     ) -> ConvertedCandles:
         """Gets candles regarding the last price converted to the target currency for all symbols or for the specified symbols
 
@@ -495,7 +517,7 @@ class Client(object):
         :param till: Optional. Last value of the queried interval. As DateTime
         :param limit: Optional. Prices per currency pair. Defaul is 100. Min is 1. Max is 1000
 
-        :returns: A class with the target_currency and data with a list of candles for the symbol of the query.
+        :return: A class with the target_currency and data with a list of candles for the symbol of the query.
         """
         params = args.DictBuilder().target_currency(target_currency).symbols(symbols).period(period).sort(sort).since(
             since).till(till).limit(limit).build()
@@ -513,10 +535,10 @@ class Client(object):
             ]
         ]] = None,
         sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
-        since: str = None,
-        till: str = None,
-        limit: int = None,
-        offset: int = None
+        since: Optional[str] = None,
+        till: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None
     ) -> ConvertedCandlesOfSymbol:
         """Gets candles regarding the last price converted to the target currency for the specified symbols
 
@@ -539,7 +561,7 @@ class Client(object):
         :param limit: Optional. Prices per currency pair. Defaul is 100. Min is 1. Max is 1000
         :param offset: Optional. Default is 0. Min is 0. Max is 100000
 
-        :returns: A list of candles of a symbol
+        :return: A list of candles of a symbol
         """
         params = args.DictBuilder().target_currency(target_currency).period(period).sort(sort).since(
             since).till(till).limit(limit).offset(offset).build()
@@ -563,7 +585,7 @@ class Client(object):
         https://api.exchange.cryptomkt.com/#get-spot-trading-balance
 
 
-        :returns: A list of spot trading balances
+        :return: A list of spot trading balances
         """
         response = self._get(endpoint='spot/balance')
         return [from_dict(data_class=Balance, data=balance_data)
@@ -578,12 +600,12 @@ class Client(object):
 
         :param currency: The currency code to query the balance
 
-        :returns: the spot trading balance of a currency
+        :return: the spot trading balance of a currency
         """
         response = self._get(endpoint=f'spot/balance/{currency}')
         return from_dict(data_class=Balance, data=response)
 
-    def get_all_active_spot_orders(self, symbol: str = None) -> List[Order]:
+    def get_all_active_spot_orders(self, symbol: Optional[str] = None) -> List[Order]:
         """Get the user's active spot orders
 
         Requires the "Place/cancel orders" API key Access Right
@@ -592,7 +614,7 @@ class Client(object):
 
         :param symbol: Optional. A symbol for filtering the active spot orders
 
-        :returns: A list of orders
+        :return: A list of orders
         """
         params = args.DictBuilder().symbol(symbol).build()
         response = self._get(endpoint='spot/order', params=params)
@@ -608,7 +630,7 @@ class Client(object):
 
         :param client order id: The client order id of the order
 
-        :returns: A spot order of the account
+        :return: A spot order of the account
         """
         response = self._get(endpoint=f'spot/order/{client_order_id}')
         return from_dict(data_class=Order, data=response, config=Config(cast=[Enum]))
@@ -624,14 +646,14 @@ class Client(object):
         time_in_force: Optional[Union[args.TimeInForce, Literal[
             'GTC', 'IOC', 'FOK', 'Day', 'GTD'
         ]]] = None,
-        client_order_id: str = None,
-        price: str = None,
-        stop_price: str = None,
-        expire_time: str = None,
-        strict_validate: bool = None,
-        post_only: bool = None,
-        take_rate: str = None,
-        make_rate: str = None
+        client_order_id: Optional[str] = None,
+        price: Optional[str] = None,
+        stop_price: Optional[str] = None,
+        expire_time: Optional[str] = None,
+        strict_validate: Optional[bool] = None,
+        post_only: Optional[bool] = None,
+        take_rate: Optional[str] = None,
+        make_rate: Optional[str] = None
     ) -> Order:
         """Creates a new spot order
 
@@ -655,7 +677,7 @@ class Client(object):
         :param take rate: Optional. Liquidity taker fee, a fraction of order volume, such as 0.001 (for 0.1% fee). Can only increase the fee. Used for fee markup.
         :param make rate: Optional. Liquidity provider fee, a fraction of order volume, such as 0.001 (for 0.1% fee). Can only increase the fee. Used for fee markup.
 
-        :returns: A new spot order
+        :return: A new spot order
         """
         builder = args.DictBuilder().client_order_id(client_order_id).symbol(symbol).side(
             side).quantity(quantity).order_type(type).price(price).stop_price(stop_price)
@@ -712,7 +734,7 @@ class Client(object):
         :param orders: the list of orders
         :param order_list_id: order list identifier. If not provided, it will be generated by the system. Must be equal to the client order id of the first order in the request
 
-        :returns: the list of the created orders
+        :return: the list of the created orders
         """
         params = args.DictBuilder().contingency_type(contingency_type).orders(
             orders).order_list_id(order_list_id).build()
@@ -725,8 +747,8 @@ class Client(object):
         client_order_id: str,
         new_client_order_id: str,
         quantity: str,
-        price: str = None,
-        strict_validate: bool = None
+        price: Optional[str] = None,
+        strict_validate: Optional[bool] = None
     ) -> Order:
         """Replaces a spot order
 
@@ -742,7 +764,7 @@ class Client(object):
         :param strict validate: Price and quantity will be checked for incrementation within the symbol’s tick size and quantity step. See the symbol's tick_size and quantity_increment
         :param price: Required if order type is 'limit', 'stopLimit', or 'takeProfitLimit'. Order price
 
-        :returns: The new spot order
+        :return: The new spot order
         """
         params = args.DictBuilder().new_client_order_id(new_client_order_id).quantity(
             quantity).price(price).strict_validate(strict_validate).build()
@@ -750,7 +772,7 @@ class Client(object):
             endpoint=f'spot/order/{client_order_id}', params=params)
         return from_dict(data_class=Order, data=response, config=Config(cast=[Enum]))
 
-    def cancel_all_orders(self, symbol: str = None) -> List[Order]:
+    def cancel_all_orders(self, symbol: Optional[str] = None) -> List[Order]:
         """Cancel all active spot orders, or all active orders for a specified symbol
 
         Requires the "Place/cancel orders" API key Access Right
@@ -758,14 +780,14 @@ class Client(object):
         https://api.exchange.cryptomkt.com/#cancel-all-spot-orders
 
 
-        :returns: A list with the canceled spot order
+        :return: A list with the canceled spot order
         """
         params = args.DictBuilder().symbol(symbol).build()
         response = self._delete(endpoint='spot/order', params=params)
         return [from_dict(data_class=Order, data=data, config=Config(cast=[Enum]))
                 for data in response]
 
-    def cancel_spot_order(self, client_order_id: str) -> Dict[str, Any]:
+    def cancel_spot_order(self, client_order_id: str) -> Order:
         """Cancel the order with the client order id
 
         Requires the "Place/cancel orders" API key Access Right
@@ -774,7 +796,7 @@ class Client(object):
 
         :param client order id: client order id of the order to cancel
 
-        :returns: The canceled spot order
+        :return: The canceled spot order
         """
         response = self._delete(endpoint=f'spot/order/{client_order_id}')
         return from_dict(data_class=Order, data=response, config=Config(cast=[Enum]))
@@ -787,7 +809,7 @@ class Client(object):
         https://api.exchange.cryptomkt.com/#get-all-trading-commission
 
 
-        :returns: A list of commission rates
+        :return: A list of commission rates
         """
         response = self._get(endpoint='spot/fee')
         return [from_dict(data_class=Commission, data=data) for data in response]
@@ -801,7 +823,7 @@ class Client(object):
 
         :param symbol: The symbol of the commission rate
 
-        :returns: The commission rate of a symbol
+        :return: The commission rate of a symbol
         """
         response = self._get(endpoint=f'spot/fee/{symbol}')
         return from_dict(data_class=Commission, data=response)
@@ -812,13 +834,14 @@ class Client(object):
 
     def get_spot_orders_history(
         self,
-        symbols: List[str] = None,
-        sort_by: Union[args.SortBy, Literal['id', 'timestamp']] = None,
-        sort: Union[args.Sort, Literal['ASC', 'DESC']] = None,
-        since: str = None,
-        till: str = None,
-        limit: int = None,
-        offset: int = None
+        symbols: Optional[List[str]] = None,
+        sort_by: Optional[Union[args.SortBy,
+                                Literal['id', 'timestamp']]] = None,
+        sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
+        since: Optional[str] = None,
+        till: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None
     ) -> List[Order]:
         """Get all the spot orders
 
@@ -838,7 +861,7 @@ class Client(object):
         :param limit: Optional. Prices per currency pair. Defaul is 100. Max is 1000
         :param offset: Optional. Default is 0. Max is 100000
 
-        :returns: A list of orders
+        :return: A list of orders
         """
         params = args.DictBuilder().symbols(symbols).sort(sort).by(
             sort_by).since(since).till(till).limit(limit).offset(offset).build()
@@ -848,14 +871,15 @@ class Client(object):
 
     def get_spot_trades_history(
         self,
-        order_id: str = None,
-        symbol: str = None,
-        sort_by: Union[args.SortBy, Literal['id', 'timestamp']] = None,
-        sort: Union[args.Sort, Literal['ASC', 'DESC']] = None,
-        since: str = None,
-        till: str = None,
-        limit: int = None,
-        offset: int = None
+        order_id: Optional[str] = None,
+        symbol: Optional[str] = None,
+        sort_by: Optional[Union[args.SortBy,
+                                Literal['id', 'timestamp']]] = None,
+        sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
+        since: Optional[str] = None,
+        till: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None
     ) -> List[Trade]:
         """Get the user's spot trading history
 
@@ -872,7 +896,7 @@ class Client(object):
         :param limit: Optional. Prices per currency pair. Defaul is 100. Max is 1000
         :param offset: Optional. Default is 0. Max is 100000
 
-        :returns: A list of trades
+        :return: A list of trades
         """
         params = args.DictBuilder().order_id(order_id).symbol(symbol).sort(
             sort).by(sort_by).since(since).till(till).limit(limit).offset(offset).build()
@@ -891,12 +915,12 @@ class Client(object):
         https://api.exchange.cryptomkt.com/#wallet-balance
 
 
-        :returns: A list of wallet balances
+        :return: A list of wallet balances
         """
         response = self._get(endpoint='wallet/balance')
         return [from_dict(data_class=Balance, data=data) for data in response]
 
-    def get_wallet_balance_of_currency(self, currency: str = None) -> Balance:
+    def get_wallet_balance_of_currency(self, currency: Optional[str] = None) -> Balance:
         """Get the user's wallet balance of a currency
 
         Requires the "Payment information" API key Access Right
@@ -905,7 +929,7 @@ class Client(object):
 
         :param currency: The currency code to query the balance
 
-        :returns: The wallet balance of the currency
+        :return: The wallet balance of the currency
         """
         response = self._get(endpoint=f'wallet/balance/{currency}')
         return from_dict(data_class=Balance, data=response)
@@ -918,7 +942,7 @@ class Client(object):
         https://api.exchange.cryptomkt.com/#deposit-crypto-address
 
 
-        :returns: A list of currency addresses
+        :return: A list of currency addresses
         """
         response = self._get(endpoint=f'wallet/crypto/address')
         return [from_dict(data_class=Address, data=data) for data in response]
@@ -932,7 +956,7 @@ class Client(object):
 
         :param currency: Currency to get the address
 
-        :returns: A currency address
+        :return: A currency address
         """
         params = args.DictBuilder().currency(currency).build()
         response = self._get(endpoint='wallet/crypto/address', params=params)
@@ -947,7 +971,7 @@ class Client(object):
 
         :param currency: currency to create a new address
 
-        :returns: The created address for the currency
+        :return: The created address for the currency
         """
         params = args.DictBuilder().currency(currency).build()
         response = self._post(
@@ -965,7 +989,7 @@ class Client(object):
 
         :param currency: currency to get the list of addresses
 
-        :returns: A list of addresses
+        :return: A list of addresses
         """
         params = args.DictBuilder().currency(currency).build()
         response = self._get(
@@ -983,7 +1007,7 @@ class Client(object):
 
         :param currency: currency to get the list of addresses
 
-        :returns: A list of addresses
+        :return: A list of addresses
         """
         params = args.DictBuilder().currency(currency).build()
         response = self._get(
@@ -995,11 +1019,12 @@ class Client(object):
         currency: str,
         amount: str,
         address: str,
-        payment_id: str = None,
-        include_fee: bool = None,
-        auto_commit: bool = None,
-        use_offchain: Literal['never', 'optionaly', 'required'] = None,
-        public_comment: str = None
+        payment_id: Optional[str] = None,
+        include_fee: Optional[bool] = None,
+        auto_commit: Optional[bool] = None,
+        use_offchain: Optional[Literal['never',
+                                       'optionaly', 'required']] = None,
+        public_comment: Optional[str] = None
     ) -> str:
         """Please take note that changing security settings affects withdrawals:
 
@@ -1023,10 +1048,10 @@ class Client(object):
         :param payment_id: Optional.
         :param include_fee: Optional. If true then the amount includes fees. Default is false
         :param auto_commit: Optional. If false then you should commit or rollback the transaction in an hour. Used in two phase commit schema. Default is true
-        :param use_offchain: Optional. Whether the withdrawal may be comitted offchain. Accepted values are 'never', 'optionaly' and 'required'. Default is TODO
+        :param use_offchain: Optional. Whether the withdrawal may be comitted offchain. Accepted values are 'never', 'optionaly' and 'required'.
         :param public_comment: Optional. Maximum lenght is 255
 
-        :returns: The transaction id
+        :return: The transaction id
         """
         params = args.DictBuilder().currency(currency).address(address).amount(amount).use_offchain(use_offchain).payment_id(
             payment_id).include_fee(include_fee).auto_commit(auto_commit).public_comment(public_comment).build()
@@ -1041,7 +1066,7 @@ class Client(object):
 
         :param id: the withdrawal transaction identifier
 
-        :returns: The transaction result. true if the commit is successful
+        :return: The transaction result. true if the commit is successful
         """
         return self._put(endpoint=f'wallet/crypto/withdraw/{id}')['result']
 
@@ -1054,11 +1079,11 @@ class Client(object):
 
         :param id: the withdrawal transaction identifier
 
-        :returns: The transaction result. true if the rollback is successful
+        :return: The transaction result. true if the rollback is successful
         """
         return self._delete(endpoint=f'wallet/crypto/withdraw/{id}')['result']
 
-    def get_estimate_withdrawal_fee(self, currency: str, amount: str) -> str:
+    def get_estimate_withdrawal_fee(self, currency: str, amount: str, network_code: Optional[str] = None) -> str:
         """Get an estimate of the withdrawal fee
 
         Requires the "Payment information" API key Access Right
@@ -1067,10 +1092,12 @@ class Client(object):
 
         :param currency: the currency code for withdrawal
         :param amount: the expected withdraw amount
+        :param network_code: Optional. network code
 
-        :returns: The expected fee
+        :return: The expected fee
         """
-        params = args.DictBuilder().amount(amount).currency(currency).build()
+        params = args.DictBuilder().amount(amount).currency(
+            currency).network_code(network_code).build()
         return self._get(endpoint='wallet/crypto/fee/estimate', params=params)['fee']
 
     def get_estimate_withdrawal_fees(self, fee_requests: List[args.FeeRequest]) -> List[Fee]:
@@ -1080,12 +1107,57 @@ class Client(object):
 
         https://api.exchange.cryptomkt.com/#estimate-withdraw-fee
 
-        :returns: A list of expected withdrawal fees
+        :return: A list of expected withdrawal fees
         """
         params = [asdict(fee_request) for fee_request in fee_requests]
         result = self._post(
             endpoint='wallet/crypto/fees/estimate', params=params)
         return [Fee.from_dict(fee_data) for fee_data in result]
+
+    def get_bulk_estimate_withdrawal_fees(self, fee_requests: List[args.FeeRequest]) -> List[Fee]:
+        """Get a list of estimates of withdrawal fees
+
+        Requires the "Payment information" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#bulk-estimate-withdrawal-fee
+
+        :return: A list of expected withdrawal fees
+        """
+        params = [asdict(fee_request) for fee_request in fee_requests]
+        result = self._post(
+            endpoint='wallet/crypto/fee/estimate/bulk', params=params)
+        return [Fee.from_dict(fee_data) for fee_data in result]
+
+    # def get_estimate_deposit_fee(self, currency: str, amount: str, network_code: Optional[str] = None) -> str:
+    #     """Get an estimate of the Deposit fee
+
+    #     Requires the "Payment information" API key Access Right
+
+    #     https://api.exchange.cryptomkt.com/#estimate-deposit-fee
+
+    #     :param currency: the currency code for deposit
+    #     :param amount: the expected deposit amount
+    #     :param network_code: Optional. network code
+
+    #     :return: The expected fee
+    #     """
+    #     params = args.DictBuilder().amount(amount).currency(
+    #         currency).network_code(network_code).build()
+    #     return self._get(endpoint='wallet/crypto/fee/deposit/estimate', params=params)['fee']
+
+    # def get_bulk_estimate_deposit_fees(self, fee_requests: List[args.FeeRequest]) -> List[Fee]:
+    #     """Get a list of estimates of deposit fees
+
+    #     Requires the "Payment information" API key Access Right
+
+    #     https://api.exchange.cryptomkt.com/#bulk-estimate-deposit-fee
+
+    #     :return: A list of expected deposit fees
+    #     """
+    #     params = [asdict(fee_request) for fee_request in fee_requests]
+    #     result = self._post(
+    #         endpoint='wallet/crypto/fee/deposit/estimate/bulk', params=params)
+    #     return [Fee.from_dict(fee_data) for fee_data in result]
 
     def check_if_crypto_address_belong_to_current_account(self, address: str) -> bool:
         """Check if an address is from this account
@@ -1096,7 +1168,7 @@ class Client(object):
 
         :param address: address to check
 
-        :returns: True if it is from the current account
+        :return: True if it is from the current account
         """
         params = args.DictBuilder().address(address).build()
         return self._get(endpoint=f'wallet/crypto/address/check-mine', params=params)['result']
@@ -1121,7 +1193,7 @@ class Client(object):
         :param to currency: currency code of destiny
         :param amount: the amount to be converted
 
-        :returns: A list of transaction identifiers of the convertion
+        :return: A list of transaction identifiers of the convertion
         """
         params = args.DictBuilder().from_currency(from_currency).to_currency(
             to_currency).amount(amount).build()
@@ -1147,7 +1219,7 @@ class Client(object):
         :param source: transfer source account type. Either 'wallet' or 'spot'
         :param destination: transfer source account type. Either 'wallet' or 'spot'
 
-        :returns: the transaction identifier of the transfer
+        :return: the transaction identifier of the transfer
         """
         params = args.DictBuilder().currency(currency).amount(
             amount).source(source).destination(destination).build()
@@ -1171,7 +1243,7 @@ class Client(object):
         :param identify_by: type of identifier. Either 'email' or 'username'
         :param identifier: the email or username of the recieving user
 
-        :returns: the transaction identifier of the transfer
+        :return: the transaction identifier of the transfer
         """
         params = args.DictBuilder().currency(currency).amount(
             amount).identify_by(identify_by).identifier(identifier).build()
@@ -1179,26 +1251,21 @@ class Client(object):
 
     def get_transaction_history(
         self,
-        ids: List[str] = None,
-        currencies: List[str] = None,
-        types: Optional[List[Union[args.TransactionType, Literal[
-            'DEPOSIT', 'WITHDRAW', 'TRANSFER', 'SWAP'
-        ]]]] = None,
-        subtypes: Optional[List[Union[args.TransactionSubType, Literal[
-            'UNCLASSIFIED', 'BLOCKCHAIN', 'AIRDROP', 'AFFILIATE', 'STAKING', 'BUY_CRYPTO', 'OFFCHAIN', 'FIAT', 'SUB_ACCOUNT', 'WALLET_TO_SPOT', 'SPOT_TO_WALLET', 'WALLET_TO_DERIVATIVES', 'DERIVATIVES_TO_WALLET', 'CHAIN_SWITCH_FROM', 'CHAIN_SWITCH_TO', 'INSTANT_EXCHANGE'
-        ]]]] = None,
-        statuses: List[Union[args.TransactionStatus, Literal[
-            'CREATED', 'PENDING', 'FAILED', 'SUCCESS', 'ROLLED_BACK'
-        ]]] = None,
-        sort_by: Optional[Union[args.SortBy,
-                                Literal['created_at', 'id']]] = None,
+        ids: Optional[List[str]] = None,
+        currencies: Optional[List[str]] = None,
+        types: Optional[List[args.TransactionType]] = None,
+        subtypes: Optional[List[args.TransactionSubType]] = None,
+        statuses: Optional[List[args.TransactionStatus]] = None,
+        order_by: Optional[Union[args.OrderBy, Literal[
+            'created_at', 'updated_at', 'last_updated_at', 'id']]] = None,
         sort: Optional[Union[args.Sort, Literal['ASC', 'DESC']]] = None,
-        id_from: int = None,
-        id_till: int = None,
-        since: str = None,
-        till: str = None,
-        limit: int = None,
-        offset: int = None
+        id_from: Optional[int] = None,
+        id_till: Optional[int] = None,
+        since: Optional[str] = None,
+        till: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        group_transactions: Optional[bool] = None,
     ) -> List[Transaction]:
         """Get the transaction history of the account
 
@@ -1218,19 +1285,20 @@ class Client(object):
         :param types: Optional. List of types to query. valid types are: 'DEPOSIT', 'WITHDRAW', 'TRANSFER' and 'SWAP'
         :param subtyes: Optional. List of subtypes to query. valid subtypes are: 'UNCLASSIFIED', 'BLOCKCHAIN', 'AIRDROP', 'AFFILIATE', 'STAKING', 'BUY_CRYPTO', 'OFFCHAIN', 'FIAT', 'SUB_ACCOUNT', 'WALLET_TO_SPOT', 'SPOT_TO_WALLET', 'WALLET_TO_DERIVATIVES', 'DERIVATIVES_TO_WALLET', 'CHAIN_SWITCH_FROM', 'CHAIN_SWITCH_TO' and 'INSTANT_EXCHANGE'
         :param statuses: Optional. List of statuses to query. valid subtypes are: 'CREATED', 'PENDING', 'FAILED', 'SUCCESS' and 'ROLLED_BACK'
-        :param sort_by: Optional. sorting parameter.'created_at' or 'id'. Default is 'created_at'
+        :param order_by: Optional. sorting parameter.'created_at', 'updated_at', 'last_activity_at' or 'id'. Default is 'created_at'
         :param sort: Optional. Sort direction. 'ASC' or 'DESC'. Default is 'DESC'
         :param id_from: Optional. Interval initial value when ordering by id. Min is 0
         :param id_till: Optional. Interval end value when ordering by id. Min is 0
-        :param since: Optional. Interval initial value when ordering by 'created_at'. As Datetime
-        :param till: Optional. Interval end value when ordering by 'created_at'. As Datetime
+        :param since: Optional. Interval initial value (inclusive). The value type depends on order_by.
+        :param till: Optional. Interval end value (inclusive). The value type depends on order_by.
         :param limit: Optional. Transactions per query. Defaul is 100. Max is 1000
         :param offset: Optional. Default is 0. Max is 100000
+        :param group_transactions: Optional. Optional. Flag indicating whether the returned transactions will be parts of a single operation. Default is false.
 
-        :returns: A list of transactions
+        :return: A list of transactions
         """
         params = args.DictBuilder().currencies(currencies).transaction_types(types).transaction_subtypes(subtypes).transaction_statuses(statuses).id_from(
-            id_from).id_till(id_till).tx_ids(ids).sort_by(sort_by).sort(sort).since(since).till(till).limit(limit).offset(offset).build()
+            id_from).id_till(id_till).tx_ids(ids).order_by(order_by).sort(sort).since(since).till(till).limit(limit).offset(offset).group_transactions(group_transactions).build()
         response = self._get(endpoint='wallet/transactions', params=params)
         return [from_dict(data_class=Transaction, data=data, config=Config(cast=[Enum]))
                 for data in response]
@@ -1244,7 +1312,7 @@ class Client(object):
 
         :param id: The identifier of the transaction
 
-        :returns: A transaction of the account
+        :return: A transaction of the account
         """
         response = self._get(endpoint=f'wallet/transactions/{id}')
         return from_dict(data_class=Transaction, data=response, config=Config(cast=[Enum]))
@@ -1253,7 +1321,7 @@ class Client(object):
         self,
         currency: str,
         address: str,
-        payment_id: str = None
+        payment_id: Optional[str] = None
     ) -> bool:
         """get the status of the offchain
 
@@ -1265,7 +1333,7 @@ class Client(object):
         :param address: address identifier
         :param payment id: Optional.
 
-        :returns: True if the offchain is available
+        :return: True if the offchain is available
 
         .. code-block:: python
         True
@@ -1288,7 +1356,7 @@ class Client(object):
         :param from: Optional. Interval initial value. As Datetime
         :param till: Optional. Interval end value. As Datetime
 
-        :returns: A list of locks
+        :return: A list of locks
         """
         params = args.DictBuilder().currency(currency).active(active).limit(
             limit).offset(offset).since(since).till(till).build()
@@ -1328,7 +1396,7 @@ class Client(object):
 
         :param sub_account_ids: A list of sub account ids. Ids as hexadecimal code
 
-        :returns: A boolean indicating whether the sub accounts where frozen. True if successful
+        :return: A boolean indicating whether the sub accounts where frozen. True if successful
         """
         params = args.DictBuilder().sub_account_ids(sub_account_ids).build()
         return self._post(endpoint='sub-account/freeze', params=params)["result"]
@@ -1344,7 +1412,7 @@ class Client(object):
 
         :param sub_account_ids: A list of sub account ids. Ids as hexadecimal code
 
-        :returns: A boolean indicating whether the sub accounts where activated. True if successful
+        :return: A boolean indicating whether the sub accounts where activated. True if successful
         """
         params = args.DictBuilder().sub_account_ids(sub_account_ids).build()
         return self._post(endpoint='sub-account/activate', params=params)["result"]
@@ -1391,7 +1459,7 @@ class Client(object):
         return [from_dict(data_class=ACLSettings, data=data)
                 for data in response["result"]]
 
-    def change_ACL_settings(self, sub_account_ids: List[str], acl_settings: ACLSettings) -> List[ACLSettings]:
+    def change_ACL_settings(self, sub_account_ids: List[str], acl_settings: args.ACLSettings) -> List[ACLSettings]:
         """Change the ACL settings of sub-accounts
 
         Disables or enables withdrawals for a sub-account
@@ -1441,11 +1509,11 @@ class Client(object):
         :param sub_account_id: id of the sub-account to get the crypto address
         :param currency: the currency of the crypto address
 
-        :returns: An Address
+        :return: An Address
         """
         response = self._get(
             endpoint=f'sub-account/crypto/address/{sub_account_id}/{currency}')
-        return from_dict(data_class=Address, data=response["result"]["address"])
+        return response["result"]["address"]
 
     ###########
     # ALIASES #

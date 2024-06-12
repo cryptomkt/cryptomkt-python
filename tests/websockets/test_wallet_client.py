@@ -1,5 +1,6 @@
 import json
 import unittest
+from cryptomarket import args
 
 from test_helpers import *
 
@@ -66,6 +67,27 @@ class TestWSWalletClient(unittest.TestCase):
         if Veredict.failed:
             self.fail(Veredict.message)
 
+    def test_get_transactions_with_params(self):
+        def check_good_transactions(err, transactions):
+            if err is not None:
+                Veredict.fail(f'{err}')
+                return
+            for transaction in transactions:
+                if not good_transaction(transaction):
+                    Veredict.fail('not a good transaction')
+                    return
+            Veredict.done = True
+        self.ws.get_transactions(
+            check_good_transactions,
+            currencies=['EOS'],
+            order_by=args.OrderBy.CREATED_AT,
+            sort=args.Sort.ASCENDING,
+            limit=1000,
+            offset=0,
+            since="1614815872000")
+        Veredict.wait_done()
+        if Veredict.failed:
+            self.fail(Veredict.message)
 
 if __name__ == '__main__':
     unittest.main()

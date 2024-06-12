@@ -134,7 +134,7 @@ class CancellAllActiveOrders(AuthCallsTestCase):
         self.assertTrue(len(orders_after_cancel) == 0, "shouldn't have orders")
 
 
-class CancelOrderByClientId(AuthCallsTestCase):
+class CancelOrderByClientCheckingNotActive(AuthCallsTestCase):
     def test_successfull_call(self):
         order = self.client.create_spot_order(
             symbol='EOSETH',
@@ -152,7 +152,6 @@ class CancelOrderByClientId(AuthCallsTestCase):
             order = self.client.get_active_spot_order(client_order_id)
 
 
-
 class CancelOrderByClientId(AuthCallsTestCase):
     def test_successfull_call(self):
         order = self.client.create_spot_order(
@@ -162,11 +161,10 @@ class CancelOrderByClientId(AuthCallsTestCase):
             type=args.OrderType.LIMIT,
             price='0.1'
         )
-        assert(order.status == OrderStatus.NEW)
+        assert (order.status == OrderStatus.NEW)
         time.sleep(5)
         canceled_order = self.client.cancel_spot_order(order.client_order_id)
-        assert(canceled_order.status == OrderStatus.CANCELED)
-
+        assert (canceled_order.status == OrderStatus.CANCELED)
 
 
 class GetAllTradingCommissions(AuthCallsTestCase):
@@ -223,7 +221,7 @@ class OrderList(AuthCallsTestCase):
                 quantity="0.1",
                 price="10000")])
         if not good_list(good_order, orders):
-            self.fail("not valid orders: " + orders)
+            self.fail("not valid orders: " + str(orders))
         self.client.cancel_all_orders()
 
 

@@ -1,11 +1,12 @@
 import time
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Any, Callable, Dict, Optional, Union
 
 from cryptomarket.exceptions import (CryptomarketAPIException,
                                      CryptomarketSDKException)
 from cryptomarket.hmac_auth import HmacAuth
-from cryptomarket.websockets.client_base import ClientBase
+from cryptomarket.websockets.client_base import ClientBase, OnErrorException
+from cryptomarket.websockets.subscriptionMethodData import SubscriptionMethodData
 
 
 class ClientAuthenticable(ClientBase):
@@ -14,11 +15,11 @@ class ClientAuthenticable(ClientBase):
         uri: str,
         api_key: str,
         api_secret: str,
-        window: int = None,
-        subscription_methods_data: Dict[str, str] = {},
-        on_connect=None,
-        on_error=None,
-        on_close=None
+        window: Optional[int] = None,
+        subscription_methods_data: Dict[str, SubscriptionMethodData] = {},
+        on_connect: Optional[Callable[[], None]] = None,
+        on_error: Optional[Callable[[OnErrorException], None]] = None,
+        on_close: Optional[Callable[[int, str], None]] = None,
     ):
         super(ClientAuthenticable, self).__init__(
             uri,
@@ -31,7 +32,7 @@ class ClientAuthenticable(ClientBase):
         self.api_key = api_key
         self.api_secret = api_secret
         self.authed: bool = False
-        self._auth_error: Optional[CryptomarketAPIException] = None
+        self._auth_error: Optional[CryptomarketSDKException] = None
 
     def connect(self, timeout=30) -> Optional[CryptomarketSDKException]:
         timeout_time = datetime.now()+timedelta(seconds=timeout)
@@ -61,14 +62,14 @@ class ClientAuthenticable(ClientBase):
             self.close()
             return CryptomarketSDKException('authentication timeout')
 
-    def authenticate(self, callback: callable = None):
+    def authenticate(self, callback: Optional[Callable[[Any, Any], Any]] = None):
         """Authenticates the websocket
 
         https://api.exchange.cryptomkt.com/#socket-session-authentication
 
         :param callback: Optional. A callable to call with the result data. It takes two arguments, err and result. err is None for successful calls, result is None for calls with error: callback(err, result).
 
-        :returns: The transaction status as result argument for the callback.
+        :return: The transaction status as result argument for the callback.
 
         .. code-block:: python
         True
