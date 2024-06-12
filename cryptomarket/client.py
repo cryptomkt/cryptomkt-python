@@ -1128,36 +1128,36 @@ class Client(object):
             endpoint='wallet/crypto/fee/estimate/bulk', params=params)
         return [Fee.from_dict(fee_data) for fee_data in result]
 
-    def get_estimate_deposit_fee(self, currency: str, amount: str, network_code: Optional[str] = None) -> str:
-        """Get an estimate of the Deposit fee
+    # def get_estimate_deposit_fee(self, currency: str, amount: str, network_code: Optional[str] = None) -> str:
+    #     """Get an estimate of the Deposit fee
 
-        Requires the "Payment information" API key Access Right
+    #     Requires the "Payment information" API key Access Right
 
-        https://api.exchange.cryptomkt.com/#estimate-deposit-fee
+    #     https://api.exchange.cryptomkt.com/#estimate-deposit-fee
 
-        :param currency: the currency code for deposit
-        :param amount: the expected deposit amount
-        :param network_code: Optional. network code
+    #     :param currency: the currency code for deposit
+    #     :param amount: the expected deposit amount
+    #     :param network_code: Optional. network code
 
-        :return: The expected fee
-        """
-        params = args.DictBuilder().amount(amount).currency(
-            currency).network_code(network_code).build()
-        return self._get(endpoint='wallet/crypto/fee/deposit/estimate', params=params)['fee']
+    #     :return: The expected fee
+    #     """
+    #     params = args.DictBuilder().amount(amount).currency(
+    #         currency).network_code(network_code).build()
+    #     return self._get(endpoint='wallet/crypto/fee/deposit/estimate', params=params)['fee']
 
-    def get_bulk_estimate_deposit_fees(self, fee_requests: List[args.FeeRequest]) -> List[Fee]:
-        """Get a list of estimates of deposit fees
+    # def get_bulk_estimate_deposit_fees(self, fee_requests: List[args.FeeRequest]) -> List[Fee]:
+    #     """Get a list of estimates of deposit fees
 
-        Requires the "Payment information" API key Access Right
+    #     Requires the "Payment information" API key Access Right
 
-        https://api.exchange.cryptomkt.com/#bulk-estimate-deposit-fee
+    #     https://api.exchange.cryptomkt.com/#bulk-estimate-deposit-fee
 
-        :return: A list of expected deposit fees
-        """
-        params = [asdict(fee_request) for fee_request in fee_requests]
-        result = self._post(
-            endpoint='wallet/crypto/fee/deposit/estimate/bulk', params=params)
-        return [Fee.from_dict(fee_data) for fee_data in result]
+    #     :return: A list of expected deposit fees
+    #     """
+    #     params = [asdict(fee_request) for fee_request in fee_requests]
+    #     result = self._post(
+    #         endpoint='wallet/crypto/fee/deposit/estimate/bulk', params=params)
+    #     return [Fee.from_dict(fee_data) for fee_data in result]
 
     def check_if_crypto_address_belong_to_current_account(self, address: str) -> bool:
         """Check if an address is from this account

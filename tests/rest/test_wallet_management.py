@@ -163,22 +163,22 @@ class TestGetEstimateWithdrawalFee(AuthCallsTestCase):
             self.fail("no fee")
 
 
-class TestGetBulkEstimateDepositFees(AuthCallsTestCase):
-    def test_successfull_call(self):
-        fees = self.client.get_bulk_estimate_deposit_fees([
-            args.FeeRequest("EOS", "12345"),
-            args.FeeRequest("ETH", "22222"),
-        ])
-        if not good_list(good_fee, fees):
-            self.fail("not a good fee")
+# class TestGetBulkEstimateDepositFees(AuthCallsTestCase):
+#     def test_successfull_call(self):
+#         fees = self.client.get_bulk_estimate_deposit_fees([
+#             args.FeeRequest("EOS", "12345"),
+#             args.FeeRequest("ETH", "22222"),
+#         ])
+#         if not good_list(good_fee, fees):
+#             self.fail("not a good fee")
 
 
-class TestGetEstimateDepositFee(AuthCallsTestCase):
-    def test_successfull_call(self):
-        fee = self.client.get_estimate_deposit_fee(
-            currency="XLM", amount="19999")
-        if fee == "":
-            self.fail("no fee")
+# class TestGetEstimateDepositFee(AuthCallsTestCase):
+#     def test_successfull_call(self):
+#         fee = self.client.get_estimate_deposit_fee(
+#             currency="XLM", amount="19999")
+#         if fee == "":
+#             self.fail("no fee")
 
 
 class CryptoAddressBelongsToCurrentAccount(AuthCallsTestCase):
