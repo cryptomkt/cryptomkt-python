@@ -6,4 +6,4 @@ from typing import Optional
 class CommitRisk:
     score: Optional[int] = None
     rbf: Optional[bool] = None
-    low_fee: Optional[str] = None
+    low_fee: Optional[bool] = None
