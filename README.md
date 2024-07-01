@@ -9,7 +9,7 @@
 To install Cryptomarket use pip
 
 ```
-pip install cryptomarket==3.2.1
+pip install cryptomarket==3.2.2
 ```
 
 # Documentation
