@@ -5,5 +5,5 @@ from typing import Optional
 @dataclass
 class CommitRisk:
     score: Optional[int] = None
-    rbf: Optional[str] = None
+    rbf: Optional[bool] = None
     low_fee: Optional[str] = None
