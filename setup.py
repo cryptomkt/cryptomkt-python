@@ -17,7 +17,7 @@ with open("requirements.txt", "r", encoding="utf-8") as requeriments:
 
 setuptools.setup(
     name="cryptomarket",
-    version="3.2.3",
+    version="3.2.4",
     packages=[
         'cryptomarket',
         'cryptomarket.websockets',
