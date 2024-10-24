@@ -1128,6 +1128,19 @@ class Client(object):
             endpoint='wallet/crypto/fee/estimate/bulk', params=params)
         return [Fee.from_dict(fee_data) for fee_data in result]
 
+
+  def get_fee_hash() -> str:
+        """Gets the hash of withdrawal fees
+        
+        Requires the "Payment information" API key Access Right
+        
+        https://api.exchange.cryptomkt.com/#get-withdrawal-fees-hash
+        
+        :return: the fees hash
+        """
+        return self._get(endpoint='wallet/crypto/fee/withdraw/hash')['result']
+
+  
     # def get_estimate_deposit_fee(self, currency: str, amount: str, network_code: Optional[str] = None) -> str:
     #     """Get an estimate of the Deposit fee
 
