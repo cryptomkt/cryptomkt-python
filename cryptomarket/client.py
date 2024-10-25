@@ -10,7 +10,7 @@ from cryptomarket.dataclasses import (Address, AmountLock, Balance, Candle,
                                       Commission, Currency, Fee, Order,
                                       OrderBook, Price, PriceHistory,
                                       SubAccount, Symbol, Ticker, Trade,
-                                      Transaction)
+                                      Transaction, WhitelistedAddress)
 from cryptomarket.dataclasses.aclSettings import ACLSettings
 from cryptomarket.dataclasses.convertedCandles import ConvertedCandles
 from cryptomarket.dataclasses.convertedCandlesOfSymbol import \
@@ -934,6 +934,18 @@ class Client(object):
         response = self._get(endpoint=f'wallet/balance/{currency}')
         return from_dict(data_class=Balance, data=response)
 
+    def get_whitelisted_addresses(self) -> List[WhitelistedAddress]:
+        """Gets the list of whitelisted addresses
+
+        Requires the "Payment information" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#get-whitelisted-addresses
+
+        :return: A list of addresses
+        """
+        response = self._get(endpoint=f'wallet/crypto/address/white-list')
+        return [from_dict(data_class=WhitelistedAddress, data=data) for data in response]
+    
     def get_deposit_crypto_addresses(self) -> List[Address]:
         """Get the current addresses of the user
 
