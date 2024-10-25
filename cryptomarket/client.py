@@ -763,7 +763,7 @@ class Client(object):
         :param new client order id: client order id for the new order
         :param quantity: Order quantity
         :param price: Required if order type is 'limit', 'stopLimit', or 'takeProfitLimit'. Order price
-        :param stop price: Required if order type is 'stopLimit', 'stopMarket', 'takeProfitLimit', or 'takeProfitMarket'. Order price
+        :param stop price: Required if order type is 'stopLimit', 'stopMarket', 'takeProfitLimit', or 'takeProfitMarket'. Order stop price
         :param strict validate: Price and quantity will be checked for incrementation within the symbol’s tick size and quantity step. See the symbol's tick_size and quantity_increment
 
         :return: The new spot order

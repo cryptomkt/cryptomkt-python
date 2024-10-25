@@ -347,7 +347,7 @@ class TradingClient(ClientAuthenticable):
         :param new_client_order_id: the new client order id for the modified order. must be unique within the trading day
         :param quantity: new order quantity
         :param price: new order price
-        :param stop price: Required if order type is 'stopLimit', 'stopMarket', 'takeProfitLimit', or 'takeProfitMarket'. Order price
+        :param stop price: Required if order type is 'stopLimit', 'stopMarket', 'takeProfitLimit', or 'takeProfitMarket'. Order stop price
         :param strict_validate:  price and quantity will be checked for the incrementation with tick size and quantity step. See symbol's tick_size and quantity_increment
         :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or a report of the new version of the order
         """
