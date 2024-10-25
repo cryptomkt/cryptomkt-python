@@ -1129,7 +1129,7 @@ class Client(object):
         return [Fee.from_dict(fee_data) for fee_data in result]
 
 
-  def get_withdrawal_fees_hash() -> str:
+  def get_withdrawal_fees_hash(self) -> str:
         """Gets the hash of withdrawal fees
         
         Requires the "Payment information" API key Access Right
