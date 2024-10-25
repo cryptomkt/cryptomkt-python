@@ -1489,7 +1489,7 @@ class Client(object):
         
         Requires the "Withdraw cryptocurrencies" API key Access Right
         
-        https://api.exchange.cryptomkt.com/#transfer-to-super-account
+        https://api.exchange.cryptomkt.com/#transfer-across-subaccounts
 
         :param sub_account_id: Identifier of a subaccount
         :param amount:   the amount of currency to transfer
