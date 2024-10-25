@@ -748,6 +748,7 @@ class Client(object):
         new_client_order_id: str,
         quantity: str,
         price: Optional[str] = None,
+        stop_price: Optional[str] = None,
         strict_validate: Optional[bool] = None
     ) -> Order:
         """Replaces a spot order
@@ -761,13 +762,14 @@ class Client(object):
         :param client order id: client order id of the old order
         :param new client order id: client order id for the new order
         :param quantity: Order quantity
-        :param strict validate: Price and quantity will be checked for incrementation within the symbol’s tick size and quantity step. See the symbol's tick_size and quantity_increment
         :param price: Required if order type is 'limit', 'stopLimit', or 'takeProfitLimit'. Order price
+        :param stop price: Required if order type is 'stopLimit', 'stopMarket', 'takeProfitLimit', or 'takeProfitMarket'. Order price
+        :param strict validate: Price and quantity will be checked for incrementation within the symbol’s tick size and quantity step. See the symbol's tick_size and quantity_increment
 
         :return: The new spot order
         """
         params = args.DictBuilder().new_client_order_id(new_client_order_id).quantity(
-            quantity).price(price).strict_validate(strict_validate).build()
+            quantity).price(price).stop_price(stop_price).strict_validate(strict_validate).build()
         response = self._patch(
             endpoint=f'spot/order/{client_order_id}', params=params)
         return from_dict(data_class=Order, data=response, config=Config(cast=[Enum]))

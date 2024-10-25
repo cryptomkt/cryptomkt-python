@@ -335,6 +335,7 @@ class TradingClient(ClientAuthenticable):
         new_client_order_id: str,
         quantiy: str,
         price: str,
+        stop_price: Optional[str]=None,
         strict_validate: Optional[bool] = None,
         callback: Optional[Callback[Report]] = None
     ):
@@ -346,11 +347,12 @@ class TradingClient(ClientAuthenticable):
         :param new_client_order_id: the new client order id for the modified order. must be unique within the trading day
         :param quantity: new order quantity
         :param price: new order price
+        :param stop price: Required if order type is 'stopLimit', 'stopMarket', 'takeProfitLimit', or 'takeProfitMarket'. Order price
         :param strict_validate:  price and quantity will be checked for the incrementation with tick size and quantity step. See symbol's tick_size and quantity_increment
         :param callback: A callable of two arguments, takes either a CryptomarketAPIException, or a report of the new version of the order
         """
         params = args.DictBuilder().client_order_id(client_order_id).new_client_order_id(
-            new_client_order_id).quantity(quantiy).price(price).strict_validate(strict_validate).build()
+            new_client_order_id).quantity(quantiy).price(price).stop_price(stop_price).strict_validate(strict_validate).build()
         intercept_response_callback: InterceptResponseCallback = None
         if callback:
             def intercept_result(err, response):
