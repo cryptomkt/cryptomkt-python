@@ -1456,7 +1456,7 @@ class Client(object):
             amount).currency(currency).type(type).build()
         return self._post(endpoint='sub-account/transfer', params=params)['result']
 
-    def transfer_to_super_account(String amount, String currency) ->str:
+    def transfer_to_super_account(self, amount:str, currency: str) ->str:
         """Creates and commits a transfer from a subaccount to its super account
         
         Call is being sent by a subaccount
@@ -1473,29 +1473,32 @@ class Client(object):
         :param currency: the currency to transfer
         :return: The transaction id of the tranfer
         """
-        pass
+        params = args.DictBuilder().amount(amount).currency(currency).build()
+        return self._post(endpoint='sub-account/transfer/sub-to-super', params=params)['result']
 
 
-    def transfer_to_another_subaccount(String subAccountId, String amount, String currency)
-    
-    """Creates and commits a transfer between the user (subaccount) and another
-    subaccount.
-    
-    Call is being sent by a subaccount
-    
-    Created but not committed transfer will reserve pending amount on the sender
-    wallet affecting their ability to withdraw or transfer crypto to another
-    account. Incomplete withdrawals affect subaccount transfers the same way
-    
-    Requires the "Withdraw cryptocurrencies" API key Access Right
-    
-    https://api.exchange.cryptomkt.com/#transfer-to-super-account
+    def transfer_to_another_subaccount(sub_account_id: str, amount: str, currency: str)->str:
+        """Creates and commits a transfer between the user (subaccount) and another
+        subaccount.
+        
+        Call is being sent by a subaccount
+        
+        Created but not committed transfer will reserve pending amount on the sender
+        wallet affecting their ability to withdraw or transfer crypto to another
+        account. Incomplete withdrawals affect subaccount transfers the same way
+        
+        Requires the "Withdraw cryptocurrencies" API key Access Right
+        
+        https://api.exchange.cryptomkt.com/#transfer-to-super-account
 
-    :param amount:   the amount of currency to transfer
-    :param currency: the currency to transfer
-    :return: The transaction id of the tranfer
-    """
-    
+        :param sub_account_id: Identifier of a subaccount
+        :param amount:   the amount of currency to transfer
+        :param currency: the currency to transfer
+        :return: The transaction id of the tranfer
+        """
+        params = args.DictBuilder().sub_account_id(sub_account_id).amount(
+            amount).currency(currency).build()
+        return self._post(endpoint='sub-account/transfer/sub-to-sub', params=params)['result']
 
 
     def get_ACL_settings(self, sub_account_ids: List[str]) -> List[ACLSettings]:
