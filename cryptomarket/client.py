@@ -1129,7 +1129,7 @@ class Client(object):
         return [Fee.from_dict(fee_data) for fee_data in result]
 
 
-  def get_fee_hash() -> str:
+  def get_withdrawal_fees_hash() -> str:
         """Gets the hash of withdrawal fees
         
         Requires the "Payment information" API key Access Right
@@ -1138,7 +1138,7 @@ class Client(object):
         
         :return: the fees hash
         """
-        return self._get(endpoint='wallet/crypto/fee/withdraw/hash')['result']
+        return self._get(endpoint='wallet/crypto/fee/withdraw/hash')['hash']
 
   
     # def get_estimate_deposit_fee(self, currency: str, amount: str, network_code: Optional[str] = None) -> str:
@@ -1455,6 +1455,48 @@ class Client(object):
         params = args.DictBuilder().sub_account_id(sub_account_id).amount(
             amount).currency(currency).type(type).build()
         return self._post(endpoint='sub-account/transfer', params=params)['result']
+
+    def transfer_to_super_account(String amount, String currency) ->str:
+        """Creates and commits a transfer from a subaccount to its super account
+        
+        Call is being sent by a subaccount
+        
+        Created but not committed transfer will reserve pending amount on the sender
+        wallet affecting their ability to withdraw or transfer crypto to another
+        account. Incomplete withdrawals affect subaccount transfers the same way
+        
+        Requires the "Withdraw cryptocurrencies" API key Access Right
+        
+        https://api.exchange.cryptomkt.com/#transfer-to-super-account
+
+        :param amount:   the amount of currency to transfer
+        :param currency: the currency to transfer
+        :return: The transaction id of the tranfer
+        """
+        pass
+
+
+    def transfer_to_another_subaccount(String subAccountId, String amount, String currency)
+    
+    """Creates and commits a transfer between the user (subaccount) and another
+    subaccount.
+    
+    Call is being sent by a subaccount
+    
+    Created but not committed transfer will reserve pending amount on the sender
+    wallet affecting their ability to withdraw or transfer crypto to another
+    account. Incomplete withdrawals affect subaccount transfers the same way
+    
+    Requires the "Withdraw cryptocurrencies" API key Access Right
+    
+    https://api.exchange.cryptomkt.com/#transfer-to-super-account
+
+    :param amount:   the amount of currency to transfer
+    :param currency: the currency to transfer
+    :return: The transaction id of the tranfer
+    """
+    
+
 
     def get_ACL_settings(self, sub_account_ids: List[str]) -> List[ACLSettings]:
         """Get a list of withdrawal settings for all sub-accounts or for the specified sub-accounts
