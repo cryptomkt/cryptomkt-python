@@ -31,6 +31,7 @@ from .wsTicker import WSTicker
 from .wsTrade import WSTrade
 from .wsPriceRate import WSPriceRate
 from .fee import Fee
+from .whitelistedAddress import WhitelistedAddress
 __all__ = [
     ACLSettings,
     Address,
@@ -66,4 +67,5 @@ __all__ = [
     WSPriceRate,
     SubAccount, 
     Fee,
+    WhitelistedAddress
 ]

@@ -3,7 +3,7 @@ from typing import Optional
 
 
 @dataclass
-class WhitelistAddress:
+class WhitelistedAddress:
     address: str
     currency: str
     name: str

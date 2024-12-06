@@ -335,7 +335,7 @@ class TradingClient(ClientAuthenticable):
         new_client_order_id: str,
         quantiy: str,
         price: str,
-        stop_price: Optional[str]=None,
+        stop_price: Optional[str] = None,
         strict_validate: Optional[bool] = None,
         callback: Optional[Callback[Report]] = None
     ):

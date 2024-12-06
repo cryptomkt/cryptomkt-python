@@ -947,7 +947,7 @@ class Client(object):
         """
         response = self._get(endpoint=f'wallet/crypto/address/white-list')
         return [from_dict(data_class=WhitelistedAddress, data=data) for data in response]
-    
+
     def get_deposit_crypto_addresses(self) -> List[Address]:
         """Get the current addresses of the user
 
@@ -1123,7 +1123,9 @@ class Client(object):
 
         :return: A list of expected withdrawal fees
         """
-        params = [asdict(fee_request) for fee_request in fee_requests]
+        params = [args.clean_nones(asdict(fee_request))
+                  for fee_request
+                  in fee_requests]
         result = self._post(
             endpoint='wallet/crypto/fees/estimate', params=params)
         return [Fee.from_dict(fee_data) for fee_data in result]
@@ -1137,24 +1139,24 @@ class Client(object):
 
         :return: A list of expected withdrawal fees
         """
-        params = [asdict(fee_request) for fee_request in fee_requests]
+        params = [args.clean_nones(asdict(fee_request))
+                  for fee_request
+                  in fee_requests]
         result = self._post(
             endpoint='wallet/crypto/fee/estimate/bulk', params=params)
         return [Fee.from_dict(fee_data) for fee_data in result]
 
-
-  def get_withdrawal_fees_hash(self) -> str:
+    def get_withdrawal_fees_hash(self) -> str:
         """Gets the hash of withdrawal fees
-        
+
         Requires the "Payment information" API key Access Right
-        
+
         https://api.exchange.cryptomkt.com/#get-withdrawal-fees-hash
-        
+
         :return: the fees hash
         """
         return self._get(endpoint='wallet/crypto/fee/withdraw/hash')['hash']
 
-  
     # def get_estimate_deposit_fee(self, currency: str, amount: str, network_code: Optional[str] = None) -> str:
     #     """Get an estimate of the Deposit fee
 
@@ -1470,17 +1472,17 @@ class Client(object):
             amount).currency(currency).type(type).build()
         return self._post(endpoint='sub-account/transfer', params=params)['result']
 
-    def transfer_to_super_account(self, amount:str, currency: str) ->str:
+    def transfer_to_super_account(self, amount: str, currency: str) -> str:
         """Creates and commits a transfer from a subaccount to its super account
-        
+
         Call is being sent by a subaccount
-        
+
         Created but not committed transfer will reserve pending amount on the sender
         wallet affecting their ability to withdraw or transfer crypto to another
         account. Incomplete withdrawals affect subaccount transfers the same way
-        
+
         Requires the "Withdraw cryptocurrencies" API key Access Right
-        
+
         https://api.exchange.cryptomkt.com/#transfer-to-super-account
 
         :param amount:   the amount of currency to transfer
@@ -1490,19 +1492,18 @@ class Client(object):
         params = args.DictBuilder().amount(amount).currency(currency).build()
         return self._post(endpoint='sub-account/transfer/sub-to-super', params=params)['result']
 
-
-    def transfer_to_another_subaccount(sub_account_id: str, amount: str, currency: str)->str:
+    def transfer_to_another_subaccount(self, sub_account_id: str, amount: str, currency: str) -> str:
         """Creates and commits a transfer between the user (subaccount) and another
         subaccount.
-        
+
         Call is being sent by a subaccount
-        
+
         Created but not committed transfer will reserve pending amount on the sender
         wallet affecting their ability to withdraw or transfer crypto to another
         account. Incomplete withdrawals affect subaccount transfers the same way
-        
+
         Requires the "Withdraw cryptocurrencies" API key Access Right
-        
+
         https://api.exchange.cryptomkt.com/#transfer-across-subaccounts
 
         :param sub_account_id: Identifier of a subaccount
@@ -1513,7 +1514,6 @@ class Client(object):
         params = args.DictBuilder().sub_account_id(sub_account_id).amount(
             amount).currency(currency).build()
         return self._post(endpoint='sub-account/transfer/sub-to-sub', params=params)['result']
-
 
     def get_ACL_settings(self, sub_account_ids: List[str]) -> List[ACLSettings]:
         """Get a list of withdrawal settings for all sub-accounts or for the specified sub-accounts
