@@ -7,8 +7,7 @@ from cryptomarket.dataclasses import (WSCandle, WSMiniTicker, WSOrderBook,
                                       WSOrderBookTop, WSTicker, WSTrade)
 from cryptomarket.dataclasses.wsPriceRate import WSPriceRate
 from cryptomarket.websockets import MarketDataClient
-from tests.rest.test_helpers import good_list
-from tests.websockets.test_helpers import Veredict, good_candle_list, good_mini_ticker, good_orderbook_top, good_price_rate, good_wsorder_book, good_wsticker, good_wstrade
+from test_helpers import *
 
 SECOND = 1
 MINUTE = 60

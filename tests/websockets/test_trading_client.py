@@ -7,7 +7,6 @@ from cryptomarket import args
 from test_helpers import *
 
 from cryptomarket.websockets import TradingClient
-from tests.rest.test_helpers import good_balance, good_trading_commission
 
 with open('/home/ismael/cryptomarket/keys.json') as fd:
     keys = json.load(fd)

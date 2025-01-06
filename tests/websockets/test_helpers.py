@@ -1,13 +1,21 @@
 import time
 from dataclasses import asdict
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List
 
 from cryptomarket.dataclasses import (Balance, OrderBookLevel, Report,
                                       WSCandle, WSMiniTicker, WSOrderBook,
                                       WSOrderBookTop, WSPublicTrade, WSTicker,
                                       WSTrade)
+from cryptomarket.dataclasses.commission import Commission
 from cryptomarket.dataclasses.wsPriceRate import WSPriceRate
-from tests.rest.test_helpers import good_list
+
+
+def good_list(check_fn: Callable[[Any], bool], list: List[Any]) -> bool:
+    for elem in list:
+        if not check_fn(elem):
+            print(elem)
+            return False
+    return True
 
 
 def defined(a_dict, key):
@@ -17,6 +25,28 @@ def defined(a_dict, key):
     if isinstance(val, str) and val == "":
         return False
     return True
+
+
+def good_balance(balance: Balance) -> bool:
+    return good_dict(
+        asdict(balance),
+        [
+            "currency",
+            "available",
+            "reserved",
+        ]
+    )
+
+
+def good_trading_commission(commission: Commission) -> bool:
+    return good_dict(
+        asdict(commission),
+        [
+            "symbol",
+            "take_rate",
+            "make_rate",
+        ]
+    )
 
 
 def good_dict(a_dict: Dict[str, Any], fields: List[str]) -> bool:

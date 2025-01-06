@@ -20,6 +20,7 @@ class Order:
     created_at: str
     updated_at: str
     price: Optional[str] = None
+    price_average: Optional[str] = None
     expire_time: Optional[str] = None
     stop_price: Optional[str] = None
     post_only: Optional[bool] = None
