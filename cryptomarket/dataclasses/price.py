@@ -4,6 +4,6 @@ from typing import Optional
 
 @dataclass
 class Price:
-    price: str
     timestamp: str
+    price: Optional[str] = None
     currency: Optional[str] = None

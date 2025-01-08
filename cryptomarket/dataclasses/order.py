@@ -19,6 +19,7 @@ class Order:
     quantity_cumulative: str
     created_at: str
     updated_at: str
+    price_average: str
     price: Optional[str] = None
     expire_time: Optional[str] = None
     stop_price: Optional[str] = None

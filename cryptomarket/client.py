@@ -10,7 +10,7 @@ from cryptomarket.dataclasses import (Address, AmountLock, Balance, Candle,
                                       Commission, Currency, Fee, Order,
                                       OrderBook, Price, PriceHistory,
                                       SubAccount, Symbol, Ticker, Trade,
-                                      Transaction)
+                                      Transaction, WhitelistedAddress)
 from cryptomarket.dataclasses.aclSettings import ACLSettings
 from cryptomarket.dataclasses.convertedCandles import ConvertedCandles
 from cryptomarket.dataclasses.convertedCandlesOfSymbol import \
@@ -748,6 +748,7 @@ class Client(object):
         new_client_order_id: str,
         quantity: str,
         price: Optional[str] = None,
+        stop_price: Optional[str] = None,
         strict_validate: Optional[bool] = None
     ) -> Order:
         """Replaces a spot order
@@ -761,13 +762,14 @@ class Client(object):
         :param client order id: client order id of the old order
         :param new client order id: client order id for the new order
         :param quantity: Order quantity
-        :param strict validate: Price and quantity will be checked for incrementation within the symbol’s tick size and quantity step. See the symbol's tick_size and quantity_increment
         :param price: Required if order type is 'limit', 'stopLimit', or 'takeProfitLimit'. Order price
+        :param stop price: Required if order type is 'stopLimit', 'stopMarket', 'takeProfitLimit', or 'takeProfitMarket'. Order stop price
+        :param strict validate: Price and quantity will be checked for incrementation within the symbol’s tick size and quantity step. See the symbol's tick_size and quantity_increment
 
         :return: The new spot order
         """
         params = args.DictBuilder().new_client_order_id(new_client_order_id).quantity(
-            quantity).price(price).strict_validate(strict_validate).build()
+            quantity).price(price).stop_price(stop_price).strict_validate(strict_validate).build()
         response = self._patch(
             endpoint=f'spot/order/{client_order_id}', params=params)
         return from_dict(data_class=Order, data=response, config=Config(cast=[Enum]))
@@ -933,6 +935,18 @@ class Client(object):
         """
         response = self._get(endpoint=f'wallet/balance/{currency}')
         return from_dict(data_class=Balance, data=response)
+
+    def get_whitelisted_addresses(self) -> List[WhitelistedAddress]:
+        """Gets the list of whitelisted addresses
+
+        Requires the "Payment information" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#get-whitelisted-addresses
+
+        :return: A list of addresses
+        """
+        response = self._get(endpoint=f'wallet/crypto/address/white-list')
+        return [from_dict(data_class=WhitelistedAddress, data=data) for data in response]
 
     def get_deposit_crypto_addresses(self) -> List[Address]:
         """Get the current addresses of the user
@@ -1109,7 +1123,9 @@ class Client(object):
 
         :return: A list of expected withdrawal fees
         """
-        params = [asdict(fee_request) for fee_request in fee_requests]
+        params = [args.clean_nones(asdict(fee_request))
+                  for fee_request
+                  in fee_requests]
         result = self._post(
             endpoint='wallet/crypto/fees/estimate', params=params)
         return [Fee.from_dict(fee_data) for fee_data in result]
@@ -1123,10 +1139,23 @@ class Client(object):
 
         :return: A list of expected withdrawal fees
         """
-        params = [asdict(fee_request) for fee_request in fee_requests]
+        params = [args.clean_nones(asdict(fee_request))
+                  for fee_request
+                  in fee_requests]
         result = self._post(
             endpoint='wallet/crypto/fee/estimate/bulk', params=params)
         return [Fee.from_dict(fee_data) for fee_data in result]
+
+    def get_withdrawal_fees_hash(self) -> str:
+        """Gets the hash of withdrawal fees
+
+        Requires the "Payment information" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#get-withdrawal-fees-hash
+
+        :return: the fees hash
+        """
+        return self._get(endpoint='wallet/crypto/fee/withdraw/hash')['hash']
 
     # def get_estimate_deposit_fee(self, currency: str, amount: str, network_code: Optional[str] = None) -> str:
     #     """Get an estimate of the Deposit fee
@@ -1442,6 +1471,49 @@ class Client(object):
         params = args.DictBuilder().sub_account_id(sub_account_id).amount(
             amount).currency(currency).type(type).build()
         return self._post(endpoint='sub-account/transfer', params=params)['result']
+
+    def transfer_to_super_account(self, amount: str, currency: str) -> str:
+        """Creates and commits a transfer from a subaccount to its super account
+
+        Call is being sent by a subaccount
+
+        Created but not committed transfer will reserve pending amount on the sender
+        wallet affecting their ability to withdraw or transfer crypto to another
+        account. Incomplete withdrawals affect subaccount transfers the same way
+
+        Requires the "Withdraw cryptocurrencies" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#transfer-to-super-account
+
+        :param amount:   the amount of currency to transfer
+        :param currency: the currency to transfer
+        :return: The transaction id of the tranfer
+        """
+        params = args.DictBuilder().amount(amount).currency(currency).build()
+        return self._post(endpoint='sub-account/transfer/sub-to-super', params=params)['result']
+
+    def transfer_to_another_subaccount(self, sub_account_id: str, amount: str, currency: str) -> str:
+        """Creates and commits a transfer between the user (subaccount) and another
+        subaccount.
+
+        Call is being sent by a subaccount
+
+        Created but not committed transfer will reserve pending amount on the sender
+        wallet affecting their ability to withdraw or transfer crypto to another
+        account. Incomplete withdrawals affect subaccount transfers the same way
+
+        Requires the "Withdraw cryptocurrencies" API key Access Right
+
+        https://api.exchange.cryptomkt.com/#transfer-across-subaccounts
+
+        :param sub_account_id: Identifier of a subaccount
+        :param amount:   the amount of currency to transfer
+        :param currency: the currency to transfer
+        :return: The transaction id of the tranfer
+        """
+        params = args.DictBuilder().sub_account_id(sub_account_id).amount(
+            amount).currency(currency).build()
+        return self._post(endpoint='sub-account/transfer/sub-to-sub', params=params)['result']
 
     def get_ACL_settings(self, sub_account_ids: List[str]) -> List[ACLSettings]:
         """Get a list of withdrawal settings for all sub-accounts or for the specified sub-accounts
